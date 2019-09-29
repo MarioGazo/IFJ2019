@@ -1,6 +1,6 @@
 #include <stdio.h>
 
 int main() {
-  printf("IFJ2019 Compiler\n");
+  printf("Testing git\n");
   return 0;
 }
