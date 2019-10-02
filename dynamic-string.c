@@ -8,14 +8,12 @@
 #include <string.h>
 
 bool dynamicStringInit(dynamicString_t* string) {
-    string->text = malloc(1);
+    string->text = calloc(1, sizeof(char));
 
     if (string->text == NULL) {
         return false;
     } else {
         string->capacity = 1;
-        string->textSize = 0;
-        string->text[string->textSize] = '\0';
         return true;
     }
 }
@@ -31,16 +29,17 @@ bool dynamicStringAddChar(dynamicString_t* string, char c) {
         return false;
     }
 
-    string->text[string->textSize++] = c;
-    string->text[string->textSize] = '\0';
+    string->text[string->capacity - 2] = c;
+    string->text[string->capacity - 1] = '\0';
     return true;
 }
 
 bool dynamicStringAddString(dynamicString_t* string, const char* source) {
-
     unsigned int sourceLength = strlen(source);
     for (int i = 0; i < sourceLength; i++) {
-        dynamicStringAddChar(string, source[i]);
+        if (dynamicStringAddChar(string, source[i])  == false) {
+            return false;
+        }
     }
     return true;
 }

@@ -8,17 +8,20 @@
 #include <stdbool.h>
 
 typedef struct dynamicString {
-    unsigned int textSize;
     unsigned int capacity;
     char* text;
 } dynamicString_t;
 
+//inicializator
 bool dynamicStringInit(dynamicString_t* string);
 
+//uvolnenie
 void dynamicStringFree(dynamicString_t* string);
 
+//dynamicke pridanie znaku
 bool dynamicStringAddChar(dynamicString_t* string, char c);
 
+//dznamicke pridanie retazca
 bool dynamicStringAddString(dynamicString_t* string, const char* source);
 
 #endif //VUT_FIT_IFJ2019_DYNAMIC_STRING_H
