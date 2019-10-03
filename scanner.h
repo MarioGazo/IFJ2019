@@ -10,7 +10,7 @@
 #include "dynamic-string.h"
 
 // returning next token
-typedef union tokenAtribute {
+typedef union {
     int intValue;
     double doubleValue;
     dynamicString_t* word;
@@ -63,7 +63,7 @@ typedef enum parserState {
     EndOfFile = -2               // endOfFile
 } parserState_t;
 
-typedef struct token {
+typedef struct {
     parserState_t tokenType;
     tokenAtribute_t tokenAtribute;
 } token_t;
@@ -91,5 +91,15 @@ typedef enum keywords {
 } keywords_t;
 
 keywords_t isKeyword(const char* string);
+
+int strToInt(const char* string);
+
+double strToDouble(const char* string);
+
+int binToDecimal(const char* string);
+
+int octToDecimal(const char* string);
+
+int hexToDecimal(const char* string);
 
 #endif //VUT_FIT_IFJ2019_SCANNER_H

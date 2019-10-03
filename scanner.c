@@ -6,46 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
-
-keywords_t isKeyword(const char* string) {
-    keywords_t keyword;
-
-    if (strcmp(string,"def") == 0) {
-        keyword = keywordDef;
-    } else if (strcmp(string,"if") == 0) {
-        keyword = keywordIf;
-    } else if (strcmp(string,"else") == 0) {
-        keyword = keywordElse;
-    } else if (strcmp(string,"None") == 0) {
-        keyword = keywordNone;
-    } else if (strcmp(string,"pass") == 0) {
-        keyword = keywordPass;
-    } else if (strcmp(string,"return") == 0) {
-        keyword = keywordReturn;
-    } else if (strcmp(string,"while") == 0) {
-        keyword = keywordWhile;
-    } else if (strcmp(string,"inputs") == 0) {
-        keyword = keywordInputs;
-    } else if (strcmp(string,"inputi") == 0) {
-        keyword = keywordInputi;
-    } else if (strcmp(string,"inputf") == 0) {
-        keyword = keywordInputf;
-    } else if (strcmp(string,"print") == 0) {
-        keyword = keywordPrint;
-    } else if (strcmp(string,"len") == 0) {
-        keyword = keywordLen;
-    } else if (strcmp(string,"substr") == 0) {
-        keyword = keywordSubstr;
-    } else if (strcmp(string,"ord") == 0) {
-        keyword = keywordOrd;
-    } else if (strcmp(string,"char") == 0) {
-        keyword = keywordChar;
-    } else {
-        keyword = notKeyword;
-    }
-
-    return keyword;
-}
+#include <stdlib.h>
 
 token_t getToken(FILE* in) {
     token_t actualToken;
@@ -55,6 +16,7 @@ token_t getToken(FILE* in) {
     parserState_t state = Start;
     int c;
 
+    keywords_t keyword;
     while (1) {
         c = getc(in);
         switch (state) {
@@ -74,7 +36,7 @@ token_t getToken(FILE* in) {
                 } else if (c == ',') {
                     actualToken.tokenType = Comma;         return actualToken; // ,
                 } else if (c == EOF) {
-                    actualToken.tokenType = EndOfFile;      return actualToken; // EndOfFile
+                    actualToken.tokenType = EndOfFile;     return actualToken; // EndOfFile
                 } else if (c == '/') {
                     state = DivideWRest;           continue; // /
                 } else if (c == '!') {
@@ -104,7 +66,6 @@ token_t getToken(FILE* in) {
                     continue;
                 } else if (c == '0') {
                     dynamicStringInit(actualToken.tokenAtribute.word);
-                    dynamicStringAddChar(actualToken.tokenAtribute.word,c);
                     state = BinOctHex;
                     continue;
                 } else if (isalpha(c)) {
@@ -118,6 +79,7 @@ token_t getToken(FILE* in) {
                     state = Identifier;
                     continue;
                 }  else {
+                    ungetc(c,in);
                     state = Error;                 continue;
                 }
 
@@ -221,7 +183,8 @@ token_t getToken(FILE* in) {
                     dynamicStringAddChar(actualToken.tokenAtribute.word,c);
                 } else {
                     ungetc(c,in);
-                    if (isKeyword(actualToken.tokenAtribute.word->text) != -1) {
+
+                    if ((keyword = isKeyword(actualToken.tokenAtribute.word->text)) != -1) {
                         state = Keyword;           continue;
                     }
                     state = Identifier;            continue;
@@ -231,7 +194,7 @@ token_t getToken(FILE* in) {
                     state = Identifier;            continue;
                 }
 
-                if (isKeyword(actualToken.tokenAtribute.word->text) != -1) {
+                if ((keyword = isKeyword(actualToken.tokenAtribute.word->text)) != -1) {
                     state = Keyword;               continue;
                 }
 
@@ -246,20 +209,33 @@ token_t getToken(FILE* in) {
                 continue;
             case Keyword:
                 ungetc(c,in);
+                // TODO not sure whether save keyword as enum number, or string
+                dynamicStringFree(actualToken.tokenAtribute.word);
+                actualToken.tokenAtribute.intValue = keyword;
                 actualToken.tokenType = Keyword;               return actualToken;
             case Integer:
                 if (isdigit(c)) {
                     dynamicStringAddChar(actualToken.tokenAtribute.word,c); continue;
                 } else if (c == '.') {
                     dynamicStringAddChar(actualToken.tokenAtribute.word,c);
-                    state = Double;                continue;
+                    if (isdigit(getc(in))) {
+                        ungetc(c,in);
+                        state = Double;            continue;
+                    } else {
+                        ungetc(c,in);
+                        dynamicStringFree(actualToken.tokenAtribute.word);
+                        state = Error;              continue;
+                    }
                 } else if (c == 'e' || c == 'E') {
                     dynamicStringAddChar(actualToken.tokenAtribute.word,c);
                     state = AlmostExponential;     continue;
                 } else {
                     ungetc(c,in);
                     actualToken.tokenType = Integer;
-                    // TODO eval whole num and free
+
+                    dynamicString_t* StringNumPtr = actualToken.tokenAtribute.word;
+                    actualToken.tokenAtribute.intValue = strToInt(actualToken.tokenAtribute.word->text);
+                    dynamicStringFree(StringNumPtr);
                     return actualToken;
                 }
             case Double:
@@ -272,7 +248,10 @@ token_t getToken(FILE* in) {
                 } else {
                     ungetc(c,in);
                     actualToken.tokenType = Double;
-                    // TODO eval double num and free
+
+                    dynamicString_t* StringNumPtr = actualToken.tokenAtribute.word;
+                    actualToken.tokenAtribute.doubleValue = strToDouble(actualToken.tokenAtribute.word->text);
+                    dynamicStringFree(StringNumPtr);
                     return actualToken;
                 }
             case AlmostExponential:
@@ -280,33 +259,35 @@ token_t getToken(FILE* in) {
                     dynamicStringAddChar(actualToken.tokenAtribute.word,c);
                     state = Exponential;           continue;
                 } else {
-                    actualToken.tokenType = Error;
+                    ungetc(c,in);
                     dynamicStringFree(actualToken.tokenAtribute.word);
-                    return actualToken;
+                    actualToken.tokenType = Error;
+                    continue;
                 }
             case Exponential:
                 if (isdigit(c)) {
                     dynamicStringAddChar(actualToken.tokenAtribute.word,c); continue;
                 } else {
                     ungetc(c,in);
-                    actualToken.tokenType = Exponential;
-                    // TODO eval exponential num and free
+                    actualToken.tokenType = Double; // every exponential num is converted to double
+
+                    dynamicString_t* StringNumPtr = actualToken.tokenAtribute.word;
+                    actualToken.tokenAtribute.doubleValue = strToDouble(actualToken.tokenAtribute.word->text);
+                    dynamicStringFree(StringNumPtr);
                     return actualToken;
                 }
             case BinOctHex:
                 if (c == 'b' || c == 'B') {
-                    dynamicStringAddChar(actualToken.tokenAtribute.word,c);
                     state = BinaryNum;             continue;
                 } else if (c == 'o' || c == 'O') {
-                    dynamicStringAddChar(actualToken.tokenAtribute.word,c);
                     state = OctalNum;              continue;
                 } else if (c == 'x' || c == 'X') {
-                    dynamicStringAddChar(actualToken.tokenAtribute.word,c);
                     state = HexadecimalNum;        continue;
                 } else if (isdigit(c)) {
                     dynamicStringAddChar(actualToken.tokenAtribute.word,c);
                     state = Integer;               continue;
                 } else {
+                    ungetc(c,in);
                     dynamicStringFree(actualToken.tokenAtribute.word);
                     state = Error;                 continue;
                 }
@@ -315,13 +296,18 @@ token_t getToken(FILE* in) {
                     dynamicStringAddChar(actualToken.tokenAtribute.word,c); continue;
                 }
 
+                if (c == '_') continue;
+
                 if (isdigit(c)) {
                     dynamicStringFree(actualToken.tokenAtribute.word);
                     state = Error;                 continue;
                 } else {
                     ungetc(c, in);
-                    actualToken.tokenType = BinaryNum;
-                    //TODO eval and free
+                    actualToken.tokenType = Integer;
+
+                    dynamicString_t* StringNumPtr = actualToken.tokenAtribute.word;
+                    actualToken.tokenAtribute.intValue = binToDecimal(actualToken.tokenAtribute.word->text);
+                    dynamicStringFree(StringNumPtr);
                     return actualToken;
                 }
             case OctalNum:
@@ -330,22 +316,32 @@ token_t getToken(FILE* in) {
                     dynamicStringAddChar(actualToken.tokenAtribute.word,c); continue;
                 }
 
+                if (c == '_') continue;
+
                 if (isdigit(c)) {
                     dynamicStringFree(actualToken.tokenAtribute.word);
                     state = Error;                 continue;
                 } else {
                     ungetc(c, in);
-                    actualToken.tokenType = OctalNum;
-                    //TODO eval and free
+                    actualToken.tokenType = Integer;
+
+                    dynamicString_t* StringNumPtr = actualToken.tokenAtribute.word;
+                    actualToken.tokenAtribute.intValue = octToDecimal(actualToken.tokenAtribute.word->text);
+                    dynamicStringFree(StringNumPtr);
                     return actualToken;
                 }
             case HexadecimalNum:
                 if (isxdigit(c)) {
                     dynamicStringAddChar(actualToken.tokenAtribute.word,c);continue;
+                } else if (c == '_') {
+                    continue;
                 } else {
                     ungetc(c,in);
-                    actualToken.tokenType = HexadecimalNum;
-                    //TODO eval end free
+                    actualToken.tokenType = Integer;
+
+                    dynamicString_t* StringNumPtr = actualToken.tokenAtribute.word;
+                    actualToken.tokenAtribute.intValue = hexToDecimal(actualToken.tokenAtribute.word->text);
+                    dynamicStringFree(StringNumPtr);
                     return actualToken;
                 }
             case Error:
@@ -355,4 +351,64 @@ token_t getToken(FILE* in) {
         }
     }
 
+}
+
+keywords_t isKeyword(const char* string) {
+    keywords_t keyword;
+
+    if (strcmp(string,"def") == 0) {
+        keyword = keywordDef;
+    } else if (strcmp(string,"if") == 0) {
+        keyword = keywordIf;
+    } else if (strcmp(string,"else") == 0) {
+        keyword = keywordElse;
+    } else if (strcmp(string,"None") == 0) {
+        keyword = keywordNone;
+    } else if (strcmp(string,"pass") == 0) {
+        keyword = keywordPass;
+    } else if (strcmp(string,"return") == 0) {
+        keyword = keywordReturn;
+    } else if (strcmp(string,"while") == 0) {
+        keyword = keywordWhile;
+    } else if (strcmp(string,"inputs") == 0) {
+        keyword = keywordInputs;
+    } else if (strcmp(string,"inputi") == 0) {
+        keyword = keywordInputi;
+    } else if (strcmp(string,"inputf") == 0) {
+        keyword = keywordInputf;
+    } else if (strcmp(string,"print") == 0) {
+        keyword = keywordPrint;
+    } else if (strcmp(string,"len") == 0) {
+        keyword = keywordLen;
+    } else if (strcmp(string,"substr") == 0) {
+        keyword = keywordSubstr;
+    } else if (strcmp(string,"ord") == 0) {
+        keyword = keywordOrd;
+    } else if (strcmp(string,"char") == 0) {
+        keyword = keywordChar;
+    } else {
+        keyword = notKeyword;
+    }
+
+    return keyword;
+}
+
+int strToInt(const char* string) {
+    return strtol(string,NULL,10);
+}
+
+double strToDouble(const char* string) {
+    return strtod(string, NULL);
+}
+
+int binToDecimal(const char* string) {
+    return strtol(string,NULL,2);
+}
+
+int octToDecimal(const char* string) {
+    return strtol(string, NULL, 8);
+}
+
+int hexToDecimal(const char* string) {
+    return strtol(string, NULL, 16);
 }
