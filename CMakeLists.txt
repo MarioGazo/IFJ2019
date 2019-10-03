@@ -7,5 +7,5 @@ include_directories(.)
 
 add_executable(VUT_FIT_IFJ2019
         ifj2019.c
-        dynamic-string.c
-        dynamic-string.h)
+        dynamic-string.c scanner.c
+        dynamic-string.h scanner.h)
