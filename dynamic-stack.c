@@ -4,8 +4,9 @@
 
 #include "dynamic-stack.h"
 #include <stdlib.h>
+#include <stdio.h>
 
-bool stackInit(stack_t* s) {
+bool stackInit(dynamic_stack_t* s) {
     s->data = calloc(1, sizeof(int));
 
     if (s->data == NULL) {
@@ -17,11 +18,11 @@ bool stackInit(stack_t* s) {
     }
 }
 
-bool stackEmpty(stack_t* s) {
+bool stackEmpty(dynamic_stack_t* s) {
     return (s->top == 0);
 }
 
-int stackPop(stack_t* s) {
+int stackPop(dynamic_stack_t* s) {
     int result = 0;
 
     if (stackEmpty(s)) {
@@ -36,7 +37,7 @@ int stackPop(stack_t* s) {
     }
 }
 
-bool stackPush(stack_t* s, int num) {
+bool stackPush(dynamic_stack_t* s, int num) {
     s->data = realloc(s->data, ++s->capacity * sizeof(int));
 
     if (s->data == NULL) {
@@ -44,5 +45,15 @@ bool stackPush(stack_t* s, int num) {
     } else {
         s->data[++s->top] = num;
         return true;
+    }
+}
+
+void stackFree(dynamic_stack_t* s) {
+    free(s->data);
+}
+
+void printStack(dynamic_stack_t s) {
+    for (int i = 0; i < s.capacity; i++) {
+        printf("%d. %d\n",i, s.data[i]);
     }
 }

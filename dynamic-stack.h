@@ -7,19 +7,21 @@
 
 #include <stdbool.h>
 
-typedef struct {
+typedef struct dynamic_stack {
     int* data;
     unsigned int capacity;
     int top;
-} stack_t;
+} dynamic_stack_t;
 
-bool stackInit(stack_t* s);
+bool stackInit(dynamic_stack_t* s);
 
-bool stackEmpty(stack_t* s);
+bool stackEmpty(dynamic_stack_t* s);
 
-int stackPop(stack_t *s);
+int stackPop(dynamic_stack_t *s);
 
-bool stackPush(stack_t *s,int num);
+bool stackPush(dynamic_stack_t *s,int num);
 
-void stackFree(stack_t* s);
+void stackFree(dynamic_stack_t* s);
+
+void printStack(dynamic_stack_t s);
 #endif //VUT_FIT_IFJ2019_DYNAMIC_STACK_H
