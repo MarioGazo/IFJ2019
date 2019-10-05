@@ -11,16 +11,22 @@
 token_t getToken(FILE* in) {
     token_t actualToken;
     actualToken.tokenType = Start;
-    actualToken.tokenAtribute.intValue = 0;
+    actualToken.tokenAttribute.intValue = 0;
 
     parserState_t state = Start;
-    int c;
 
-    keywords_t keyword;
+    dynamic_stack_t indetationStack;
+    stackInit(&indetationStack);
+
+    int spaceCount = 0;
+
+    keywords_t keyword = -1;
+
+    int c;
     while (1) {
         c = getc(in);
         switch (state) {
-            case Start:
+            case Start: // done
                 if (c == '+') {
                     actualToken.tokenType = Plus;          return actualToken; // +
                 } else if (c == '-') {
@@ -45,8 +51,6 @@ token_t getToken(FILE* in) {
                     state = CommentStart;          continue; // #
                 } else if (c == '\n') {
                     state = EOL;                   continue; // \n
-                } else if (c == '\"') {
-                    state = OneQuoteStart;         continue; // "
                 } else if (c == '<') {
                     state = Smaller;               continue; // <
                 } else if (c == '>') {
@@ -55,137 +59,260 @@ token_t getToken(FILE* in) {
                     state = Assign;                continue; // =
                 } else if (c == ' ') {
                     state = Start;                 continue; // ' '
-                } else if (c == '\'') {
-                    dynamicStringInit(actualToken.tokenAtribute.word);
-                    state = StringStart;
-                    continue;
+                } else if (c == '\"') {
+                    if (dynamicStringInit(actualToken.tokenAttribute.word) == false) {
+                        state = ErrorMalloc;       continue; // malloc error
+                    } else {
+                        state = OneQuoteStart;     continue; // "
+                    }
+                }  else if (c == '\'') {
+                    if (dynamicStringInit(actualToken.tokenAttribute.word) == false) {
+                        state = ErrorMalloc;       continue; // malloc error
+                    } else {
+                        state = StringStart;       continue; // '
+                    }
                 } else if (isdigit(c) && c != '0') {
-                    dynamicStringInit(actualToken.tokenAtribute.word);
-                    dynamicStringAddChar(actualToken.tokenAtribute.word,c);
-                    state = Integer;
-                    continue;
+                    if (dynamicStringInit(actualToken.tokenAttribute.word) == false) {
+                        state = ErrorMalloc;       continue; // malloc error
+                    }
+
+                    if (dynamicStringAddChar(actualToken.tokenAttribute.word,c) == false) {
+                        state = ErrorMalloc;        continue; // malloc error
+                    } else {
+                        state = Integer;            continue; // 1-9
+                    }
                 } else if (c == '0') {
-                    dynamicStringInit(actualToken.tokenAtribute.word);
-                    state = BinOctHex;
-                    continue;
+                     if (dynamicStringInit(actualToken.tokenAttribute.word) == false) {
+                         state = ErrorMalloc;       continue; // malloc error
+                     } else {
+                         state = BinOctHex;         continue; // 0
+                     }
                 } else if (isalpha(c)) {
-                    dynamicStringInit(actualToken.tokenAtribute.word);
-                    dynamicStringAddChar(actualToken.tokenAtribute.word,c);
-                    state = IdOrKw;
-                    continue;
+                    if (dynamicStringInit(actualToken.tokenAttribute.word) == false) {
+                        state = ErrorMalloc;        continue; // malloc error
+                    }
+
+                    if (dynamicStringAddChar(actualToken.tokenAttribute.word,c) == false) {
+                        state = ErrorMalloc;        continue; // malloc error
+                    } else {
+                        state = IdOrKw;             continue; // a-zA-Z
+                    }
                 } else if (c == '_') {
-                    dynamicStringInit(actualToken.tokenAtribute.word);
-                    dynamicStringAddChar(actualToken.tokenAtribute.word,c);
-                    state = Identifier;
-                    continue;
+                    if (dynamicStringInit(actualToken.tokenAttribute.word) == false) {
+                        state = ErrorMalloc;        continue; // malloc error
+                    }
+
+                    if (dynamicStringAddChar(actualToken.tokenAttribute.word,c) == false) {
+                        state = ErrorMalloc;        continue; // malloc error
+                    } else {
+                        state = Identifier;         continue; // _
+                    }
                 }  else {
                     ungetc(c,in);
-                    state = Error;                 continue;
+                    state = Error;                  continue; // undefined lexem
                 }
 
-            case DivideWRest:
+            case DivideWRest: // done
                 if (c == '/') {
-                    actualToken.tokenType = DivideWORest;      return actualToken;
+                    actualToken.tokenType = DivideWORest;      return actualToken; // //
                 } else {
                     ungetc(c,in);
-                    actualToken.tokenType = DivideWRest;       return actualToken;
+                    actualToken.tokenType = DivideWRest;       return actualToken; // /
                 }
-            case Exclamation:
+
+            case Exclamation: // done
                 if (c == '=') {
-                    actualToken.tokenType = NotEqual;          return actualToken;
+                    actualToken.tokenType = NotEqual;          return actualToken; // !=
                 } else {
-                    state = Error;                 continue;
+                    state = Error;                  continue;
                 }
-            case CommentStart:
+
+            case CommentStart: // done
                 if (c == '\n') {
-                    state = CommentEnd;            continue;
+                    state = CommentEnd;             continue;  // #abcdef\n
                 } else {
-                    continue;
+                    continue; // #abcdef
                 }
-            case CommentEnd:
+
+            case CommentEnd: // done
                 state = Start;
                 continue;
-            case EOL:
-                //TODO
-                continue;
-            case Indent:
-                //TODO
-                continue;
-            case Dedent:
-                //TODO
-                continue;
-            case OneQuoteStart:
-                if (c == '\"') {
-                    state = TwoQuoteStart;         continue;
+
+            case EOL: // done
+                if (c != ' ') {
+                    ungetc(c,in);
+                    state = Start;                 continue;
+                } else {
+                    spaceCount++;
+                    while ((c = getc(in)) == ' ') {
+                        spaceCount++;
+                    }
+
+                    ungetc(c,in);
+
+                    if (c == '\n') {
+                        spaceCount = 0;
+                        state = Start;             continue;
+                    }
+
+                    if (spaceCount == stackTop(indetationStack)) {
+                        state = Start;             continue;
+                    } else if (spaceCount > stackTop(indetationStack)) {
+                        stackPush(&indetationStack, spaceCount);
+                        state = Indent;            continue;
+                    } else {
+                        while (!stackEmpty(&indetationStack)) {
+                            actualToken.tokenAttribute.intValue++;
+
+                            if (spaceCount == stackPop(&indetationStack)) {
+                                state = Dedent;    break;
+                            }
+                        }
+                        if (stackEmpty(&indetationStack)) {
+                            state = Error;         continue;
+                        } else {
+                            continue;
+                        }
+                    }
+                }
+
+            case Indent: // done                                                    stack:
+                ungetc(c,in);                           // def bla():               0
+                actualToken.tokenType = Indent;         //     indented code        0 4
+                return actualToken;                     //         indented code    0 4 8
+
+            case Dedent: // done
+                ungetc(c,in);                           // while true:              0
+                actualToken.tokenType = Dedent;         //     code inside loop     0 4
+                return actualToken;                     // code outside loop        0
+
+            case OneQuoteStart: // done
+                if (c == 34) {
+                    state = TwoQuoteStart;         continue; // ""
                 } else {
                     state = Error;                 continue;
                 }
-            case TwoQuoteStart:
-                if (c == '\"') {
-                    state = DocumentString;        continue;
+
+            case TwoQuoteStart: // done
+                if (c == 34) {
+                    state = DocumentString;        continue; // """
                 } else {
                     state = Error;                 continue;
                 }
-            case DocumentString:
+
+            case DocumentString: // done
                 if (c == '\"') {
-                    state = OneQuoteEnd;           continue;
+                    state = OneQuoteEnd;           continue; // """ abcdefghijklm
                 } else {
-                    continue;
+                    if (dynamicStringAddChar(actualToken.tokenAttribute.word,c) == false) {
+                        state = ErrorMalloc;       continue; // malloc error
+                    } else {
+                        continue;
+                    }
                 }
-            case OneQuoteEnd:
+            case OneQuoteEnd: // done
                 if (c == '\"') {
-                    state = TwoQuoteEnd;           continue;
+                    state = TwoQuoteEnd;           continue;  // """ abcdefghijklm "
                 } else {
-                    state = DocumentString;        continue;
+                    if (dynamicStringAddChar(actualToken.tokenAttribute.word,34) == false) {
+                        state = ErrorMalloc;       continue; // malloc error
+                    } else {
+                        state = DocumentString;    continue;  // """ abcdefghijklm " abc
+                    }
                 }
-            case TwoQuoteEnd:
+
+            case TwoQuoteEnd: // done
                 if (c == '\"') {
-                    state = DocumentStringEnd;     continue;
+                    state = DocumentStringEnd;     continue;  // """ abcdefghijklm """
                 } else {
-                    state = DocumentString;        continue;
+                    if (dynamicStringAddChar(actualToken.tokenAttribute.word,c) == false) {
+                        state = ErrorMalloc;       continue; // malloc error
+                    } else {
+                        state = DocumentString;    continue;  // """ abcdefghijklm "" abc
+                    }
                 }
-            case DocumentStringEnd:
+
+            case DocumentStringEnd: // done
                 ungetc(c,in);
-                state = Start;                     continue;
-                // \n and EOF errors TODO
-            case StringStart:
-                if (c == '\'') {
+                actualToken.tokenType = DocumentStringEnd; return actualToken;
+
+            case StringStart: // done
+                if (c == '\'') {    // 'abc'
                     state = StringEnd;             continue;
-                } else {
-                    dynamicStringAddChar(actualToken.tokenAtribute.word,c);
+                } else if (c < 32) {
+                    state = Error;                 continue;
+                } else if (c == '\\') {
+                    c = getc(in);
+                    switch (c) {
+                        case '\"':
+                            c = '\"';
+                            break;
+                        case '\'':
+                            c = '\'';
+                            break;
+                        case 'n':
+                            c = '\n';
+                            break;
+                        case 't':
+                            c = '\t';
+                            break;
+                        case '\\':
+                            c = '\\';
+                            break;
+                        case 'x':
+                            c  = getc(in) - '0';
+                            c *= 16;
+                            c += getc(in) - '0';
+                        default:
+                            ungetc(c,in);
+                            c = '\\';
+                    }
+                }
+
+                if (dynamicStringAddChar(actualToken.tokenAttribute.word,c) == false) {
+                    state = ErrorMalloc;
                     continue;
                 }
-            case StringEnd:
+                continue;
+
+            case StringEnd: // done
+                ungetc(c,in);
                 actualToken.tokenType = StringEnd;             return actualToken;
+
             case Smaller:
                 if (c == '=') {
-                    actualToken.tokenType = SmallerOrEqual;    return actualToken;
+                    actualToken.tokenType = SmallerOrEqual;    return actualToken; // <=
                 } else {
                     ungetc(c,in);
-                    actualToken.tokenType = Smaller;           return actualToken;
+                    actualToken.tokenType = Smaller;           return actualToken; // <
                 }
-            case Bigger:
+
+            case Bigger: // done
                 if (c == '=') {
-                    actualToken.tokenType = BiggerOrEqual;     return  actualToken;
+                    actualToken.tokenType = BiggerOrEqual;     return actualToken; // >=
                 } else {
                     ungetc(c,in);
-                    actualToken.tokenType = Bigger;            return actualToken;
+                    actualToken.tokenType = Bigger;            return actualToken; // +
                 }
-            case Assign:
+
+            case Assign: // done
                 if (c == '=') {
-                    actualToken.tokenType = Equals;            return actualToken;
+                    actualToken.tokenType = Equals;            return actualToken; // ==
                 } else {
                     ungetc(c,in);
-                    actualToken.tokenType = Assign;            return actualToken;
+                    actualToken.tokenType = Assign;            return actualToken; // =
                 }
-            case IdOrKw:
+
+            case IdOrKw: // done
                 if (isalpha(c) || isdigit(c) || c == '_') {
-                    dynamicStringAddChar(actualToken.tokenAtribute.word,c);
+                    if (dynamicStringAddChar(actualToken.tokenAttribute.word,c) == false) {
+                        state = ErrorMalloc;       continue; // malloc error
+                    }
                 } else {
                     ungetc(c,in);
 
-                    if ((keyword = isKeyword(actualToken.tokenAtribute.word->text)) != -1) {
-                        state = Keyword;           continue;
+                    if ((keyword = isKeyword(actualToken.tokenAttribute.word->text)) != -1) {
+                        state = Keyword;           continue; // if, else, while
                     }
                     state = Identifier;            continue;
                 }
@@ -194,159 +321,215 @@ token_t getToken(FILE* in) {
                     state = Identifier;            continue;
                 }
 
-                if ((keyword = isKeyword(actualToken.tokenAtribute.word->text)) != -1) {
-                    state = Keyword;               continue;
+                if ((keyword = isKeyword(actualToken.tokenAttribute.word->text)) != -1) {
+                    state = Keyword;               continue; // if, else, while
                 }
 
                 continue;
-            case Identifier:
+
+            case Identifier: // done
                 if (isalpha(c) || isdigit(c) || c == '_') {
-                    dynamicStringAddChar(actualToken.tokenAtribute.word,c);
+                    if (dynamicStringAddChar(actualToken.tokenAttribute.word,c) == false) {
+                        state = ErrorMalloc;       continue; // malloc error
+                    }
                 } else {
                     ungetc(c,in);
                     actualToken.tokenType = Identifier;        return  actualToken;
                 }
-                continue;
-            case Keyword:
+
+            case Keyword: // done
                 ungetc(c,in);
                 // TODO not sure whether save keyword as enum number, or string
-                dynamicStringFree(actualToken.tokenAtribute.word);
-                actualToken.tokenAtribute.intValue = keyword;
+                dynamicStringFree(actualToken.tokenAttribute.word);
+                actualToken.tokenAttribute.intValue = keyword;
                 actualToken.tokenType = Keyword;               return actualToken;
-            case Integer:
+
+            case Integer: // done
                 if (isdigit(c)) {
-                    dynamicStringAddChar(actualToken.tokenAtribute.word,c); continue;
+                    if (dynamicStringAddChar(actualToken.tokenAttribute.word,c) == false) {
+                        state = ErrorMalloc;
+                        continue;
+                    } else {
+                        continue;
+                    }
                 } else if (c == '.') {
-                    dynamicStringAddChar(actualToken.tokenAtribute.word,c);
-                    if (isdigit(getc(in))) {
+                    if (dynamicStringAddChar(actualToken.tokenAttribute.word,c) == false) {
+                        state = ErrorMalloc;
+                        continue;
+                    }
+                    if (isdigit(c = getc(in))) {
                         ungetc(c,in);
-                        state = Double;            continue;
+                        state = Double;             continue;
                     } else {
                         ungetc(c,in);
-                        dynamicStringFree(actualToken.tokenAtribute.word);
+                        dynamicStringFree(actualToken.tokenAttribute.word);
                         state = Error;              continue;
                     }
                 } else if (c == 'e' || c == 'E') {
-                    dynamicStringAddChar(actualToken.tokenAtribute.word,c);
-                    state = AlmostExponential;     continue;
+                    if (dynamicStringAddChar(actualToken.tokenAttribute.word,c) == false) {
+                        state = ErrorMalloc;        continue;
+                    } else {
+                        state = AlmostExponential;  continue;
+                    }
                 } else {
                     ungetc(c,in);
                     actualToken.tokenType = Integer;
 
-                    dynamicString_t* StringNumPtr = actualToken.tokenAtribute.word;
-                    actualToken.tokenAtribute.intValue = strToInt(actualToken.tokenAtribute.word->text);
+                    dynamicString_t* StringNumPtr = actualToken.tokenAttribute.word;
+                    actualToken.tokenAttribute.intValue = strToInt(actualToken.tokenAttribute.word->text);
                     dynamicStringFree(StringNumPtr);
                     return actualToken;
                 }
-            case Double:
+
+            case Double: // done
                 if (isdigit(c)) {
-                    dynamicStringAddChar(actualToken.tokenAtribute.word,c); continue;
+                    if (dynamicStringAddChar(actualToken.tokenAttribute.word,c) == false) {
+                        state = ErrorMalloc;        continue;
+                    } else {
+                        continue;
+                    }
                 } else if (c == 'e' || c == 'E') {
-                    dynamicStringAddChar(actualToken.tokenAtribute.word,c);
-                    state = AlmostExponential;
-                    continue;
+                    if (dynamicStringAddChar(actualToken.tokenAttribute.word,c) == false) {
+                        state = ErrorMalloc;        continue;
+                    } else {
+                        state = AlmostExponential;  continue;
+                    }
                 } else {
                     ungetc(c,in);
                     actualToken.tokenType = Double;
 
-                    dynamicString_t* StringNumPtr = actualToken.tokenAtribute.word;
-                    actualToken.tokenAtribute.doubleValue = strToDouble(actualToken.tokenAtribute.word->text);
+                    dynamicString_t* StringNumPtr = actualToken.tokenAttribute.word;
+                    actualToken.tokenAttribute.doubleValue = strToDouble(actualToken.tokenAttribute.word->text);
                     dynamicStringFree(StringNumPtr);
                     return actualToken;
                 }
-            case AlmostExponential:
+
+            case AlmostExponential: // done
                 if (isdigit(c) || c == '+' || c == '-') {
-                    dynamicStringAddChar(actualToken.tokenAtribute.word,c);
-                    state = Exponential;           continue;
+                    if (dynamicStringAddChar(actualToken.tokenAttribute.word,c) == false) {
+                        state = ErrorMalloc;        continue;
+                    } else {
+                        state = Exponential;        continue;
+                    }
                 } else {
                     ungetc(c,in);
-                    dynamicStringFree(actualToken.tokenAtribute.word);
+                    dynamicStringFree(actualToken.tokenAttribute.word);
                     actualToken.tokenType = Error;
                     continue;
                 }
-            case Exponential:
+
+            case Exponential: // done
                 if (isdigit(c)) {
-                    dynamicStringAddChar(actualToken.tokenAtribute.word,c); continue;
+                    if (dynamicStringAddChar(actualToken.tokenAttribute.word,c) == false) {
+                        state = ErrorMalloc;        continue;
+                    } else {
+                        continue;
+                    }
                 } else {
                     ungetc(c,in);
                     actualToken.tokenType = Double; // every exponential num is converted to double
 
-                    dynamicString_t* StringNumPtr = actualToken.tokenAtribute.word;
-                    actualToken.tokenAtribute.doubleValue = strToDouble(actualToken.tokenAtribute.word->text);
+                    dynamicString_t* StringNumPtr = actualToken.tokenAttribute.word;
+                    actualToken.tokenAttribute.doubleValue = strToDouble(actualToken.tokenAttribute.word->text);
                     dynamicStringFree(StringNumPtr);
                     return actualToken;
                 }
-            case BinOctHex:
+
+            case BinOctHex: // done
                 if (c == 'b' || c == 'B') {
-                    state = BinaryNum;             continue;
+                    state = BinaryNum;             continue; // 0b 0B
                 } else if (c == 'o' || c == 'O') {
-                    state = OctalNum;              continue;
+                    state = OctalNum;              continue; // 0o 0O
                 } else if (c == 'x' || c == 'X') {
-                    state = HexadecimalNum;        continue;
+                    state = HexadecimalNum;        continue; // 0x 0X
                 } else if (isdigit(c)) {
-                    dynamicStringAddChar(actualToken.tokenAtribute.word,c);
-                    state = Integer;               continue;
+                    if (dynamicStringAddChar(actualToken.tokenAttribute.word,c) == false) {
+                        state = ErrorMalloc;       continue; // malloc error
+                    } else {
+                        state = Integer;           continue; // 0123
+                    }
                 } else {
                     ungetc(c,in);
-                    dynamicStringFree(actualToken.tokenAtribute.word);
+                    dynamicStringFree(actualToken.tokenAttribute.word);
                     state = Error;                 continue;
                 }
-            case BinaryNum:
-                if (c == '0' || c == '1') {
-                    dynamicStringAddChar(actualToken.tokenAtribute.word,c); continue;
+
+            case BinaryNum: // done
+                if (c == '0' || c == '1') { // 0b111
+                    if (dynamicStringAddChar(actualToken.tokenAttribute.word,c) == false) {
+                        state = ErrorMalloc;       continue;
+                    } else {
+                        continue;
+                    }
                 }
 
-                if (c == '_') continue;
+                if (c == '_') continue;  // 0b1111_0000
 
                 if (isdigit(c)) {
-                    dynamicStringFree(actualToken.tokenAtribute.word);
+                    dynamicStringFree(actualToken.tokenAttribute.word);
                     state = Error;                 continue;
                 } else {
                     ungetc(c, in);
                     actualToken.tokenType = Integer;
 
-                    dynamicString_t* StringNumPtr = actualToken.tokenAtribute.word;
-                    actualToken.tokenAtribute.intValue = binToDecimal(actualToken.tokenAtribute.word->text);
+                    dynamicString_t* StringNumPtr = actualToken.tokenAttribute.word;
+                    actualToken.tokenAttribute.intValue = binToDecimal(actualToken.tokenAttribute.word->text);
                     dynamicStringFree(StringNumPtr);
                     return actualToken;
                 }
-            case OctalNum:
+
+            case OctalNum: // done
                 if (c == '0' || c == '1' || c == '2' || c == '3' ||
-                    c == '4' || c =='5' || c == '6' || c == '7') {
-                    dynamicStringAddChar(actualToken.tokenAtribute.word,c); continue;
+                    c == '4' || c =='5' || c == '6' || c == '7') { // 0o123
+                    if (dynamicStringAddChar(actualToken.tokenAttribute.word,c) == false) {
+                        state = ErrorMalloc;       continue;
+                    } else {
+                        continue;
+                    }
                 }
 
-                if (c == '_') continue;
+                if (c == '_') continue; // 0o123_456
 
                 if (isdigit(c)) {
-                    dynamicStringFree(actualToken.tokenAtribute.word);
+                    dynamicStringFree(actualToken.tokenAttribute.word);
                     state = Error;                 continue;
                 } else {
                     ungetc(c, in);
                     actualToken.tokenType = Integer;
 
-                    dynamicString_t* StringNumPtr = actualToken.tokenAtribute.word;
-                    actualToken.tokenAtribute.intValue = octToDecimal(actualToken.tokenAtribute.word->text);
+                    dynamicString_t* StringNumPtr = actualToken.tokenAttribute.word;
+                    actualToken.tokenAttribute.intValue = octToDecimal(actualToken.tokenAttribute.word->text);
                     dynamicStringFree(StringNumPtr);
                     return actualToken;
                 }
-            case HexadecimalNum:
-                if (isxdigit(c)) {
-                    dynamicStringAddChar(actualToken.tokenAtribute.word,c);continue;
-                } else if (c == '_') {
+
+            case HexadecimalNum: // done
+                if (isxdigit(c)) { // 0xFFFF
+                    if (dynamicStringAddChar(actualToken.tokenAttribute.word,c) == false) {
+                        state = ErrorMalloc;       continue;
+                    } else {
+                        continue;
+                    }
+                } else if (c == '_') { // 0xFFFF_FFFF
                     continue;
                 } else {
                     ungetc(c,in);
                     actualToken.tokenType = Integer;
 
-                    dynamicString_t* StringNumPtr = actualToken.tokenAtribute.word;
-                    actualToken.tokenAtribute.intValue = hexToDecimal(actualToken.tokenAtribute.word->text);
+                    dynamicString_t* StringNumPtr = actualToken.tokenAttribute.word;
+                    actualToken.tokenAttribute.intValue = hexToDecimal(actualToken.tokenAttribute.word->text);
                     dynamicStringFree(StringNumPtr);
                     return actualToken;
                 }
-            case Error:
+
+            case Error: // done
                 ungetc(c,in);
                 actualToken.tokenType = Error;
+                return actualToken;
+
+            case ErrorMalloc: // done
+                ungetc(c,in);
+                actualToken.tokenType = ErrorMalloc;
                 return actualToken;
         }
     }
@@ -393,14 +576,13 @@ keywords_t isKeyword(const char* string) {
     return keyword;
 }
 
-int strToInt(const char* string) {
-    return strtol(string,NULL,10);
-}
-
 double strToDouble(const char* string) {
     return strtod(string, NULL);
 }
 
+int strToInt(const char* string) {
+    return strtol(string,NULL,10);
+}
 int binToDecimal(const char* string) {
     return strtol(string,NULL,2);
 }

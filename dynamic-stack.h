@@ -24,4 +24,6 @@ bool stackPush(dynamic_stack_t *s,int num);
 void stackFree(dynamic_stack_t* s);
 
 void printStack(dynamic_stack_t s);
+
+int stackTop(dynamic_stack_t s);
 #endif //VUT_FIT_IFJ2019_DYNAMIC_STACK_H

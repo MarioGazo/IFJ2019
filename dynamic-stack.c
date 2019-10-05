@@ -57,3 +57,7 @@ void printStack(dynamic_stack_t s) {
         printf("%d. %d\n",i, s.data[i]);
     }
 }
+
+int stackTop(dynamic_stack_t s) {
+    return s.data[s.top];
+}

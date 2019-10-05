@@ -8,13 +8,14 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include "dynamic-string.h"
+#include "dynamic-stack.h"
 
 // returning next token
 typedef union {
     int intValue;
     double doubleValue;
     dynamicString_t* word;
-} tokenAtribute_t;
+} tokenAttribute_t;
 
 typedef enum parserState {
     Start,                 // S
@@ -60,12 +61,13 @@ typedef enum parserState {
     OctalNum,              // 0o252
     HexadecimalNum,        // 0xAA
     Error = -1,            // lexical error
-    EndOfFile = -2               // endOfFile
+    ErrorMalloc = -2,      // internal error
+    EndOfFile = -3         // endOfFile
 } parserState_t;
 
 typedef struct {
     parserState_t tokenType;
-    tokenAtribute_t tokenAtribute;
+    tokenAttribute_t tokenAttribute;
 } token_t;
 
 token_t getToken(FILE* in);
@@ -92,9 +94,9 @@ typedef enum keywords {
 
 keywords_t isKeyword(const char* string);
 
-int strToInt(const char* string);
-
 double strToDouble(const char* string);
+
+int strToInt(const char* string);
 
 int binToDecimal(const char* string);
 
