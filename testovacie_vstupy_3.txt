@@ -1,0 +1,8 @@
+# Program 3: shit shit shit
+print('Zadajte cislo: ')
+a = inputi()
+if a < 0.0: # nejaký komentár
+  print('Neviem to spoèíta')
+else:
+  vysl = factorial(a)
+  print('Vysledok je:\n\\', vysl)
