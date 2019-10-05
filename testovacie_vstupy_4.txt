@@ -1,0 +1,18 @@
+# Program 4: Santa's string shit
+""" Práca s reazcami a vstavnımi funkciami """
+s1 = 'Toto je text zo zadania'
+s2 = s1 + ', skvelá konkatenácia'
+print(s1, '\n', s2)
+s1len = len(s1)
+s1len = s1len - 4
+s1 = substr(s, s1len, 4)
+s1len = s1len + 1 	  #e vraj korekcia indexu stringu
+print('4 znaky od ', s1len, '. znaku v "', s2, '\":', s1)
+print('Nieèo zadajte')
+s1 = inputs()
+if s1 != None:
+  while s1 != 'abcdefgh':
+    print('Bolo to zle')
+    s1 = inputs()
+else: # Pouívate¾ niè nezadal
+  pass

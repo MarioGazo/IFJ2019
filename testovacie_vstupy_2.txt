@@ -1,0 +1,11 @@
+# Program 2: more shit zo zadania
+# Výpoèet faktoriálu rekurzívne
+def factorial(n):
+  if n < 2:
+    result = 1
+  else:
+# else nieèo robí? asi áno
+    decremented_n = n - 1
+    temp_result = factorial(decremented_n)
+  return result
+# end of else and function
