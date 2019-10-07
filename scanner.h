@@ -30,6 +30,12 @@ typedef enum parserState {
     DivideWORest,          // //
     Exclamation,           // !
     NotEqual,              // !=
+    Smaller,               // <
+    SmallerOrEqual,        // <=
+    Bigger,                // >
+    BiggerOrEqual,         // >=
+    Assign,                // =
+    Equals,                // ==
     CommentStart,          // #
     CommentEnd,            // #blabla'EOL'
     EOL,                   // EOL
@@ -43,12 +49,6 @@ typedef enum parserState {
     DocumentStringEnd,     // """blabla"""
     StringStart,           // '
     StringEnd,             // 'blabla'
-    Smaller,               // <
-    SmallerOrEqual,        // <=
-    Bigger,                // >
-    BiggerOrEqual,         // >=
-    Assign,                // =
-    Equals,                // ==
     IdOrKw,                // string of characters
     Keyword,               // string is a keyword
     Identifier,            // string is an identifier (key for hashtable)
@@ -93,6 +93,8 @@ typedef enum keywords {
 } keywords_t;
 
 keywords_t isKeyword(const char* string);
+
+parserState_t parserStart(FILE* in, int c, token_t* actualToken);
 
 double strToDouble(const char* string);
 

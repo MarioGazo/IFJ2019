@@ -36,7 +36,7 @@ bool dynamicStringAddChar(dynamicString_t* string, char c) {
 
 bool dynamicStringAddString(dynamicString_t* string, const char* source) {
     unsigned int sourceLength = strlen(source);
-    for (int i = 0; i < sourceLength; i++) {
+    for (unsigned int i = 0; i < sourceLength; i++) {
         if (dynamicStringAddChar(string, source[i])  == false) {
             return false;
         }

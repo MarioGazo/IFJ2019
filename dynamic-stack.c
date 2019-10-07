@@ -53,7 +53,7 @@ void stackFree(dynamic_stack_t* s) {
 }
 
 void printStack(dynamic_stack_t s) {
-    for (int i = 0; i < s.capacity; i++) {
+    for (unsigned int i = 0; i < s.capacity; i++) {
         printf("%d. %d\n",i, s.data[i]);
     }
 }
