@@ -8,7 +8,9 @@
 #include <ctype.h>
 #include <stdlib.h>
 
-token_t getToken(FILE* in) {
+#define DEBUG 0
+
+token_t getToken(FILE* in, dynamic_stack_t* indentationStack) {
 
     // initialization of actual token
     token_t actualToken;
@@ -18,9 +20,6 @@ token_t getToken(FILE* in) {
     // state of parser
     parserState_t state = Start;
 
-    // indentation stack
-    dynamic_stack_t indetationStack;
-    stackInit(&indetationStack);
     int spaceCount = 0;
 
     // keyword type in case of keyword
@@ -33,9 +32,12 @@ token_t getToken(FILE* in) {
     int c;
     while (1) {
         c = getc(in);
+            #if DEBUG == 1
+                printf("%c",c);
+            #endif
         switch (state) {
             case Start: // done
-                state = parserStart(in,c,&actualToken);
+                state = parserStart(in,c,&actualToken.tokenAttribute.word);
                 continue;
 
             case Plus: // done
@@ -134,6 +136,7 @@ token_t getToken(FILE* in) {
                 }
 
             case CommentEnd: // done
+                ungetc(c,in);
                 state = Start;
                 continue;
 
@@ -154,20 +157,20 @@ token_t getToken(FILE* in) {
                         state = Start;             continue;
                     }
 
-                    if (spaceCount == stackTop(indetationStack)) {
+                    if (spaceCount == stackTop(*indentationStack)) {
                         state = Start;             continue;
-                    } else if (spaceCount > stackTop(indetationStack)) {
-                        stackPush(&indetationStack, spaceCount);
+                    } else if (spaceCount > stackTop(*indentationStack)) {
+                        stackPush(indentationStack, spaceCount);
                         state = Indent;            continue;
                     } else {
-                        while (!stackEmpty(&indetationStack)) {
+                        while (!stackEmpty(indentationStack)) {
                             actualToken.tokenAttribute.intValue++;
 
-                            if (spaceCount == stackPop(&indetationStack)) {
+                            if (spaceCount == stackPop(indentationStack)) {
                                 state = Dedent;    break;
                             }
                         }
-                        if (stackEmpty(&indetationStack)) {
+                        if (stackEmpty(indentationStack)) {
                             state = Error;         continue;
                         } else {
                             continue;
@@ -203,7 +206,7 @@ token_t getToken(FILE* in) {
                 if (c == '\"') {
                     state = OneQuoteEnd;           continue; // """ abcdefghijklm
                 } else {
-                    if (dynamicStringAddChar(actualToken.tokenAttribute.word,c) == false) {
+                    if (dynamicStringAddChar(&actualToken.tokenAttribute.word,c) == false) {
                         state = ErrorMalloc;       continue; // malloc error
                     } else {
                         continue;
@@ -213,7 +216,7 @@ token_t getToken(FILE* in) {
                 if (c == '\"') {
                     state = TwoQuoteEnd;           continue;  // """ abcdefghijklm "
                 } else {
-                    if (dynamicStringAddChar(actualToken.tokenAttribute.word,34) == false) {
+                    if (dynamicStringAddChar(&actualToken.tokenAttribute.word,34) == false) {
                         state = ErrorMalloc;       continue; // malloc error
                     } else {
                         state = DocumentString;    continue;  // """ abcdefghijklm " abc
@@ -224,7 +227,7 @@ token_t getToken(FILE* in) {
                 if (c == '\"') {
                     state = DocumentStringEnd;     continue;  // """ abcdefghijklm """
                 } else {
-                    if (dynamicStringAddChar(actualToken.tokenAttribute.word,c) == false) {
+                    if (dynamicStringAddChar(&actualToken.tokenAttribute.word,c) == false) {
                         state = ErrorMalloc;       continue; // malloc error
                     } else {
                         state = DocumentString;    continue;  // """ abcdefghijklm "" abc
@@ -240,7 +243,8 @@ token_t getToken(FILE* in) {
                     state = StringEnd;             continue;
                 } else if (c < 32) {
                     state = Error;                 continue;
-                } else if (c == '\\') {
+                } else if (c == '\\' || (actualToken.tokenAttribute.word.capacity == 1 &&
+                                         actualToken.tokenAttribute.word.text[0] == '\\')) {
                     c = getc(in);
                     switch (c) {
                         case '\"':
@@ -270,15 +274,17 @@ token_t getToken(FILE* in) {
                             }
 
                             c = hexToDecimal(hexaNum);
+                        case EOF:
+                            ungetc(c,in);
+                            state = Error;          continue;
                         default:
                             ungetc(c,in);
                             c = '\\';
                     }
                 }
 
-                if (dynamicStringAddChar(actualToken.tokenAttribute.word,c) == false) {
-                    state = ErrorMalloc;
-                    continue;
+                if (dynamicStringAddChar(&actualToken.tokenAttribute.word,c) == false) {
+                    state = ErrorMalloc;            continue;
                 }
                 continue;
 
@@ -288,13 +294,13 @@ token_t getToken(FILE* in) {
 
             case IdOrKw: // done
                 if (isalpha(c) || isdigit(c) || c == '_') {
-                    if (dynamicStringAddChar(actualToken.tokenAttribute.word,c) == false) {
+                    if (dynamicStringAddChar(&actualToken.tokenAttribute.word,c) == false) {
                         state = ErrorMalloc;       continue; // malloc error
                     }
                 } else {
                     ungetc(c,in);
 
-                    if ((keyword = isKeyword(actualToken.tokenAttribute.word->text)) != -1) {
+                    if ((keyword = isKeyword(actualToken.tokenAttribute.word.text)) != -1) {
                         state = Keyword;           continue; // if, else, while
                     }
                     state = Identifier;            continue;
@@ -304,7 +310,7 @@ token_t getToken(FILE* in) {
                     state = Identifier;            continue;
                 }
 
-                if ((keyword = isKeyword(actualToken.tokenAttribute.word->text)) != -1) {
+                if ((keyword = isKeyword(actualToken.tokenAttribute.word.text)) != -1) {
                     state = Keyword;               continue; // if, else, while
                 }
 
@@ -312,7 +318,7 @@ token_t getToken(FILE* in) {
 
             case Identifier: // done
                 if (isalpha(c) || isdigit(c) || c == '_') {
-                    if (dynamicStringAddChar(actualToken.tokenAttribute.word,c) == false) {
+                    if (dynamicStringAddChar(&actualToken.tokenAttribute.word,c) == false) {
                         state = ErrorMalloc;       continue; // malloc error
                     }
                 } else {
@@ -322,21 +328,20 @@ token_t getToken(FILE* in) {
 
             case Keyword: // done
                 ungetc(c,in);
-                // TODO not sure whether save keyword as enum number, or string
-                dynamicStringFree(actualToken.tokenAttribute.word);
+                dynamicStringFree(&actualToken.tokenAttribute.word);
                 actualToken.tokenAttribute.intValue = keyword;
                 actualToken.tokenType = Keyword;               return actualToken;
 
             case Integer: // done
                 if (isdigit(c)) {
-                    if (dynamicStringAddChar(actualToken.tokenAttribute.word,c) == false) {
+                    if (dynamicStringAddChar(&actualToken.tokenAttribute.word,c) == false) {
                         state = ErrorMalloc;
                         continue;
                     } else {
                         continue;
                     }
                 } else if (c == '.') {
-                    if (dynamicStringAddChar(actualToken.tokenAttribute.word,c) == false) {
+                    if (dynamicStringAddChar(&actualToken.tokenAttribute.word,c) == false) {
                         state = ErrorMalloc;
                         continue;
                     }
@@ -345,11 +350,11 @@ token_t getToken(FILE* in) {
                         state = Double;             continue;
                     } else {
                         ungetc(c,in);
-                        dynamicStringFree(actualToken.tokenAttribute.word);
+                        dynamicStringFree(&actualToken.tokenAttribute.word);
                         state = Error;              continue;
                     }
                 } else if (c == 'e' || c == 'E') {
-                    if (dynamicStringAddChar(actualToken.tokenAttribute.word,c) == false) {
+                    if (dynamicStringAddChar(&actualToken.tokenAttribute.word,c) == false) {
                         state = ErrorMalloc;        continue;
                     } else {
                         state = AlmostExponential;  continue;
@@ -358,21 +363,21 @@ token_t getToken(FILE* in) {
                     ungetc(c,in);
                     actualToken.tokenType = Integer;
 
-                    dynamicString_t* StringNumPtr = actualToken.tokenAttribute.word;
-                    actualToken.tokenAttribute.intValue = strToInt(actualToken.tokenAttribute.word->text);
+                    dynamicString_t* StringNumPtr = &actualToken.tokenAttribute.word;
+                    actualToken.tokenAttribute.intValue = strToInt(actualToken.tokenAttribute.word.text);
                     dynamicStringFree(StringNumPtr);
                     return actualToken;
                 }
 
             case Double: // done
                 if (isdigit(c)) {
-                    if (dynamicStringAddChar(actualToken.tokenAttribute.word,c) == false) {
+                    if (dynamicStringAddChar(&actualToken.tokenAttribute.word,c) == false) {
                         state = ErrorMalloc;        continue;
                     } else {
                         continue;
                     }
                 } else if (c == 'e' || c == 'E') {
-                    if (dynamicStringAddChar(actualToken.tokenAttribute.word,c) == false) {
+                    if (dynamicStringAddChar(&actualToken.tokenAttribute.word,c) == false) {
                         state = ErrorMalloc;        continue;
                     } else {
                         state = AlmostExponential;  continue;
@@ -381,29 +386,29 @@ token_t getToken(FILE* in) {
                     ungetc(c,in);
                     actualToken.tokenType = Double;
 
-                    dynamicString_t* StringNumPtr = actualToken.tokenAttribute.word;
-                    actualToken.tokenAttribute.doubleValue = strToDouble(actualToken.tokenAttribute.word->text);
+                    dynamicString_t* StringNumPtr = &actualToken.tokenAttribute.word;
+                    actualToken.tokenAttribute.doubleValue = strToDouble(actualToken.tokenAttribute.word.text);
                     dynamicStringFree(StringNumPtr);
                     return actualToken;
                 }
 
             case AlmostExponential: // done
                 if (isdigit(c) || c == '+' || c == '-') {
-                    if (dynamicStringAddChar(actualToken.tokenAttribute.word,c) == false) {
+                    if (dynamicStringAddChar(&actualToken.tokenAttribute.word,c) == false) {
                         state = ErrorMalloc;        continue;
                     } else {
                         state = Exponential;        continue;
                     }
                 } else {
                     ungetc(c,in);
-                    dynamicStringFree(actualToken.tokenAttribute.word);
+                    dynamicStringFree(&actualToken.tokenAttribute.word);
                     actualToken.tokenType = Error;
                     continue;
                 }
 
             case Exponential: // done
                 if (isdigit(c)) {
-                    if (dynamicStringAddChar(actualToken.tokenAttribute.word,c) == false) {
+                    if (dynamicStringAddChar(&actualToken.tokenAttribute.word,c) == false) {
                         state = ErrorMalloc;        continue;
                     } else {
                         continue;
@@ -412,8 +417,8 @@ token_t getToken(FILE* in) {
                     ungetc(c,in);
                     actualToken.tokenType = Double; // every exponential num is converted to double
 
-                    dynamicString_t* StringNumPtr = actualToken.tokenAttribute.word;
-                    actualToken.tokenAttribute.doubleValue = strToDouble(actualToken.tokenAttribute.word->text);
+                    dynamicString_t* StringNumPtr = &actualToken.tokenAttribute.word;
+                    actualToken.tokenAttribute.doubleValue = strToDouble(actualToken.tokenAttribute.word.text);
                     dynamicStringFree(StringNumPtr);
                     return actualToken;
                 }
@@ -425,21 +430,17 @@ token_t getToken(FILE* in) {
                     state = OctalNum;              continue; // 0o 0O
                 } else if (c == 'x' || c == 'X') {
                     state = HexadecimalNum;        continue; // 0x 0X
-                } else if (isdigit(c)) {
-                    if (dynamicStringAddChar(actualToken.tokenAttribute.word,c) == false) {
+                } else {
+                    if (dynamicStringAddChar(&actualToken.tokenAttribute.word,c) == false) {
                         state = ErrorMalloc;       continue; // malloc error
                     } else {
                         state = Integer;           continue; // 0123
                     }
-                } else {
-                    ungetc(c,in);
-                    dynamicStringFree(actualToken.tokenAttribute.word);
-                    state = Error;                 continue;
                 }
 
             case BinaryNum: // done
                 if (c == '0' || c == '1') { // 0b111
-                    if (dynamicStringAddChar(actualToken.tokenAttribute.word,c) == false) {
+                    if (dynamicStringAddChar(&actualToken.tokenAttribute.word,c) == false) {
                         state = ErrorMalloc;       continue;
                     } else {
                         continue;
@@ -449,14 +450,14 @@ token_t getToken(FILE* in) {
                 if (c == '_') continue;  // 0b1111_0000
 
                 if (isdigit(c)) {
-                    dynamicStringFree(actualToken.tokenAttribute.word);
+                    dynamicStringFree(&actualToken.tokenAttribute.word);
                     state = Error;                 continue;
                 } else {
                     ungetc(c, in);
                     actualToken.tokenType = Integer;
 
-                    dynamicString_t* StringNumPtr = actualToken.tokenAttribute.word;
-                    actualToken.tokenAttribute.intValue = binToDecimal(actualToken.tokenAttribute.word->text);
+                    dynamicString_t* StringNumPtr = &actualToken.tokenAttribute.word;
+                    actualToken.tokenAttribute.intValue = binToDecimal(actualToken.tokenAttribute.word.text);
                     dynamicStringFree(StringNumPtr);
                     return actualToken;
                 }
@@ -464,7 +465,7 @@ token_t getToken(FILE* in) {
             case OctalNum: // done
                 if (c == '0' || c == '1' || c == '2' || c == '3' ||
                     c == '4' || c =='5' || c == '6' || c == '7') { // 0o123
-                    if (dynamicStringAddChar(actualToken.tokenAttribute.word,c) == false) {
+                    if (dynamicStringAddChar(&actualToken.tokenAttribute.word,c) == false) {
                         state = ErrorMalloc;       continue;
                     } else {
                         continue;
@@ -474,21 +475,21 @@ token_t getToken(FILE* in) {
                 if (c == '_') continue; // 0o123_456
 
                 if (isdigit(c)) {
-                    dynamicStringFree(actualToken.tokenAttribute.word);
+                    dynamicStringFree(&actualToken.tokenAttribute.word);
                     state = Error;                 continue;
                 } else {
                     ungetc(c, in);
                     actualToken.tokenType = Integer;
 
-                    dynamicString_t* StringNumPtr = actualToken.tokenAttribute.word;
-                    actualToken.tokenAttribute.intValue = octToDecimal(actualToken.tokenAttribute.word->text);
+                    dynamicString_t* StringNumPtr = &actualToken.tokenAttribute.word;
+                    actualToken.tokenAttribute.intValue = octToDecimal(actualToken.tokenAttribute.word.text);
                     dynamicStringFree(StringNumPtr);
                     return actualToken;
                 }
 
             case HexadecimalNum: // done
                 if (isxdigit(c)) { // 0xFFFF
-                    if (dynamicStringAddChar(actualToken.tokenAttribute.word,c) == false) {
+                    if (dynamicStringAddChar(&actualToken.tokenAttribute.word,c) == false) {
                         state = ErrorMalloc;       continue;
                     } else {
                         continue;
@@ -499,8 +500,8 @@ token_t getToken(FILE* in) {
                     ungetc(c,in);
                     actualToken.tokenType = Integer;
 
-                    dynamicString_t* StringNumPtr = actualToken.tokenAttribute.word;
-                    actualToken.tokenAttribute.intValue = hexToDecimal(actualToken.tokenAttribute.word->text);
+                    dynamicString_t* StringNumPtr = &actualToken.tokenAttribute.word;
+                    actualToken.tokenAttribute.intValue = hexToDecimal(actualToken.tokenAttribute.word.text);
                     dynamicStringFree(StringNumPtr);    return actualToken;
                 }
 
@@ -524,7 +525,7 @@ token_t getToken(FILE* in) {
 
 }
 
-parserState_t parserStart(FILE* in, int c, token_t* actualToken) {
+parserState_t parserStart(FILE* in, int c, dynamicString_t* actualTokenString) {
     parserState_t state = Start;
 
     if (c == '+') {
@@ -560,54 +561,54 @@ parserState_t parserStart(FILE* in, int c, token_t* actualToken) {
     } else if (c == ' ') {
         state = Start;
     } else if (c == '\"') {
-        if (dynamicStringInit(actualToken->tokenAttribute.word) == false) {
+        if (dynamicStringInit(actualTokenString) == false) {
             state = ErrorMalloc;
         } else {
             state = OneQuoteStart;
         }
     }  else if (c == '\'') {
-        if (dynamicStringInit(actualToken->tokenAttribute.word) == false) {
+        if (dynamicStringInit(actualTokenString) == false) {
             state = ErrorMalloc;
         } else {
             state = StringStart;
         }
     } else if (isdigit(c) && c != '0') {
-        if (dynamicStringInit(actualToken->tokenAttribute.word) == false) {
+        if (dynamicStringInit(actualTokenString) == false) {
             state = ErrorMalloc;
         }
 
-        if (dynamicStringAddChar(actualToken->tokenAttribute.word,c) == false) {
+        if (dynamicStringAddChar(actualTokenString,c) == false) {
             state = ErrorMalloc;
         } else {
             state = Integer;
         }
     } else if (c == '0') {
-        if (dynamicStringInit(actualToken->tokenAttribute.word) == false) {
+        if (dynamicStringInit(actualTokenString) == false) {
             state = ErrorMalloc;
         } else {
             state = BinOctHex;
         }
     } else if (isalpha(c)) {
-        if (dynamicStringInit(actualToken->tokenAttribute.word) == false) {
+        if (dynamicStringInit(actualTokenString) == false) {
             state = ErrorMalloc;
         }
 
-        if (dynamicStringAddChar(actualToken->tokenAttribute.word,c) == false) {
+        if (dynamicStringAddChar(actualTokenString,c) == false) {
             state = ErrorMalloc;
         } else {
             state = IdOrKw;
         }
     } else if (c == '_') {
-        if (dynamicStringInit(actualToken->tokenAttribute.word) == false) {
+        if (dynamicStringInit(actualTokenString) == false) {
             state = ErrorMalloc;
         }
 
-        if (dynamicStringAddChar(actualToken->tokenAttribute.word,c) == false) {
+        if (dynamicStringAddChar(actualTokenString,c) == false) {
             state = ErrorMalloc;
         } else {
             state = Identifier;
         }
-    }  else if (c == ' ') {
+    }  else if (c == ' ' || c == '\t') {
             state = Start;
     }  else {
         ungetc(c,in);

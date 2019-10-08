@@ -14,6 +14,7 @@ bool dynamicStringInit(dynamicString_t* string) {
         return false;
     } else {
         string->capacity = 1;
+        string->text[0] = '\0';
         return true;
     }
 }
