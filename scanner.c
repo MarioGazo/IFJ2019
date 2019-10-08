@@ -8,8 +8,6 @@
 #include <ctype.h>
 #include <stdlib.h>
 
-#define DEBUG 0
-
 token_t getToken(FILE* in, dynamic_stack_t* indentationStack) {
 
     // initialization of actual token
@@ -32,9 +30,6 @@ token_t getToken(FILE* in, dynamic_stack_t* indentationStack) {
     int c;
     while (1) {
         c = getc(in);
-            #if DEBUG == 1
-                printf("%c",c);
-            #endif
         switch (state) {
             case Start: // done
                 state = parserStart(in,c,&actualToken.tokenAttribute.word);
@@ -130,6 +125,7 @@ token_t getToken(FILE* in, dynamic_stack_t* indentationStack) {
 
             case CommentStart: // done
                 if (c == '\n') {
+                    ungetc(c,in);
                     state = CommentEnd;             continue;  // #abcdef\n
                 } else {
                     continue; // #abcdef
@@ -141,41 +137,47 @@ token_t getToken(FILE* in, dynamic_stack_t* indentationStack) {
                 continue;
 
             case EOL: // done
-                if (c != ' ') {
-                    ungetc(c,in);
-                    state = Start;                 continue;
-                } else {
+                if (c == ' ') {
                     spaceCount++;
-                    while ((c = getc(in)) == ' ') {
+                    while ((c = getc(in)) == ' ')
                         spaceCount++;
+                } else {
+                    spaceCount = 0;
+                }
+
+                ungetc(c,in);
+
+                if (c == '\n') {
+                    spaceCount = 0;
+                    state = Start;             continue;
+                }
+
+                if (spaceCount == stackTop(*indentationStack)) {
+                    state = Start;             continue;
+                } else if (spaceCount > stackTop(*indentationStack)) {
+                    stackPush(indentationStack, spaceCount);
+                    spaceCount = 0;
+                    state = Indent;            continue;
+                } else {
+                    while (!stackEmpty(indentationStack)) {
+                        actualToken.tokenAttribute.intValue++;
+                        stackPop(indentationStack);
+
+                        if (spaceCount == stackTop(*indentationStack)) {
+                            state = Dedent;    break;
+                        }
                     }
 
-                    ungetc(c,in);
-
-                    if (c == '\n') {
-                        spaceCount = 0;
-                        state = Start;             continue;
+                    if (state == Dedent) {
+                        continue;
                     }
 
-                    if (spaceCount == stackTop(*indentationStack)) {
-                        state = Start;             continue;
-                    } else if (spaceCount > stackTop(*indentationStack)) {
-                        stackPush(indentationStack, spaceCount);
-                        state = Indent;            continue;
+                    if (spaceCount == 0) {
+                        state = Dedent;         break;
                     } else {
-                        while (!stackEmpty(indentationStack)) {
-                            actualToken.tokenAttribute.intValue++;
-
-                            if (spaceCount == stackPop(indentationStack)) {
-                                state = Dedent;    break;
-                            }
-                        }
-                        if (stackEmpty(indentationStack)) {
-                            state = Error;         continue;
-                        } else {
-                            continue;
-                        }
+                        state = Error;          continue;
                     }
+
                 }
 
             case Indent: // done                                                    stack:
@@ -434,6 +436,7 @@ token_t getToken(FILE* in, dynamic_stack_t* indentationStack) {
                     if (dynamicStringAddChar(&actualToken.tokenAttribute.word,c) == false) {
                         state = ErrorMalloc;       continue; // malloc error
                     } else {
+                        ungetc(c,in);
                         state = Integer;           continue; // 0123
                     }
                 }
@@ -515,7 +518,12 @@ token_t getToken(FILE* in, dynamic_stack_t* indentationStack) {
 
             case EndOfFile: // done
                 ungetc(c,in);
-                actualToken.tokenType = EndOfFile;      return actualToken; // EndOfFile
+                if (!stackEmpty(indentationStack)) {
+                    stackPop(indentationStack);
+                    state = Dedent;                 continue; // Dedent
+                } else {
+                    actualToken.tokenType = EndOfFile;  return actualToken; // EndOfFile
+                }
 
             default: // done
                 ungetc(c,in);

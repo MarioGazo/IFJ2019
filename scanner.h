@@ -74,21 +74,21 @@ token_t getToken(FILE* in, dynamic_stack_t * indentationStack);
 
 // deciding whether string is a keyword
 typedef enum keywords {
-    keywordDef,         // def
-    keywordIf,          // if
-    keywordElse,        // else
-    keywordNone,        // None
-    keywordPass,        // pass
-    keywordReturn,      // return
-    keywordWhile,       // while
-    keywordInputs,      // inputs()
-    keywordInputi,      // inputi()
-    keywordInputf,      // inputf()
-    keywordPrint,       // print(...)
-    keywordLen,         // len(...)
-    keywordSubstr,      // substr(...)
-    keywordOrd,         // ord(...)
-    keywordChar,        // char()
+    keywordDef,         //  0 def
+    keywordIf,          //  1 if
+    keywordElse,        //  2 else
+    keywordNone,        //  3 None
+    keywordPass,        //  4 pass
+    keywordReturn,      //  5 return
+    keywordWhile,       //  6 while
+    keywordInputs,      //  7 inputs()
+    keywordInputi,      //  8 inputi()
+    keywordInputf,      //  9 inputf()
+    keywordPrint,       // 10 print(...)
+    keywordLen,         // 11 len(...)
+    keywordSubstr,      // 12 substr(...)
+    keywordOrd,         // 13 ord(...)
+    keywordChar,        // 14 char()
     notKeyword = -1
 } keywords_t;
 
