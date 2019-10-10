@@ -1,3 +1,10 @@
+/**
+ * Implementation of imperative language IFJ2019 translator
+ * @file ifj2019.c
+ * @author ...
+ * @brief Main file of the translator
+ */
+
 #include <stdio.h>
 #include "scanner.h"
 
@@ -15,7 +22,8 @@ int main() {
     parserState_t state = Start;
     while (actualToken.tokenType != EndOfFile &&
            actualToken.tokenType != Error &&
-           actualToken.tokenType != ErrorMalloc) {
+           actualToken.tokenType != ErrorMalloc &&
+           actualToken.tokenType != ErrorIndent) {
         actualToken = getToken(stdin,&indentationStack);
         state = actualToken.tokenType;
         switch (state) {
@@ -53,7 +61,7 @@ int main() {
                 printf("Smaller\n");
                 break;
             case SmallerOrEqual:
-                printf("Smaller\n");
+                printf("SmallerOrEqual\n");
                 break;
             case Bigger:
                 printf("Bigger\n");

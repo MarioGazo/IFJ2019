@@ -1,27 +1,54 @@
-// Dynamic string library
-// Created by Mário Gažo on 2019-09-25.
-//
+/**
+ * Implementation of imperative language IFJ2019 translator
+ * @file dynamic-string.h
+ * @author Mario Gazo (xgazom00)
+ * @brief Dynamic string interface
+ */
 
 #ifndef VUT_FIT_IFJ2019_DYNAMIC_STRING_H
 #define VUT_FIT_IFJ2019_DYNAMIC_STRING_H
 
 #include <stdbool.h>
 
+/**
+ * @struct Dynamic string structure
+ */
 typedef struct {
     unsigned int capacity;
     char* text;
 } dynamicString_t;
 
-//inicializator
+/**
+ * @biref Initializes to an empty string of capacity = 1
+ *
+ * @param string Dynamic string to be initialized
+ * @return Whether the initialization was successful
+ */
 bool dynamicStringInit(dynamicString_t* string);
 
-//uvolnenie
+/**
+ * @brief Frees the dynamic string
+ *
+ * @param string Dynamic string to be freed
+ */
 void dynamicStringFree(dynamicString_t* string);
 
-//dynamicke pridanie znaku
-bool dynamicStringAddChar(dynamicString_t* string, char c);
+/**
+ * @brief Appends a single character to dynamic string
+ *
+ * @param string Dynamic string to be appended to
+ * @param c Character to be appended
+ * @return Whether the attachment was successful
+ */
+bool dynamicStringAddChar(dynamicString_t* string, int c);
 
-//dynamicke pridanie retazca
+/**
+ * @brief Appends an entire string to dynamic string
+ *
+ * @param string Dynamic string to be appended to
+ * @param source String to be appended
+ * @return Whether the attachment was successful
+ */
 bool dynamicStringAddString(dynamicString_t* string, const char* source);
 
 #endif //VUT_FIT_IFJ2019_DYNAMIC_STRING_H

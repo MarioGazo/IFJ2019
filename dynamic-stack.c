@@ -1,6 +1,9 @@
-// dynamic stack implementation
-// Created by Mário Gažo on 4.10.19.
-//
+/**
+ * Implementation of imperative language IFJ2019 translator
+ * @file dynamic-stack.c
+ * @author Mario Gazo (xgazom00)
+ * @brief Dynamic stack implementation
+ */
 
 #include "dynamic-stack.h"
 #include <stdlib.h>
@@ -18,14 +21,14 @@ bool stackInit(dynamic_stack_t* s) {
     }
 }
 
-bool stackEmpty(dynamic_stack_t* s) {
-    return (s->top == 0);
+bool stackEmpty(dynamic_stack_t s) {
+    return (s.top == 0);
 }
 
 int stackPop(dynamic_stack_t* s) {
     int result = 0;
 
-    if (stackEmpty(s)) {
+    if (stackEmpty(*s)) {
         return -1;
     } else {
         result = s->data[s->top--];
@@ -50,12 +53,6 @@ bool stackPush(dynamic_stack_t* s, int num) {
 
 void stackFree(dynamic_stack_t* s) {
     free(s->data);
-}
-
-void printStack(dynamic_stack_t s) {
-    for (unsigned int i = 0; i < s.capacity; i++) {
-        printf("%d. %d\n",i, s.data[i]);
-    }
 }
 
 int stackTop(dynamic_stack_t s) {

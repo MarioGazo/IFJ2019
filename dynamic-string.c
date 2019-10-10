@@ -1,6 +1,9 @@
-// Dynamic string implementation
-// Created by Mário Gažo on 2019-09-25.
-//
+/**
+ * Implementation of imperative language IFJ2019 translator
+ * @file dynamic-string.c
+ * @author Mario Gazo (xgazom00)
+ * @brief Dynamic string implementation
+ */
 
 #include "dynamic-string.h"
 #include <stdlib.h>
@@ -23,7 +26,7 @@ void dynamicStringFree(dynamicString_t* string) {
     free(string->text);
 }
 
-bool dynamicStringAddChar(dynamicString_t* string, char c) {
+bool dynamicStringAddChar(dynamicString_t* string, int c) {
     string->text = realloc(string->text,++string->capacity);
 
     if (string->text == NULL) {

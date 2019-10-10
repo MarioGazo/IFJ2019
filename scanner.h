@@ -1,7 +1,9 @@
-// lexical analysis definition
-// Created by Mário Gažo on 2019-10-03.
-//
-
+/**
+ * Implementation of imperative language IFJ2019 translator
+ * @file scanner.h
+ * @author Mario Gazo (xgazom00)
+ * @brief Lexical analysis interface
+ */
 #ifndef VUT_FIT_IFJ2019_SCANNER_H
 #define VUT_FIT_IFJ2019_SCANNER_H
 
@@ -10,13 +12,18 @@
 #include "dynamic-string.h"
 #include "dynamic-stack.h"
 
-// returning next token
+/**
+ * @union Token attribute is a number or a string
+ */
 typedef union {
     int intValue;
     double doubleValue;
     dynamicString_t word;
 } tokenAttribute_t;
 
+/**
+ * @enum Various states of parser
+ */
 typedef enum parserState {
     Start,                 //  0 S
     Plus,                  //  1 +
@@ -61,17 +68,33 @@ typedef enum parserState {
     OctalNum,              // 40 0o252
     HexadecimalNum,        // 41 0xAA
     Error = -1,            // -1 lexical error
-    ErrorMalloc = -2,      // -2 internal error
-    EndOfFile = -3         // -3 endOfFile
+    ErrorIndent = -2,      // -2 indentation error
+    ErrorMalloc = -3,      // -3 internal error
+    EndOfFile = -4         // -4 endOfFile
 } parserState_t;
 
+/**
+ * @struct Token
+ *
+ * Token represents one of the final states and its potential attribute
+ */
 typedef struct {
     parserState_t tokenType;
     tokenAttribute_t tokenAttribute;
 } token_t;
 
+/**
+ * @brief Lexical analysis finite state machine
+ *
+ * @param in Source file from which tokens are read
+ * @param indentationStack Stack in case of indentation
+ * @return Next token
+ */
 token_t getToken(FILE* in, dynamic_stack_t * indentationStack);
 
+/**
+ * @enum Assigning each keyword a numeric value
+ */
 // deciding whether string is a keyword
 typedef enum keywords {
     keywordDef,         //  0 def
@@ -88,22 +111,53 @@ typedef enum keywords {
     keywordLen,         // 11 len(...)
     keywordSubstr,      // 12 substr(...)
     keywordOrd,         // 13 ord(...)
-    keywordChar,        // 14 char()
+    keywordChar,        // 14 char(...)
     notKeyword = -1
 } keywords_t;
 
+/**
+ * @brief Compares string to each keyword
+ *
+ * @param string String to be compared
+ * @return numeric value of the keyword
+ */
 keywords_t isKeyword(const char* string);
 
+/**
+ * @brief Makes it easier to read the finite state machine
+ *
+ * @param in Source file
+ * @param c First read character
+ * @param actualTokenString Reference to string attribute
+ * @return next state after the first one
+ */
 parserState_t parserStart(FILE* in, int c, dynamicString_t* actualTokenString);
 
+/**
+ * @brief Makes it easier to read
+ *
+ * @param in Source file
+ * @param c Last character
+ * @param state Current state of the finite state machine
+ * @return Set token
+ */
+token_t ungetAndSetToken(FILE* in, int c, parserState_t state);
+
+/**
+ * @brief Converts string of numbers to its value
+ *
+ * @param string String to be converted
+ * @return Decimal number
+ */
 double strToDouble(const char* string);
 
-int strToInt(const char* string);
-
-int binToDecimal(const char* string);
-
-int octToDecimal(const char* string);
-
-int hexToDecimal(const char* string);
+/**
+ * @brief Converts string of numbers to its value
+ *
+ * @param string String to be converted
+ * @param base Base of the number
+ * @return Whole number
+ */
+int strToInt(const char* string, int base);
 
 #endif //VUT_FIT_IFJ2019_SCANNER_H

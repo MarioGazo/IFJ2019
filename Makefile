@@ -1,5 +1,5 @@
-# IFJ2019 Compiler
-# Tym: 94, variant II
+# Implementation of imperative language IFJ2019 translator
+# Makefile
 
 CC = gcc
 FILES = ifj2019.c scanner.c dynamic-string.c dynamic-stack.c
