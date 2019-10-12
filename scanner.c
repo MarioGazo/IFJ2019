@@ -1,5 +1,5 @@
 /**
- * Implementation of imperative language IFJ2019 translator
+ * Implementation of imperative language IFJ2019 compiler
  * @file scanner.c
  * @author Mario Gazo (xgazom00)
  * @brief Lexical analysis implementation
@@ -106,6 +106,9 @@ token_t getToken(FILE* in, dynamic_stack_t* indentationStack) {
                 if (c == '\n') {
                     ungetc(c,in);
                     state = CommentEnd;             continue;  // #abcdef\n
+                } else if (c == EOF) {
+                    ungetc(c,in);
+                    state = Error;                  continue;
                 } else {
                     continue; // #abcdef
                 }
@@ -193,6 +196,9 @@ token_t getToken(FILE* in, dynamic_stack_t* indentationStack) {
             case DocumentString:
                 if (c == '\"') {
                     state = OneQuoteEnd;           continue; // """ abcdefghijklm
+                } else if (c == EOF) {
+                    ungetc(c,in);
+                    state = Error;                  continue;
                 } else {
                     if (dynamicStringAddChar(&actualToken.tokenAttribute.word,c) == false) {
                         state = ErrorMalloc;       continue; // malloc error

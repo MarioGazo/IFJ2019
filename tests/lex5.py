@@ -1,0 +1,9 @@
+"""abcdef"""
+"""
+abc
+def
+ghi
+"""
+"""abc"""
+#abcdef
+"""abc"""
