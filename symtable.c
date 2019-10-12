@@ -151,8 +151,13 @@ void TDelete(hashTable* hTab, dynamicString_t key) {
     {
         active_item = before_item;
         if (strcmp(active_item->key, key)){
-            // If there is another item in row, connect it with the item before
-            before_item->next = active_item->next;
+            if (active_item->next == NULL){
+                // If there is no item in row, make new first item
+                hTab->variables[hash_key_index] = before_item;
+            } else {
+                // If there is another item in row, connect it with the item before
+                before_item->next = active_item->next;
+            }
             // Free item attributes
             free(active_item->key.text);
             free(active_item);
