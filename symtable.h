@@ -11,6 +11,7 @@
 #include <mach/mach_types.h>
 #include "dynamic-string.h"
 #include "scanner.h"
+#include <string.h>
 
 /**
  * @enum IFJ2019 Data types
@@ -89,6 +90,6 @@ void TDelete(hashTable* hTab, dynamicString_t key);
  * @param string String for hashing
  * @return Hash value
  */
-long THashFunction(char string[]);
+unsigned long THashFunction(char string[]);
 
 #endif //VUT_FIT_IFJ2019_SYMTABLE_H
