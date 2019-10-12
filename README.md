@@ -1,4 +1,4 @@
-# Implementation of imperative language IFJ2019 compiler
+# Implementation of imperative language IFJ19 compiler
 Team 94, variant II<br/>
 - Mário Gažo    xgazom00@stud.fit.vutbr.cz	<br/>
 - Juraj Lazúr   xlazur00@stud.fit.vutbr.cz  <br/>
