@@ -24,7 +24,7 @@ typedef enum {
 } varType_t;
 
 /**
- * @struct Representation of an symtable item
+ * @struct Representation of a symtable item
  */
 typedef struct hTabItem {
     dynamicString_t key;
