@@ -47,3 +47,11 @@ bool dynamicStringAddString(dynamicString_t* string, const char* source) {
     }
     return true;
 }
+
+char* dynamicStringGetText(dynamicString_t string) {
+    return string.text;
+}
+
+int dynamicStringStrCmp(dynamicString_t string1, dynamicString_t string2) {
+    return strcmp(dynamicStringGetText(string1),dynamicStringGetText(string2));
+}

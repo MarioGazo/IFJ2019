@@ -51,4 +51,17 @@ bool dynamicStringAddChar(dynamicString_t* string, int c);
  */
 bool dynamicStringAddString(dynamicString_t* string, const char* source);
 
+/**
+ * @param string Dynamic string
+ * @return Text
+ */
+char* dynamicStringGetText(dynamicString_t string);
+
+/**
+ * @param string1 First dynamic string
+ * @param string2 Second dynamic string
+ * @return Result of comparison of strings
+ */
+int dynamicStringStrCmp(dynamicString_t string1, dynamicString_t string2);
+
 #endif //VUT_FIT_IFJ2019_DYNAMIC_STRING_H
