@@ -8,10 +8,10 @@
 #ifndef VUT_FIT_IFJ2019_SYMTABLE_H
 #define VUT_FIT_IFJ2019_SYMTABLE_H
 
-#include <mach/mach_types.h>
 #include "dynamic-string.h"
 #include "scanner.h"
 #include <string.h>
+#include <stdlib.h>
 
 /**
  * @enum IFJ2019 Data types
@@ -32,7 +32,7 @@ typedef struct hTabItem {
     varType_t type;
     bool defined;
     tokenAttribute_t value;
-    struct variable* next;
+    struct hTabItem *next;
 } hTabItem_t;
 
 /**
@@ -40,17 +40,16 @@ typedef struct hTabItem {
  */
 typedef struct {
     unsigned long size;
-    hTabItem_t* variables;
+    struct hTabItem *variables[];
 } hashTable;
 
 /**
  * @brief Initialises to and empty hash table with capacity = size
  *
- * @param hTab Hash table
  * @param size Hash table size
- * @return Whether the initialization was successful
+ * @return Pointer to new table, or NULL in unsucessful case NULL
  */
-bool TInit(hashTable* hTab, unsigned long size);
+hashTable* TInit(unsigned long size);
 
 /**
  * @brief Frees all items and the hash table
@@ -65,7 +64,7 @@ void TFree(hashTable* hTab);
  * @param item Item to be inserted
  * @return Added item, NULL if allocation failed
  */
-hTabItem_t* TInsert(hashTable* hTab, hTabItem_t item);
+hTabItem_t* TInsert(hashTable* hTab, hTabItem_t *item);
 
 /**
  * @brief Find an item by its key
@@ -84,12 +83,14 @@ hTabItem_t* TSearch(hashTable* hTab, dynamicString_t key);
  */
 void TDelete(hashTable* hTab, dynamicString_t key);
 
+void TPrint(hashTable* hTab);
+
 /**
  * @brief Hash function
  *
  * @param string String for hashing
  * @return Hash value
  */
-unsigned long THashFunction(char string[]);
+unsigned long THashFunction(char *string);
 
 #endif //VUT_FIT_IFJ2019_SYMTABLE_H
