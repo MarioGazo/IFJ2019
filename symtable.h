@@ -83,6 +83,11 @@ hTabItem_t* TSearch(hashTable* hTab, dynamicString_t key);
  */
 void TDelete(hashTable* hTab, dynamicString_t key);
 
+/**
+ * @brief Prints all items from table
+ *
+ * @param hTab Hash table to be printed
+ */
 void TPrint(hashTable* hTab);
 
 /**
