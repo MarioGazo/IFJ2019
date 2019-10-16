@@ -64,7 +64,7 @@ void TFree(hashTable* hTab);
  * @param item Item to be inserted
  * @return Added item, NULL if allocation failed
  */
-hTabItem_t* TInsert(hashTable* hTab, hTabItem_t *item);
+hTabItem_t* TInsert(hashTable* hTab, hTabItem_t item);
 
 /**
  * @brief Find an item by its key

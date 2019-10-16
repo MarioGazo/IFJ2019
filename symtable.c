@@ -74,16 +74,16 @@ void TFree(hashTable* hTab) {
     free(hTab);
 }
 
-hTabItem_t* TInsert(hashTable* hTab, hTabItem_t *item) {
+hTabItem_t* TInsert(hashTable* hTab, hTabItem_t item) {
 
-    // Zistíme, či existuje tabuľka, do ktorej chceme vkladať a key, ktorý chceme použiť
-    if (hTab == NULL || item == NULL) {
+    // Zistíme, či existuje tabuľka, do ktorej chceme vkladať
+    if (hTab == NULL) {
         fprintf(stderr, "Search error, non-valid key or table\n");
         return NULL;
     }
 
     // Použijeme hash funkciu a vytvoríme index
-    unsigned int hash_key_index = (THashFunction(item->key.text) % hTab->size);
+    unsigned int hash_key_index = (THashFunction(dynamicStringGetText(item.key)) % hTab->size);
     hTabItem_t *active_item;
 
     // Alokujem pamť pre nový prvok(token) v tabuľke
@@ -95,14 +95,25 @@ hTabItem_t* TInsert(hashTable* hTab, hTabItem_t *item) {
     }
 
     // Pripravíme si nový item skopítovaním dát z item ako parametra funkcie
-    new_table_item->key.text = item->key.text;
-    new_table_item->key.capacity = item->key.capacity;
-    new_table_item->defined = item->defined;
-    new_table_item->type = item->type;
-    new_table_item->value.intValue = item->value.intValue;
-    new_table_item->value.doubleValue = item->value.doubleValue;
-    new_table_item->value.word.text = item->value.word.text;
-    new_table_item->value.word.capacity = item->value.word.capacity;
+    new_table_item->key = item.key;
+    new_table_item->defined = item.defined;
+    new_table_item->type = item.type;
+    // Kopírujeme typ dát, určených type
+    switch (new_table_item->type) {
+        case TypeInteger:
+            new_table_item->value.intValue = item.value.intValue;
+            break;
+        case TypeDouble:
+            new_table_item->value.doubleValue = item.value.doubleValue;
+            break;
+        case TypeString:
+            new_table_item->value.word = item.value.word;
+            break;
+        case TypeBool:;
+            break;
+        case TypeUndefined:;
+            break;
+    }
     new_table_item->next = NULL;
 
     // Teraz vložíme item do tabuľky
@@ -144,7 +155,7 @@ hTabItem_t* TSearch(hashTable* hTab, dynamicString_t key) {
     // Prejdeme celý riadok v tabuľke s indexom hTabItem_t *active_item a porovnávame key s uloženými items
     while (active_item != NULL)
     {
-        if (!strcmp(active_item->key.text, key.text)){
+        if (!dynamicStringStrCmp(active_item->key,key)){
             break;
         }
         active_item = active_item->next;
@@ -156,7 +167,7 @@ hTabItem_t* TSearch(hashTable* hTab, dynamicString_t key) {
 
 void TDelete(hashTable* hTab, dynamicString_t key) {
 
-    // Zistíme, či existuje tabuľka, do ktorej chceme vkladať a key, ktorý chceme použiť
+    // Zistíme, či existuje tabuľka, z ktorej chceme vymazávať
     if (hTab == NULL || key.text == NULL) {
         fprintf(stderr, "Search error, non-valid key or table\n");
         return;
@@ -214,7 +225,7 @@ void TPrint(hashTable* hTab) {
             // Vypisujeme všetky prvky riadku
             do {
                 // Key
-                printf("%u:\t%s\t", i, actual_item->key.text);
+                printf("%u:\t%s\t", i, dynamicStringGetText(actual_item->key));
 
                 // Typ, podľa určenia
                 if (actual_item->type == TypeInteger) {
@@ -233,7 +244,7 @@ void TPrint(hashTable* hTab) {
                 if (actual_item->defined == 0) {
                     printf("\tUndefined");
                 } else {
-                    printf("\tDefined");
+                    printf("\tDefined\t");
                 }
 
                 // Podľa určeného typu, vypisujeme jeho hodnotu
@@ -242,7 +253,7 @@ void TPrint(hashTable* hTab) {
                 } else if (actual_item->type == TypeDouble) {
                     printf("\t%f\n", actual_item->value.doubleValue);
                 } else if (actual_item->type == TypeString) {
-                    printf("\t%s\n", actual_item->value.word.text);
+                    printf("\t%s\n", dynamicStringGetText(actual_item->value.word));
                 } else if (actual_item->type == TypeBool) {
                     printf("\t%i\n", actual_item->value.intValue);
                 } else {
