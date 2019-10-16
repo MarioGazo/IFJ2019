@@ -96,6 +96,6 @@ void TPrint(hashTable* hTab);
  * @param string String for hashing
  * @return Hash value
  */
-unsigned long THashFunction(char *string);
+unsigned long THashFunction(const char *string);
 
 #endif //VUT_FIT_IFJ2019_SYMTABLE_H

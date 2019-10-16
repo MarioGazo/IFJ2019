@@ -9,13 +9,10 @@
 
 hashTable *TInit(unsigned long size) {
 
-    unsigned int i;
-
     hashTable *new_table;
 
     // Kontrola, či je požadovaná veľkosť poľa aspoň 1
-    if (size < 1){
-        new_table = NULL;
+    if (size < 1) {
         return NULL;
     }
 
@@ -23,13 +20,12 @@ hashTable *TInit(unsigned long size) {
     new_table = malloc( sizeof(hashTable) + (size)*sizeof(hTabItem_t *));
 
     // Kontrola alokácie pamäti
-    if (new_table == NULL){
-        new_table = NULL;
+    if (new_table == NULL) {
         return NULL;
     }
 
     // Nastavíme všetky pointre v tabuľke na NULL
-    for (i = 0; i < size; i++)
+    for (unsigned long i = 0; i < size; i++)
     {
         new_table->variables[i] = NULL;
     }
@@ -48,11 +44,10 @@ void TFree(hashTable* hTab) {
         return;
     }
 
-    unsigned int i;
     hTabItem_t *active_item, *next_item;
 
     // Prechádzame cez všetky prvky tabuľku a postupne ich vymazámave a uvoľnujeme pamäť
-    for (i = 0; i < hTab->size; i++)
+    for (unsigned long i = 0; i < hTab->size; i++)
     {
         // Ak na zvolenom indexe nič nie je, prejdeme na ďalši index tabuľky
         if (hTab->variables[i] == NULL)
@@ -209,7 +204,6 @@ void TDelete(hashTable* hTab, dynamicString_t key) {
 
 void TPrint(hashTable* hTab) {
 
-    unsigned int i;
     hTabItem_t *actual_item;
 
     // Kontrola, či tabuľka existuje
@@ -218,14 +212,14 @@ void TPrint(hashTable* hTab) {
     }
 
     // Prechádzame všetky riadky tabuľky, pričom vypisujeme len neprázdne
-    for (i = 0; i < hTab->size; i++)
+    for (unsigned long i = 0; i < hTab->size; i++)
     {
         if (hTab->variables[i] != NULL) {
             actual_item = hTab->variables[i];
             // Vypisujeme všetky prvky riadku
             do {
                 // Key
-                printf("%u:\t%s\t", i, dynamicStringGetText(actual_item->key));
+                printf("%lu:\t%s\t", i, dynamicStringGetText(actual_item->key));
 
                 // Typ, podľa určenia
                 if (actual_item->type == TypeInteger) {
@@ -266,7 +260,7 @@ void TPrint(hashTable* hTab) {
     }
 }
 
-unsigned long THashFunction(char *string) {
+unsigned long THashFunction(const char *string) {
     // Hashovacia funkcia
     unsigned long h=0;
     const unsigned char *p;

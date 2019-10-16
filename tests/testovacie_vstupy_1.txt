@@ -1,6 +1,6 @@
 # Program 1: some shit zo zadania
 a = inputi()
-if a < 0:	# chýba kontola aèžrrØø
+if a < 0:	# chï¿½ba kontola aèžrrï¿½ï¿½
   print("""
 Faktorial nejde spocitat
 """)
@@ -9,4 +9,4 @@ else:
   while a > 0:
     vysl = vysl * a
     a = a - 1
-  print('Vysledok je:', vysl, '\n')
+    print('Vysledok je:', vysl, '\n')
