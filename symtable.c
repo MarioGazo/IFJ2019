@@ -9,10 +9,13 @@
 
 hashTable *TInit(unsigned long size) {
 
+    unsigned int i;
+
     hashTable *new_table;
 
     // Kontrola, či je požadovaná veľkosť poľa aspoň 1
-    if (size < 1) {
+    if (size < 1){
+        new_table = NULL;
         return NULL;
     }
 
@@ -20,12 +23,13 @@ hashTable *TInit(unsigned long size) {
     new_table = malloc( sizeof(hashTable) + (size)*sizeof(hTabItem_t *));
 
     // Kontrola alokácie pamäti
-    if (new_table == NULL) {
+    if (new_table == NULL){
+        new_table = NULL;
         return NULL;
     }
 
     // Nastavíme všetky pointre v tabuľke na NULL
-    for (unsigned long i = 0; i < size; i++)
+    for (i = 0; i < size; i++)
     {
         new_table->variables[i] = NULL;
     }
@@ -44,10 +48,11 @@ void TFree(hashTable* hTab) {
         return;
     }
 
+    unsigned int i;
     hTabItem_t *active_item, *next_item;
 
     // Prechádzame cez všetky prvky tabuľku a postupne ich vymazámave a uvoľnujeme pamäť
-    for (unsigned long i = 0; i < hTab->size; i++)
+    for (i = 0; i < hTab->size; i++)
     {
         // Ak na zvolenom indexe nič nie je, prejdeme na ďalši index tabuľky
         if (hTab->variables[i] == NULL)
@@ -183,27 +188,32 @@ void TDelete(hashTable* hTab, dynamicString_t key) {
         return;
     }
 
+    if (!strcmp(active_item->key.text, key.text)){
+        hTab->variables[hash_key_index] = active_item->next;
+        free(active_item);
+        return;
+    }
+
     // Prechádzame celý riadok tabuľky s indexom hash_key_index a hľadáme zhodný key
-    while (next_item != NULL)
+    while (active_item != NULL)
     {
         // Ak nájdeme zhodu, ložíme si výskyt a pokračujeme ďalej po riadku
-        if (!strcmp(next_item->key.text, key.text)){
-            before_item = active_item;
-            active_item = next_item;
+        if (!strcmp(active_item->key.text, key.text)){
+            break;
         }
         // Posunieme sa na ďalší item v riadku
-        next_item = next_item->next;
+        before_item = active_item;
+        active_item = active_item->next;
     }
 
     // Na koniec uvoľníme posledný známy výskyt key
-    if (before_item != active_item){
-        before_item->next = active_item->next;
-        free(active_item);
-    }
+    before_item->next = active_item->next;
+    free(active_item);
 }
 
 void TPrint(hashTable* hTab) {
 
+    unsigned int i;
     hTabItem_t *actual_item;
 
     // Kontrola, či tabuľka existuje
@@ -212,14 +222,14 @@ void TPrint(hashTable* hTab) {
     }
 
     // Prechádzame všetky riadky tabuľky, pričom vypisujeme len neprázdne
-    for (unsigned long i = 0; i < hTab->size; i++)
+    for (i = 0; i < hTab->size; i++)
     {
         if (hTab->variables[i] != NULL) {
             actual_item = hTab->variables[i];
             // Vypisujeme všetky prvky riadku
             do {
                 // Key
-                printf("%lu:\t%s\t", i, dynamicStringGetText(actual_item->key));
+                printf("%u:\t%s\t", i, dynamicStringGetText(actual_item->key));
 
                 // Typ, podľa určenia
                 if (actual_item->type == TypeInteger) {
@@ -260,7 +270,7 @@ void TPrint(hashTable* hTab) {
     }
 }
 
-unsigned long THashFunction(const char *string) {
+unsigned long THashFunction(char *string) {
     // Hashovacia funkcia
     unsigned long h=0;
     const unsigned char *p;
