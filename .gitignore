@@ -1,0 +1,5 @@
+.DS_Store
+.idea/
+CMakeFiles/
+cmake-build-debug/
+ifj2019
