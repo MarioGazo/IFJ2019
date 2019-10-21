@@ -136,9 +136,8 @@ token_t getToken(FILE* in, dynamic_stack_t* indentationStack) {
                     continue;
                 }
 
-                if (spaceCount == stackTop(*indentationStack)) { // no token
-                    state = Start;
-                    continue;
+                if (spaceCount == stackTop(*indentationStack)) { // EOL
+                    actualToken.tokenType = EOL;        return actualToken;
                 } else if (spaceCount > stackTop(*indentationStack)) { // indent
                     stackPush(indentationStack, spaceCount);
                     state = Indent;
