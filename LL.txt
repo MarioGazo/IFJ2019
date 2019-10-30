@@ -1,0 +1,35 @@
+<program> 	-> <program_body> EOF
+<program_body> 	-> <def_func> <program_body>
+<program_body> 	-> document_string <program_body>
+<program_body> 	-> <command> <program_body>
+<program_body> 	-> ε
+<def_func> 	-> def funcId (<param>): INDENT <command_list> DEDENT
+<param> 	-> id <params>
+<param>		-> ε
+<params> 	-> ,id <params>
+<params> 	-> ε
+<command_list>	-> <command> <command_list>
+<command_list>	-> ε
+<command> 	-> id = <assign>
+<command>	-> if expression: INDENT <command_list> DEDENT else: INDENT <command_list> DEDENT
+<command>	-> while expression: INDENT <command_list> DEDENT
+<command>	-> return <value>
+<command>	-> pass
+<command>	-> print(<term>)
+<command>	-> funcId(<param>)
+<command>	-> expression
+<assign>	-> funcId(<param>)
+<assign>	-> id
+<assign> 	-> expression
+<assign>	-> <value>
+<term>		-> id <terms>
+<term>		-> <value> <terms>
+<term>		-> document_string <terms>
+<terms>		-> ,id <terms>
+<terms>		-> ,<value> <terms>
+<terms>		-> ,document_string <terms>
+<terms>		-> ε
+<value>		-> integer
+<value>		-> string
+<value>		-> float
+<value> 	-> None 
