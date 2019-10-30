@@ -14,4 +14,5 @@ add_executable(VUT_FIT_IFJ2019
         analyser.c analyser.h
         symtable.h symtable.c
         code-gen.c code-gen.h
+        dynamic-symstack.c dynamic-symstack.h
         )

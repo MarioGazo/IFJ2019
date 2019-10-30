@@ -327,6 +327,7 @@ token_t getToken(FILE* in, dynamic_stack_t* indentationStack) {
 
             case Keyword:
                 ungetc(c,in);
+                actualToken.tokenAttribute.intValue = isKeyword(actualToken.tokenAttribute.word.text);
                 actualToken.tokenType = Keyword;               return actualToken;
 
             case Integer:
