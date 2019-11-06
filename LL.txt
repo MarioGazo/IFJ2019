@@ -9,7 +9,6 @@
 <params> 	-> ,id <params>
 <params> 	-> ε
 <command_list>	-> <command> <command_list>
-<command_list>	-> ε
 <command> 	-> id = <assign>
 <command>	-> if expression: INDENT <command_list> DEDENT else: INDENT <command_list> DEDENT
 <command>	-> while expression: INDENT <command_list> DEDENT

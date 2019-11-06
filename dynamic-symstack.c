@@ -1,5 +1,5 @@
 /**
- * Implementation of imperative language IFJ2019 translator
+ * Implementation of imperative language IFJ2019 compiler
  * @file dynamic-symstack.c
  * @brief Dynamic symbol stack implementation
  */

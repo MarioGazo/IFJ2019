@@ -1,5 +1,5 @@
 /**
- * Implementation of imperative language IFJ2019 translator
+ * Implementation of imperative language IFJ2019 compiler
  * @file dynamic-stack.h
  * @author Mario Gazo (xgazom00)
  * @brief Dynamic stack interface

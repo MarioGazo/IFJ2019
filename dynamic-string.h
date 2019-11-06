@@ -1,5 +1,5 @@
 /**
- * Implementation of imperative language IFJ2019 translator
+ * Implementation of imperative language IFJ2019 compiler
  * @file dynamic-string.h
  * @author Mario Gazo (xgazom00)
  * @brief Dynamic string interface

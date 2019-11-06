@@ -11,8 +11,8 @@ add_executable(VUT_FIT_IFJ2019
         dynamic-string.h scanner.h
         dynamic-stack.c dynamic-stack.h
         expression.h expression.c
-        analyser.c analyser.h
+        parser.c parser.h
         symtable.h symtable.c
         code-gen.c code-gen.h
         dynamic-symstack.c dynamic-symstack.h
-        )
+        error.h)

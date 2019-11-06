@@ -1,5 +1,5 @@
 /**
- * Implementation of imperative language IFJ2019 translator
+ * Implementation of imperative language IFJ2019 compiler
  * @file scanner.h
  * @author Mario Gazo (xgazom00)
  * @brief Lexical analysis interface
@@ -50,12 +50,12 @@ typedef enum parserState {
     Dedent,                // 22 EOL....space count < stack top
     OneQuoteStart,         // 23 "
     TwoQuoteStart,         // 24 ""
-    DocumentString,        // 25 """blabla
+    DocumentStringStart,        // 25 """blabla
     OneQuoteEnd,           // 26 """blabla"
     TwoQuoteEnd,           // 27 """blabla""
-    DocumentStringEnd,     // 28 """blabla"""
+    DocumentString,     // 28 """blabla"""
     StringStart,           // 29 '
-    StringEnd,             // 30 'blabla'
+    String,             // 30 'blabla'
     IdOrKw,                // 31 string of characters
     Keyword,               // 32 string is a keyword
     Identifier,            // 33 string is an identifier (key for hashtable)
@@ -90,7 +90,7 @@ typedef struct {
  * @param indentationStack Stack in case of indentation
  * @return Next token
  */
-token_t getToken(FILE* in, dynamic_stack_t * indentationStack);
+token_t getToken(FILE* in, dynamic_stack_t* indentationStack);
 
 /**
  * @enum Assigning each keyword a numeric value
@@ -159,5 +159,13 @@ double strToDouble(const char* string);
  * @return Whole number
  */
 int strToInt(const char* string, int base);
+
+/**
+ * @brief Prints out state for debugging purposes
+ *
+ * @param indentationStack Dynamic stack to track indentation.
+ * @param actualToken Token to be printed out.
+ */
+void printToken(dynamic_stack_t* indentationStack, token_t actualToken);
 
 #endif //VUT_FIT_IFJ2019_SCANNER_H

@@ -192,7 +192,7 @@ token_t getToken(FILE* in, dynamic_stack_t* indentationStack) {
                     state = Error;                 continue;
                 }
 
-            case DocumentString:
+            case DocumentStringStart:
                 if (c == '\"') {
                     state = OneQuoteEnd;           continue; // """ abcdefghijklm
                 } else if (c == EOF) {
@@ -218,7 +218,7 @@ token_t getToken(FILE* in, dynamic_stack_t* indentationStack) {
 
             case TwoQuoteEnd:
                 if (c == '\"') {
-                    state = DocumentStringEnd;     continue;  // """ abcdefghijklm """
+                    state = DocumentString;     continue;  // """ abcdefghijklm """
                 } else {
                     if (dynamicStringAddChar(&actualToken.tokenAttribute.word,c) == false) {
                         state = ErrorMalloc;       continue; // malloc error
@@ -227,13 +227,13 @@ token_t getToken(FILE* in, dynamic_stack_t* indentationStack) {
                     }
                 }
 
-            case DocumentStringEnd:
+            case DocumentString:
                 ungetc(c,in);
-                actualToken.tokenType = DocumentStringEnd; return actualToken;
+                actualToken.tokenType = DocumentString; return actualToken;
 
             case StringStart:
                 if (c == '\'') {    // 'abc'
-                    state = StringEnd;             continue;
+                    state = String;             continue;
                 } else if (c < 32) {
                     state = Error;                 continue;
                 } else if (c == '\\' || (actualToken.tokenAttribute.word.capacity == 1 &&
@@ -286,9 +286,9 @@ token_t getToken(FILE* in, dynamic_stack_t* indentationStack) {
                 }
                 continue;
 
-            case StringEnd:
+            case String:
                 ungetc(c,in);
-                actualToken.tokenType = StringEnd;             return actualToken;
+                actualToken.tokenType = String;             return actualToken;
 
             case IdOrKw: {
                 if (isalpha(c) || isdigit(c) || c == '_') {
@@ -624,4 +624,105 @@ double strToDouble(const char* string) {
 
 int strToInt(const char* string, int base) {
     return strtol(string,NULL,base);
+}
+
+void printState(dynamic_stack_t * indentationStack, token_t actualToken) {
+    switch (actualToken.tokenType) {
+        case Plus:
+            printf("Plus\n");
+            break;
+        case Minus:
+            printf("Minus\n");
+            break;
+        case Multiply:
+            printf("Multiply\n");
+            break;
+        case Colon:
+            printf("Colon\n");
+            break;
+        case LeftBracket:
+            printf("LeftBracket\n");
+            break;
+        case RightBracket:
+            printf("RightBracket\n");
+            break;
+        case Comma:
+            printf("Comma\n");
+            break;
+        case DivideWORest:
+            printf("DivideWORest\n");
+            break;
+        case DivideWRest:
+            printf("DivideWRest\n");
+            break;
+        case NotEqual:
+            printf("NotEqual\n");
+            break;
+        case Smaller:
+            printf("Smaller\n");
+            break;
+        case SmallerOrEqual:
+            printf("SmallerOrEqual\n");
+            break;
+        case Bigger:
+            printf("Bigger\n");
+            break;
+        case BiggerOrEqual:
+            printf("BiggerOrEqual\n");
+            break;
+        case Assign:
+            printf("Assign\n");
+            break;
+        case Equals:
+            printf("Equals\n");
+            break;
+        case Indent:
+            printf("Indent: ");
+            for (int i = 0; i < indentationStack->top + 1; i++) {
+                printf("%d ", indentationStack->data[i]);
+            }
+            printf("\n");
+            break;
+        case Dedent:
+            printf("Dedent: ");
+            for (int i = 0; i < indentationStack->top + 1; i++) {
+                printf("%d ", indentationStack->data[i]);
+            }
+            printf("\n");
+            break;
+        case DocumentString:
+            printf("DocumentStringEnd = ");
+            printf("%s\n", actualToken.tokenAttribute.word.text);
+            break;
+        case String:
+            printf("String = ");
+            printf("%s\n", actualToken.tokenAttribute.word.text);
+            break;
+        case Identifier:
+            printf("Identifier = ");
+            printf("%s\n", actualToken.tokenAttribute.word.text);
+            break;
+        case Keyword:
+            printf("Keyword\n");
+            break;
+        case Integer:
+            printf("Integer = ");
+            printf("%d\n", actualToken.tokenAttribute.intValue);
+            break;
+        case Double:
+            printf("Double = ");
+            printf("%lf\n", actualToken.tokenAttribute.doubleValue);
+            break;
+        case Error:
+            printf("Error\n");
+            break;
+        case ErrorMalloc:
+            printf("ErrorMalloc\n");
+            break;
+        case EndOfFile:
+            printf("EndOfFile\n");
+            break;
+        default:
+            printf("Start\n");
+    }
 }
