@@ -31,4 +31,3 @@
 <value>		-> integer
 <value>		-> string
 <value>		-> float
-<value> 	-> None 
