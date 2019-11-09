@@ -14,27 +14,27 @@
 /**
  * @brief Start of syntactical analysis
  *
- * @param file Input file
+ * @param file Input program from STDIN
  * @return Error code
  */
 int analyse(FILE* file);
 
 /**
- * @brief Program body
+ * @brief Main analysing function, which process all parts of the input program.
  *
  * @return Error code
  */
 int program();
 
 /**
- * @brief Function definition
+ * @brief Function analysing user defined functions
  *
  * @return Error code
  */
 int defFunction();
 
 /**
- * @brief Function parameter
+ * @brief Function analysing parameters of user defined functions
  *
  * @return Error code
  */
