@@ -80,6 +80,11 @@ hTabItem_t* TInsert(hashTable* hTab, hTabItem_t item) {
     unsigned int hash_key_index = (THashFunction(dynamicStringGetText(item.key)) % hTab->size);
     hTabItem_t *active_item;
 
+    // Kontrola, či sa v tabuľke nenachádza item s rovnakým key
+    if (TSearch(hTab,item.key) != NULL){
+        return NULL;
+    }
+
     // Alokujem pamť pre nový prvok(token) v tabuľke
     hTabItem_t *new_table_item = malloc(sizeof(hTabItem_t));
 
@@ -103,10 +108,13 @@ hTabItem_t* TInsert(hashTable* hTab, hTabItem_t item) {
         case TypeString:
             new_table_item->value.word = item.value.word;
             break;
+        case TypeFunction:
+            break;
         case TypeBool:;
             break;
         case TypeUndefined:;
             break;
+        default: break;
     }
     new_table_item->next = NULL;
 
@@ -162,7 +170,7 @@ hTabItem_t* TSearch(hashTable* hTab, dynamicString_t key) {
 void TDelete(hashTable* hTab, dynamicString_t key) {
 
     // Zistíme, či existuje tabuľka, z ktorej chceme vymazávať
-    if (hTab == NULL || key.text == NULL) {
+    if (hTab == NULL || TSearch(hTab,key) == NULL) {
         fprintf(stderr, "Search error, non-valid key or table\n");
         return;
     }
@@ -231,6 +239,8 @@ void TPrint(hashTable* hTab) {
                     printf("\tTypeDouble");
                 } else if (actual_item->type == TypeString) {
                     printf("\tTypeString");
+                } else if (actual_item->type == TypeString) {
+                    printf("\tTypeFunction");
                 } else if (actual_item->type == TypeBool) {
                     printf("\tTypeBool");
                 } else {
@@ -251,6 +261,8 @@ void TPrint(hashTable* hTab) {
                     printf("\t%f\n", actual_item->value.doubleValue);
                 } else if (actual_item->type == TypeString) {
                     printf("\t%s\n", dynamicStringGetText(actual_item->value.word));
+                } else if (actual_item->type == TypeFunction) {
+                    printf("\t%s\n", dynamicStringGetText(actual_item->key));
                 } else if (actual_item->type == TypeBool) {
                     printf("\t%i\n", actual_item->value.intValue);
                 } else {

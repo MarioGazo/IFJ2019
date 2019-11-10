@@ -96,7 +96,9 @@ int program() {
 // 1. Vetva - Spracovávanie používateľom definovanej funkcie
 int defFunction() {
     // Záznamy funkcie
+
     hTabItem_t funcRecord, controlRecord; // zaznam funkcie
+
 
     // Prechádzame konštukciu funkcie a kontolujeme syntaktickú správnosť zápisu
     // Vzor: def id ( zoznam_parametrov ) : EOL
@@ -106,7 +108,9 @@ int defFunction() {
     funcRecord.key = actualToken.tokenAttribute.word;
     funcRecord.type = TypeFunction;
     funcRecord.defined = TRUE;
+
     funcRecord.next = NULL;
+
 
     GET_AND_CHECK_TOKEN(LeftBracket);                                   // def foo(
 
