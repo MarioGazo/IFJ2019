@@ -20,6 +20,7 @@ typedef enum {
     TypeInteger,
     TypeDouble,
     TypeString,
+    TypeFunction,
     TypeBool,
     TypeUndefined
 } varType_t;

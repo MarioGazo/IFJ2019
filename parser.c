@@ -92,7 +92,9 @@ int program() {
 // 1. Vetva - Spracovávanie používateľom definovanej funkcie
 int defFunction() {
     // Záznamy funkcie
-    hTabItem_t funcRecord; // zaznam funkcie
+
+    hTabItem_t funcRecord, controlRecord; // zaznam funkcie
+
 
     // Prechádzame konštukciu funkcie a kontolujeme syntaktickú správnosť zápisu
     // Vzor: def id ( zoznam_parametrov ) : EOL
@@ -103,11 +105,25 @@ int defFunction() {
     funcRecord.type = TypeFunction;
     funcRecord.defined = TRUE;
 
+    funcRecord.next = NULL;
+
+
     GET_AND_CHECK_TOKEN(LeftBracket);                                   // def foo(
 
     // Počet parametrov
     funcRecord.value.intValue = 0;
     if ((errorCode = param(&funcRecord)) != PROG_OK) return errorCode;  // def foo(...)
+
+    //Ak uz bola funkcia pouzita, je v HashTable, skontolujeme len pocet parametrov
+    if ((&controlRecord = TSearch(GlobalTable, funcRecord.key)) != NULL){
+        // Funkcia uz bola pouzita, skontrolujeme, ci ma rovnaky pocet parametrov
+        if (controlRecord.value.intValue != funcRecord.value.intValue){
+            return SYNTAX_ERR;
+        } else {
+            inFunc = false;
+            return PROG_OK;
+        }
+    }
 
     GET_AND_CHECK_TOKEN(Colon);                                         // def foo(...):
     GET_AND_CHECK_TOKEN(Indent);                                        // def foo(...):
@@ -369,7 +385,62 @@ int commandList() {
         }
     // TODO
     } else if (actualToken.tokenType == Identifier) {   // abc....abc = <value> / abc()
-        return PROG_OK;// volanie funkcie alebo priradenie identifikatoru
+        hTabItem_t varRecord, controlToken; // zaznam premennej
+
+        varRecord.key = actualToken.tokenAttribute.word;
+        varRecord.defined = TRUE;
+        varRecord.next = NULL;
+
+        GET_TOKEN;
+
+        if (actualToken.tokenType == Assign) { // priradenie
+            GET_TOKEN;
+            if (actualToken.tokenType == Identifier) { //abc = abc...
+                GET_TOKEN;
+                //Ulozime si identifikator, nevieme ci ide o volanie funkcie alebo vyraz
+                controlToken.key = actualToken.tokenAttribute.word;
+                controlToken.defined = TRUE;
+                controlToken.next = NULL;
+
+                GET_TOKEN;
+                //Volanie funkcie
+                if (actualToken.tokenType == LeftBracket){ //abc = a(
+                    hTabItem_t funcRecord, controlRecord;
+
+                    // Musime skontrolovat, ci bola funkcia definovana a ak ano, ci sedi pocet parametrov
+                    funcRecord.value.intValue = 0;
+                    funcRecord.key = actualToken.tokenAttribute.word;
+                    funcRecord.type = TypeFunction;
+                    funcRecord.defined = FALSE;
+                    funcRecord.next = NULL;
+
+                    if ((errorCode = param(&funcRecord)) != PROG_OK) return errorCode;  // //abc = a(...)
+
+                    if ((&controlRecord = TSearch(GlobalTable, funcRecord.key)) != NULL){
+                        // Funkcia uz bola definovana, skontrolujeme, ci ma rovnaky pocet parametrov
+                        if (controlRecord.value.intValue != funcRecord.value.intValue){
+                            return SYNTAX_ERR;
+                        }
+                    } else {
+                        // Uložíme funkciu do HashTable a budeme neskor zistovat jej definiciu
+                        TInsert(GlobalTable, funcRecord);
+                    }
+
+                } else {
+                    // Volanie precedentnej analyzi
+                    // Riesi sa vyraz, musime odovzdat dva tokeny
+                    // controlToken a actualToken
+                    return PROG_OK;
+                }
+                // Tak ci tak sa jedna o inicializaciu premennej, mozeme ju ulozit do HashTable
+                TInsert(GlobalTable, varRecord);
+                return PROG_OK;
+            } else {
+                return SYNTAX_ERR;
+            }
+        } else { // Vsetko ostatne je chyba
+            return SYNTAX_ERR;
+        }
     } else {
         return SYNTAX_ERR;
     }
