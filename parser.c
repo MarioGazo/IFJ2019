@@ -14,6 +14,9 @@
 
 #define DEBUG 1
 
+#define TRUE 1
+#define FALSE 0
+
 // Makro kontolujúce, či je token valid
 #define GET_TOKEN \
     if (DEBUG)     \
@@ -50,12 +53,8 @@ int analyse(FILE* file) {
     // Vstupné dáta zo STDIN
     in = file;
 
-<<<<<<< HEAD
-    errorCode = program();
-=======
     // Spustenie analýzi
     program();
->>>>>>> 8b6a2073f6376bb6ec694995b25c6ae976056bd1
 
     // Uvoľnenie pamäti
     TFree(GlobalTable);
@@ -97,8 +96,8 @@ int program() {
 int defFunction() {
     // Záznamy funkcie
 
-    hTabItem_t funcRecord, controlRecord; // zaznam funkcie
-
+    hTabItem_t funcRecord; // zaznam funkcie
+    hTabItem_t* controlRecord;
 
     // Prechádzame konštukciu funkcie a kontolujeme syntaktickú správnosť zápisu
     // Vzor: def id ( zoznam_parametrov ) : EOL
@@ -119,9 +118,9 @@ int defFunction() {
     if ((errorCode = param(&funcRecord)) != PROG_OK) return errorCode;  // def foo(...)
 
     //Ak uz bola funkcia pouzita, je v HashTable, skontolujeme len pocet parametrov
-    if ((&controlRecord = TSearch(GlobalTable, funcRecord.key)) != NULL){
+    if ((controlRecord = TSearch(GlobalTable, funcRecord.key)) != NULL){
         // Funkcia uz bola pouzita, skontrolujeme, ci ma rovnaky pocet parametrov
-        if (controlRecord.value.intValue != funcRecord.value.intValue){
+        if (controlRecord->value.intValue != funcRecord.value.intValue){
             return SYNTAX_ERR;
         } else {
             inFunc = false;
@@ -409,7 +408,8 @@ int commandList() {
                 GET_TOKEN;
                 //Volanie funkcie
                 if (actualToken.tokenType == LeftBracket){ //abc = a(
-                    hTabItem_t funcRecord, controlRecord;
+                    hTabItem_t funcRecord;
+                    hTabItem_t* controlRecord;
 
                     // Musime skontrolovat, ci bola funkcia definovana a ak ano, ci sedi pocet parametrov
                     funcRecord.value.intValue = 0;
@@ -420,9 +420,9 @@ int commandList() {
 
                     if ((errorCode = param(&funcRecord)) != PROG_OK) return errorCode;  // //abc = a(...)
 
-                    if ((&controlRecord = TSearch(GlobalTable, funcRecord.key)) != NULL){
+                    if ((controlRecord = TSearch(GlobalTable, funcRecord.key)) != NULL){
                         // Funkcia uz bola definovana, skontrolujeme, ci ma rovnaky pocet parametrov
-                        if (controlRecord.value.intValue != funcRecord.value.intValue){
+                        if (controlRecord->value.intValue != funcRecord.value.intValue){
                             return SYNTAX_ERR;
                         }
                     } else {
