@@ -45,7 +45,7 @@ int analyse(FILE* file) {
 
     in = file;
 
-    program();
+    errorCode = program();
 
     TFree(GlobalTable);
     TFree(LocalTable);
@@ -305,7 +305,7 @@ int commandList() {
             GET_TOKEN;
             return (errorCode = commandList());
         } else {
-            if ((errorCode = expression()) != 0) return errorCode;             // value != None
+            if ((errorCode = expression()) != 0) return errorCode;     // value != None
 
             GET_TOKEN;
             if (actualToken.tokenType == Dedent) {
