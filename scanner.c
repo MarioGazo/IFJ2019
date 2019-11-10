@@ -357,6 +357,8 @@ token_t getToken(FILE* in, dynamic_stack_t* indentationStack) {
                     } else {
                         state = AlmostExponential;  continue;
                     }
+                } else if (c == '_') {
+                    continue;
                 } else {
                     ungetc(c,in);
                     actualToken.tokenType = Integer;
@@ -380,6 +382,8 @@ token_t getToken(FILE* in, dynamic_stack_t* indentationStack) {
                     } else {
                         state = AlmostExponential;  continue;
                     }
+                } else if (c == '_') {
+                    continue;
                 } else {
                     ungetc(c,in);
                     actualToken.tokenType = Double;
@@ -482,8 +486,7 @@ token_t getToken(FILE* in, dynamic_stack_t* indentationStack) {
 
                     dynamicString_t* StringNumPtr = &actualToken.tokenAttribute.word;
                     actualToken.tokenAttribute.intValue = strToInt(actualToken.tokenAttribute.word.text,8);
-                    dynamicStringFree(StringNumPtr);
-                    return actualToken;
+                    dynamicStringFree(StringNumPtr);    return actualToken;
                 }
 
             case HexadecimalNum:
