@@ -53,6 +53,14 @@ bool sym_stackEmpty(dynamic_symbol_stack_t *s);
 token_t sym_stackPop(dynamic_symbol_stack_t *s);
 
 /**
+ * @brief Return the top item of the dynamic symbol stack
+ *
+ * @param s Dynamic symbol stack to be popped from
+ * @return Token on top of the dynamic symbol stack, or if stack is empty NULL
+ */
+token_t sym_stackTopItem(dynamic_symbol_stack_t *s);
+
+/**
  * @brief Pushes a token on top of the dynamic stack
  *
  * @param s Dynamic symbol stack to be pushed to
