@@ -35,16 +35,35 @@ token_t sym_stackPop(dynamic_symbol_stack_t *s) {
         return result_token;
 
     } else {
-        // Posunutie ukazovateľa na vrchole zásobníka
+        // Kopírovanie atribútov tokenu
         result_token.tokenAttribute = s->top_item->tokenAttribute;
         result_token.tokenType = s->top_item->tokenType;
 
-        // Kopírovanie atribútov tokenu
+        // Posunutie ukazovateľa na vrchole zásobníka
         token_to_be_free = s->top_item;
         s->top_item = s->top_item->next_item;
 
         // Uvoľnenie pamäti pre token, ktorý sme pomocou pop odstránili z vrcholu zásobníka
         free(token_to_be_free);
+    }
+
+    // Vracia sa token s atribútmi prebranými zo zásobníka
+    return result_token;
+}
+
+token_t sym_stackTopItem(dynamic_symbol_stack_t *s) {
+    token_t result_token;
+
+    // V prípade, že je zásobník prázdny, vráti sa token s chybovým hlásením -3
+    result_token.tokenType = -3;
+
+    if (sym_stackEmpty(s)) {
+        return result_token;
+
+    } else {
+        // Kopírovanie atribútov tokenu
+        result_token.tokenAttribute = s->top_item->tokenAttribute;
+        result_token.tokenType = s->top_item->tokenType;
     }
 
     // Vracia sa token s atribútmi prebranými zo zásobníka
