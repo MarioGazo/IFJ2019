@@ -54,4 +54,11 @@ int commandList();
  */
 int term();
 
+/**
+ * @brief Assignent
+ * @param varRecord Variable to assign to
+ *
+ * @return Error code
+ */
+ int assign(hTabItem_t* varRecord);
 #endif //VUT_FIT_IFJ2019_PARSER_H

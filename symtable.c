@@ -112,8 +112,6 @@ hTabItem_t* TInsert(hashTable* hTab, hTabItem_t item) {
             break;
         case TypeBool:;
             break;
-        case TypeUndefined:;
-            break;
         default: break;
     }
     new_table_item->next = NULL;

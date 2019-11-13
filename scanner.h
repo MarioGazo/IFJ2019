@@ -111,7 +111,7 @@ typedef enum keywords {
     keywordLen,         // 11 len(...)
     keywordSubstr,      // 12 substr(...)
     keywordOrd,         // 13 ord(...)
-    keywordChar,        // 14 char(...)
+    keywordChr,        // 14 char(...)
     notKeyword = -1
 } keywords_t;
 

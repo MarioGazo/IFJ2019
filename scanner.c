@@ -616,7 +616,7 @@ keywords_t isKeyword(const char* string) {
     } else if (strcmp(string,"len") == 0) {     return keywordLen;
     } else if (strcmp(string,"substr") == 0) {  return keywordSubstr;
     } else if (strcmp(string,"ord") == 0) {     return keywordOrd;
-    } else if (strcmp(string,"char") == 0) {    return keywordChar;
+    } else if (strcmp(string,"char") == 0) {    return keywordChr;
     } else {                                    return notKeyword;
     }
 }
