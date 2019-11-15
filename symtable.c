@@ -110,7 +110,7 @@ hTabItem_t* TInsert(hashTable* hTab, hTabItem_t item) {
             break;
         case TypeFunction:
             break;
-        case TypeBool:;
+        case TypeBool:
             break;
         default: break;
     }

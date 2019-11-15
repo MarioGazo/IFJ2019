@@ -1,9 +1,9 @@
 # Implementation of imperative language IFJ2019 translator
 # Makefile
 
-CC = gcc
-FILES = ifj2019.c scanner.c dynamic-string.c dynamic-stack.c symtable.c dynamic-symstack.c parser.c
-CFLAGS = -std=gnu99 -Wall -Wextra -Werror -pedantic
+CC=gcc
+FILES=ifj2019.c scanner.c dynamic-string.c dynamic-stack.c symtable.c dynamic-symstack.c parser.c expression.c
+CFLAGS=-std=gnu99 -Wall -Wextra -Werror -pedantic
 
 all: ifj2019
 

@@ -629,7 +629,7 @@ int strToInt(const char* string, int base) {
     return strtol(string,NULL,base);
 }
 
-void printState(dynamic_stack_t * indentationStack, token_t actualToken) {
+void printToken(dynamic_stack_t * indentationStack, token_t actualToken) {
     switch (actualToken.tokenType) {
         case Plus:
             printf("Plus\n");
@@ -679,6 +679,9 @@ void printState(dynamic_stack_t * indentationStack, token_t actualToken) {
         case Equals:
             printf("Equals\n");
             break;
+        case EOL:
+            printf("EOL\n");
+            break;
         case Indent:
             printf("Indent: ");
             for (int i = 0; i < indentationStack->top + 1; i++) {
@@ -726,6 +729,7 @@ void printState(dynamic_stack_t * indentationStack, token_t actualToken) {
             printf("EndOfFile\n");
             break;
         default:
-            printf("Start\n");
+            printf("Token value == %i\n",actualToken.tokenType);
+            break;
     }
 }
