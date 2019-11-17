@@ -68,9 +68,11 @@ int analyse(FILE* file) {
 
     // zistujeme ci boli vsetky volane funkcie definovane
     for (int i = 0; i < 236897; i++) {
-        if (GlobalTable->variables[i]->type == TypeFunction &&
-            GlobalTable->variables[i]->defined != TRUE) {
-            return SEMPROG_ERR;
+        if (GlobalTable->variables[i] != NULL) {
+            if (GlobalTable->variables[i]->type == TypeFunction &&
+                GlobalTable->variables[i]->defined != TRUE) {
+                return SEMPROG_ERR;
+            }
         }
     }
 
@@ -94,8 +96,9 @@ int program() {
     // Na základe tokenu sa zvolí vetva pre spracovanie
     // Koniec spracovávaného programu
     if (actualToken.tokenType == EndOfFile) {
-        PRINT_DEBUG("EndOfFIle\n");
+        PRINT_DEBUG("End of program\n");
 
+        GET_AND_CHECK_TOKEN(EOL);
         return PROG_OK;
     // Používateľom definovaná funkcia
     } else if (actualToken.tokenType == Keyword &&
@@ -108,7 +111,7 @@ int program() {
         return program();
     // DocumentString - je preskočený
     } else if (actualToken.tokenType == DocumentString) {
-        PRINT_DEBUG("Document String");
+        PRINT_DEBUG("DocumentString\n");
 
         GET_AND_CHECK_TOKEN(EOL);
         return program();
@@ -129,7 +132,7 @@ int defFunction() {
 
     // Prechádzame konštukciu funkcie a kontolujeme syntaktickú správnosť zápisu
     // Vzor: def id ( zoznam_parametrov ) : INDENT
-    //        sekvencia príkazov <- EOL po kazdom prikaze
+    //          sekvencia príkazov <- EOL po kazdom prikaze
     // DEDENT
     GET_AND_CHECK_TOKEN(Identifier);
 
@@ -163,6 +166,7 @@ int defFunction() {
     GET_AND_CHECK_TOKEN(Colon);                                         // def foo(...):
     GET_AND_CHECK_TOKEN(Indent);                                        // def foo(...):
 
+    GET_TOKEN;
     if ((errorCode = commandList()) != PROG_OK) return errorCode;       // __command_list
 
     // Uložíme funkciu do HashTable
@@ -204,6 +208,9 @@ int commandList() {
     PRINT_DEBUG("Command\n");
 
     // WHILE
+    // Vzor: while (výraz): INDENT
+    //          sekvencia prikazov <- EOL po kazdom prikaze
+    //       DEDENT
     if (actualToken.tokenType == Keyword &&
         actualToken.tokenAttribute.intValue == keywordWhile) {  // while
         PRINT_DEBUG("\tWhile\n");
@@ -219,6 +226,11 @@ int commandList() {
 
         return (errorCode = commandListContOrEnd());
     // IF & ELSE
+    // Vzor:  if (výraz): INDENT
+    //          sekvencia príkazov <- EOL po kazdom prikaze
+    //        DEDENT else: INDENT
+    //          sekvencia prikazov <- EOL po kazdom prikaze
+    //        DEDENT
     } else if (actualToken.tokenType == Keyword &&
                actualToken.tokenAttribute.intValue == keywordIf) {
         PRINT_DEBUG("\tIf & Else\n");
@@ -282,17 +294,25 @@ int commandList() {
         varRecord.defined = TRUE;
         varRecord.next = NULL;
 
-        GET_AND_CHECK_TOKEN(Assign);
+        GET_TOKEN;
 
-        if ((errorCode = assign(&varRecord)) != PROG_OK) return errorCode;
-        // Uloženie premennej do HashTable
-        if (inFunc) {
-            TInsert(LocalTable, varRecord);
+        if (actualToken.tokenType == Assign) {
+
+            if ((errorCode = assign(&varRecord)) != PROG_OK) return errorCode;
+            // Uloženie premennej do HashTable
+            if (inFunc) {
+                TInsert(LocalTable, varRecord);
+            } else {
+                TInsert(GlobalTable, varRecord);
+            }
+
+            return (errorCode = commandListContOrEnd());
+        } else if (actualToken.tokenType == LeftBracket) { // TODO kontrola poctu parametrov, pripade pridanie do hTab
+            param(&varRecord);
+            return (errorCode = commandListContOrEnd());
         } else {
-            TInsert(GlobalTable, varRecord);
+            return SYNTAX_ERR;
         }
-
-        return (errorCode = commandListContOrEnd());
     // ERROR
     } else {
         return SYNTAX_ERR;
@@ -322,15 +342,13 @@ int term() {
 
     if (actualToken.tokenType == RightBracket) {
         // WRITE '\n'
-        PROG_OK;
+        return PROG_OK;
     } else if (actualToken.tokenType == Comma) {
         // WRITE _ <- medzera
         return (errorCode = term());
     } else {
         return SYNTAX_ERR;
     }
-
-    return SYNTAX_ERR;
 }
 
 int assign(hTabItem_t* varRecord) {
@@ -504,7 +522,7 @@ int commandListContOrEnd() {
     if (expr) { expr = false; } else { GET_TOKEN; }
 
     // ak je citany prikaz v tele programu, musi byt zakonceny EOL
-    if (actualToken.tokenType == EOL && inBody) {
+    if (inBody && (actualToken.tokenType == EOL || actualToken.tokenType == EndOfFile)) {
         inBody = false;
         return PROG_OK;
     } else if (inBody) {

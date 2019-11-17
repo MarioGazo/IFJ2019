@@ -1,4 +1,4 @@
 # simple file
 if a < 1:
-    print()
+    print('abc')
 123

@@ -114,7 +114,6 @@ token_t getToken(FILE* in, dynamic_stack_t* indentationStack) {
                 }
 
             case CommentEnd:
-                ungetc(c,in);
                 state = Start;
                 continue;
 
@@ -131,7 +130,7 @@ token_t getToken(FILE* in, dynamic_stack_t* indentationStack) {
                 }
                 ungetc(c, in);
 
-                if (c == '\n') { // skip
+                if (c == '\n' || c == EOF) { // skip
                     state = Start;
                     continue;
                 }
@@ -187,7 +186,7 @@ token_t getToken(FILE* in, dynamic_stack_t* indentationStack) {
 
             case TwoQuoteStart:
                 if (c == '\"') {
-                    state = DocumentString;        continue; // """
+                    state = DocumentStringStart;        continue; // """
                 } else {
                     state = Error;                 continue;
                 }
@@ -197,7 +196,7 @@ token_t getToken(FILE* in, dynamic_stack_t* indentationStack) {
                     state = OneQuoteEnd;           continue; // """ abcdefghijklm
                 } else if (c == EOF) {
                     ungetc(c,in);
-                    state = Error;                  continue;
+                    state = Error;                 continue;
                 } else {
                     if (dynamicStringAddChar(&actualToken.tokenAttribute.word,c) == false) {
                         state = ErrorMalloc;       continue; // malloc error
@@ -697,7 +696,7 @@ void printToken(dynamic_stack_t * indentationStack, token_t actualToken) {
             printf("\n");
             break;
         case DocumentString:
-            printf("DocumentStringEnd = ");
+            printf("DocumentString = ");
             printf("%s\n", actualToken.tokenAttribute.word.text);
             break;
         case String:
