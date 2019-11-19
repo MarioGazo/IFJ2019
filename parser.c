@@ -50,6 +50,10 @@ bool inFunc = false;    // sme vo funkcii
 bool expr = false;      // bol spracovany vyraz
 bool inBody = false;    // prebieha citanie instrukcii v tele hlavneho programu
 
+// Výsledný kód
+dynamicString_t code;
+FILE * output;
+
 // Hlavný program
 int analyse(FILE* file) {
     PRINT_DEBUG("Analysis start\n");
@@ -59,6 +63,8 @@ int analyse(FILE* file) {
     // Rozmery tabuľky prevzaté z internetu
     GlobalTable = TInit(236897);
     LocalTable = TInit(1741);
+    // Inicializácia dynamic stringu pre výsledný kód
+    dynamicStringInit(&code);
 
     // Vstupné dáta zo STDIN
     in = file;
@@ -80,7 +86,25 @@ int analyse(FILE* file) {
     TFree(GlobalTable);
     TFree(LocalTable);
     stackFree(&indentationStack);
-    return errorCode;
+
+    // Ak je program korektný, je výsledný kód vypísaný do súboru
+    if (errorCode == PROG_OK) {
+        output = fopen("prg.out","w+");
+
+        // Zlyhanie pri tvorbe súboru na výpis
+        if (output == NULL) {
+            return INTERNAL_ERR;
+        }
+
+        fprintf(output, "%s", code.text); // TODO kontrola vypisu
+        dynamicStringFree(&code);
+        fclose(output);
+
+        return PROG_OK;
+    } else {
+        dynamicStringFree(&code);
+        return errorCode;
+    }
 }
 
 // Hlavný mechanizmus spracovávania programu
@@ -501,8 +525,6 @@ int assign(hTabItem_t* varRecord) {
 
         GET_AND_CHECK_TOKEN(LeftBracket);
         GET_AND_CHECK_TOKEN(Integer);
-        if (actualToken.tokenAttribute.intValue > 255 || actualToken.tokenAttribute.intValue < 0)
-            return SEMELSE_ERR;
 
         // MOVE str 'Int'
         GET_AND_CHECK_TOKEN(RightBracket);
