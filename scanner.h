@@ -67,6 +67,8 @@ typedef enum parserState {
     BinaryNum,             // 39 0b1010_1010
     OctalNum,              // 40 0o252
     HexadecimalNum,        // 41 0xAA
+    Shift = 100,                 // 42 Shift type for prec analy
+    Nonterminal = 99,           // 43 Nonterminal for prec analy
     Error = -1,            // -1 lexical error
     ErrorIndent = -2,      // -2 indentation error
     ErrorMalloc = -3,      // -3 internal error

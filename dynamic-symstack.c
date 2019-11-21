@@ -24,50 +24,31 @@ bool sym_stackEmpty(dynamic_symbol_stack_t *s) {
     return (s->top_item == NULL);
 }
 
-token_t sym_stackPop(dynamic_symbol_stack_t *s) {
-    token_t result_token;
-    symbol_token_t *token_to_be_free;
+token_t * sym_stackPop(dynamic_symbol_stack_t *s) {
+    token_t *  token;
+    symbol_token_t *tokenf;
 
     // V prípade, že je zásobník prázdny, vráti sa token s chybovým hlásením -3
-    result_token.tokenType = -3;
+
 
     if (sym_stackEmpty(s)) {
-        return result_token;
-
-    } else {
-        // Kopírovanie atribútov tokenu
-        result_token.tokenAttribute = s->top_item->tokenAttribute;
-        result_token.tokenType = s->top_item->tokenType;
-
-        // Posunutie ukazovateľa na vrchole zásobníka
-        token_to_be_free = s->top_item;
-        s->top_item = s->top_item->next_item;
-
-        // Uvoľnenie pamäti pre token, ktorý sme pomocou pop odstránili z vrcholu zásobníka
-        free(token_to_be_free);
+        return NULL;
     }
+    tokenf = s->top_item;
+    token = tokenf->token;
+    s->top_item = tokenf->next_item;
+    free(tokenf);
 
     // Vracia sa token s atribútmi prebranými zo zásobníka
-    return result_token;
+    return token;
 }
 
-token_t sym_stackTopItem(dynamic_symbol_stack_t *s) {
-    token_t result_token;
-
-    // V prípade, že je zásobník prázdny, vráti sa token s chybovým hlásením -3
-    result_token.tokenType = -3;
-
-    if (sym_stackEmpty(s)) {
-        return result_token;
-
-    } else {
-        // Kopírovanie atribútov tokenu
-        result_token.tokenAttribute = s->top_item->tokenAttribute;
-        result_token.tokenType = s->top_item->tokenType;
+token_t * sym_stackTopItem(dynamic_symbol_stack_t *s) {
+    if(sym_stackEmpty(s)){
+      return NULL;
     }
-
     // Vracia sa token s atribútmi prebranými zo zásobníka
-    return result_token;
+    return s->top_item->token;
 }
 
 bool sym_stackPush(dynamic_symbol_stack_t *s, token_t *t) {
@@ -88,8 +69,7 @@ bool sym_stackPush(dynamic_symbol_stack_t *s, token_t *t) {
     s->top_item = new_token;
 
     // Uloženie atribútov do nového prvku zásobníku
-    new_token->tokenAttribute = t->tokenAttribute;
-    new_token->tokenType = t->tokenType;
+    new_token->token = t;
 
     // Ak bolo uloženie úspešné, je vrátené TRUE
     return true;
@@ -104,9 +84,103 @@ void sym_stackFree(dynamic_symbol_stack_t *s) {
         if (s->top_item != NULL){
             s->top_item = s->top_item->next_item;
         }
+        free(token_to_be_free->token);
         free(token_to_be_free);
     }
 
     // Uvoľníme ukazovateľ
     free(s);
+}
+
+void sym_stackPrintTokenType(token_t * token){
+  if(token == NULL){
+    printf("%s\n", "TOKEN IS NULL");
+    return;
+  }
+  switch (token->tokenType){
+    case Plus:
+      printf("+|");
+      break;
+    case Multiply:
+      printf("*|");
+      break;
+    case LeftBracket:
+      printf("(|");
+      break;
+    case RightBracket:
+      printf(")|");
+      break;
+    case Identifier:
+      printf("I|");
+      break;
+    case  EOL:
+      printf("$|");
+      break;
+    case  Equals:
+      printf("=|");
+      break;
+    case 99:
+      printf("E|");
+      break;
+    case 100:
+      printf("<|");
+      break;
+    default:
+      printf("UNKNOWN|");
+
+  };
+}
+
+void sym_stackPrint(dynamic_symbol_stack_t * stack){
+  symbol_token_t * st = stack->top_item;
+  printf("%s\n", "================");
+  do{
+    sym_stackPrintTokenType(st->token);
+    st = st->next_item;
+  }while(st!=NULL);
+  printf("\n%s\n", "================");
+
+}
+
+
+token_t * sym_stackTraverse(dynamic_symbol_stack_t * stack, int howMuch){
+  symbol_token_t * st = stack->top_item;
+  for(int i = 0; i<howMuch; i++){
+    if(st->next_item==NULL){
+      return NULL;
+    }
+    st = st->next_item;
+  }
+  return st->token;
+}
+
+void sym_stackDeepInsert(dynamic_symbol_stack_t * stack, token_t * token, int howMuch){
+  //Im starting to think that a linked list might have been a better idea... 
+  if(howMuch == 0){
+    sym_stackPush(stack, token);
+    return;
+  }
+
+
+
+  symbol_token_t * st= stack->top_item;
+  for(int i = 0; i<howMuch - 1; i++){
+    if(st->next_item==NULL){
+      return;
+    }
+    st = st->next_item;
+  }
+
+  symbol_token_t *new_token = calloc(1, sizeof(symbol_token_t));
+
+  if (new_token == NULL){
+      return;
+  }
+
+  // Posunutie ukazovateľa na vrchol zásobníku
+  new_token->next_item = st->next_item;
+  st->next_item = new_token;
+
+  // Uloženie atribútov do nového prvku zásobníku
+  new_token->token = token;
 }

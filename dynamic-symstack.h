@@ -19,8 +19,7 @@
  * Symbol_token represents one item, token, in dynamic symbol stack
  */
 typedef struct symbol_token {
-    parserState_t tokenType;
-    tokenAttribute_t tokenAttribute;
+    token_t * token;
     struct symbol_token *next_item;
 } symbol_token_t;
 
@@ -50,7 +49,7 @@ bool sym_stackEmpty(dynamic_symbol_stack_t *s);
  * @param s Dynamic symbol stack to be popped from
  * @return Token on top of the dynamic symbol stack, or if stack is empty NULL
  */
-token_t sym_stackPop(dynamic_symbol_stack_t *s);
+token_t * sym_stackPop(dynamic_symbol_stack_t *s);
 
 /**
  * @brief Return the top item of the dynamic symbol stack
@@ -58,7 +57,7 @@ token_t sym_stackPop(dynamic_symbol_stack_t *s);
  * @param s Dynamic symbol stack to be popped from
  * @return Token on top of the dynamic symbol stack, or if stack is empty NULL
  */
-token_t sym_stackTopItem(dynamic_symbol_stack_t *s);
+token_t * sym_stackTopItem(dynamic_symbol_stack_t *s);
 
 /**
  * @brief Pushes a token on top of the dynamic stack
@@ -75,4 +74,16 @@ bool sym_stackPush(dynamic_symbol_stack_t *s, token_t *t);
  * @param s Dynamic symbol stack to be freed
  */
 void sym_stackFree(dynamic_symbol_stack_t *s);
+
+//helper function for printing stack for testing purposes
+void sym_stackPrintTokenType(token_t * token);
+
+//prints stack
+void sym_stackPrint(dynamic_symbol_stack_t * stack);
+
+//Like top but looks as deep as specified by howMuch where 0 = top
+token_t * sym_stackTraverse(dynamic_symbol_stack_t * stack, int howMuch);
+
+//inserts a token before a token on a specified depth. 0 = top
+void sym_stackDeepInsert(dynamic_symbol_stack_t * stack, token_t * token, int howMuch);
 #endif //VUT_FIT_IFJ2019_DYNAMIC_SYM_STACK_H
