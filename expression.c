@@ -230,23 +230,3 @@ int expression(token_t * token) {
 }
 
 
-int main(){
-  expression(NULL);
-
-
-  //stack test
-  return 1;
-  dynamic_symbol_stack_t * stack = sym_stackInit();
-  token_t * token = calloc(1, sizeof(token_t));
-  token->tokenType = EOL;
-  sym_stackPush(stack, token);
-  token_t * token1 = calloc(1, sizeof(token_t));
-  token1->tokenType = 99;
-  sym_stackPush(stack, token1);
-
-
-  sym_stackPrint(stack);
-
-  sym_stackFree(stack);
-
-}
