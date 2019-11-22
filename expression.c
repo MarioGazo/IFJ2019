@@ -20,12 +20,6 @@ char LL[7][7] = {
 
 };
 
-char sLL[3][3] = { //special table to deal with strings
-//  +    S    $
-  {'>', '>', '>'}, //+
-  {'>', ' ', '>'}, //S
-  {'<', '<', ' '} //$
-};
 //Rules to pick from. 99 = E (Nonterminal)
  parserState_t rules[RULEHEIGHT][RULEWIDTH] = {
   {99, Plus, 99},                                           //E -> E+E
@@ -244,7 +238,8 @@ int exSwitch( dynamic_symbol_stack_t * stack, token_t ** t, int * deep, char sym
 int expression(token_t * token) {
      dynamic_symbol_stack_t * stack = sym_stackInit();
      token_t * end = calloc(1, sizeof(token_t));
-     int * deep = calloc(1, sizeof(int));
+     int d;
+     int * deep = &d;
      int retCode = 0;
      int mode = 0; //Which LLpos function to pick from. 0 means undecided. 1 is concatenation mode, -1 is expression mode. Any further attempt to change it while it has a non-zero value should result in an error.
 
@@ -259,6 +254,8 @@ int expression(token_t * token) {
          if(LLPos(token) == -1 && LLSPos(token) == -1){
            //The token wasnt recognized by neither function, meaning a syntax error
            printf("TOKEN UNRECOGNIZED\n");
+           sym_stackFree(stack);
+           free(token);
            return SYNTAX_ERR;
          }else if(LLPos(token) > -1 && LLSPos(token) > -1){
            //The token was recognized by both, in which case i do nothing
@@ -268,6 +265,8 @@ int expression(token_t * token) {
              mode = -1;
            }else if(mode == 1){
              printf("%s\n", "WRONG TOKEN (E MODE)");
+             sym_stackFree(stack);
+             free(token);
              return SYNTAX_ERR;
            }
         }else if(LLPos(token) == -1 && LLSPos(token) > -1){
@@ -276,6 +275,8 @@ int expression(token_t * token) {
             mode = 1;
           }else if(mode == -1){
             printf("%s\n", "WRONG TOKEN (S MODE)");
+            sym_stackFree(stack);
+            free(token);
             return SYNTAX_ERR;
           }
         }
@@ -289,21 +290,24 @@ int expression(token_t * token) {
 
 
         if(retCode!=0){
+          sym_stackFree(stack);
+          free(token);
            return retCode;
         }
 
 
         sym_stackPrint(stack);
-        if(sym_stackTopItem(stack)->tokenType==EOL){
-          printf("%s\n", "INTERNAL ERROR");
-          return INTERNAL_ERR;
-        }
 
      }while(!(token->tokenType==EOL && sym_stackTopItem(stack)->tokenType==99 && (sym_stackTraverse(stack, 1)->tokenType== EOL || sym_stackTraverse(stack, 1)->tokenType== EndOfFile || sym_stackTraverse(stack, 1)->tokenType== Comma))); //The work is over when there is E$ on the stack and the token is one of the forementioned types
 
 
 
     sym_stackFree(stack);
-    free(deep);
+    free(token);
     return PROG_OK;
+}
+
+int main() {
+  expression(NULL);
+  return 0;
 }
