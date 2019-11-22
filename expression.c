@@ -161,7 +161,7 @@ token_t * getNewToken(){
 
   };
 }
-int exSwitch( dynamic_symbol_stack_t * stack, token_t ** t, int * deep, char symbol){
+int expSwitch( dynamic_symbol_stack_t * stack, token_t ** t, int * deep, char symbol){
   token_t * bufferT = NULL;
   token_t * token  = *t;
   parserState_t exp[RULEWIDTH];
@@ -282,9 +282,9 @@ int expression(token_t * token) {
         }
 
         if(mode == 0 || mode == -1){
-          retCode = exSwitch(stack, &token, deep, LL[LLPos(terminalTop(stack, deep))][LLPos(token)]);
+          retCode = expSwitch(stack, &token, deep, LL[LLPos(terminalTop(stack, deep))][LLPos(token)]);
         }else{
-          retCode = exSwitch(stack, &token, deep, LL[LLSPos(terminalTop(stack, deep))][LLSPos(token)]);
+          retCode = expSwitch(stack, &token, deep, LL[LLSPos(terminalTop(stack, deep))][LLSPos(token)]);
         }
 
 
@@ -305,9 +305,4 @@ int expression(token_t * token) {
     sym_stackFree(stack);
     free(token);
     return PROG_OK;
-}
-
-int main() {
-  expression(NULL);
-  return 0;
 }
