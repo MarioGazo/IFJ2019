@@ -38,6 +38,6 @@ token_t * new_token(parserState_t type);
 
 
 //switch to decide what to do with a given char from the LL table
-int expSwitch( dynamic_symbol_stack_t * stack, token_t ** t, int * deep,  char symbol);
+int expSwitch( dynamic_symbol_stack_t * stack, token_t ** t, int * depth,  char symbol);
 
 #endif //VUT_FIT_IFJ2019_EXPRESSION_H

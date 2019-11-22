@@ -39,7 +39,7 @@ char LL[7][7] = {
 };
 
 
-token_t * terminalTop(dynamic_symbol_stack_t * stack, int * deep){
+token_t * terminalTop(dynamic_symbol_stack_t * stack, int * depth){
   token_t * token = sym_stackTopItem(stack);
   int i = 0;
 
@@ -47,7 +47,7 @@ token_t * terminalTop(dynamic_symbol_stack_t * stack, int * deep){
     i++;
     token = sym_stackTraverse(stack, i);
   }
-  *deep = i;
+  *depth = i;
   return token;
 }
 
@@ -161,7 +161,7 @@ token_t * getNewToken(){
 
   };
 }
-int expSwitch( dynamic_symbol_stack_t * stack, token_t ** t, int * deep, char symbol){
+int expSwitch( dynamic_symbol_stack_t * stack, token_t ** t, int * depth, char symbol){
   token_t * bufferT = NULL;
   token_t * token  = *t;
   parserState_t exp[RULEWIDTH];
@@ -172,7 +172,7 @@ int expSwitch( dynamic_symbol_stack_t * stack, token_t ** t, int * deep, char sy
        *t = getNewToken();
        break;
      case '<':
-       sym_stackDeepInsert(stack, new_token(100), *deep);  //insert < behind the first terminal (100 = enum shift)
+       sym_stackDeepInsert(stack, new_token(100), *depth);  //insert < behind the first terminal (100 = enum shift)
        sym_stackPush(stack, token);
        sym_stackPrint(stack);//TODO: delete this line
 
@@ -239,7 +239,7 @@ int expression(token_t * token) {
      dynamic_symbol_stack_t * stack = sym_stackInit();
      token_t * end = calloc(1, sizeof(token_t));
      int d;
-     int * deep = &d;
+     int * depth = &d;
      int retCode = 0;
      int mode = 0; //Which LLpos function to pick from. 0 means undecided. 1 is concatenation mode, -1 is expression mode. Any further attempt to change it while it has a non-zero value should result in an error.
 
@@ -282,9 +282,9 @@ int expression(token_t * token) {
         }
 
         if(mode == 0 || mode == -1){
-          retCode = expSwitch(stack, &token, deep, LL[LLPos(terminalTop(stack, deep))][LLPos(token)]);
+          retCode = expSwitch(stack, &token, depth, LL[LLPos(terminalTop(stack, depth))][LLPos(token)]);
         }else{
-          retCode = expSwitch(stack, &token, deep, LL[LLSPos(terminalTop(stack, deep))][LLSPos(token)]);
+          retCode = expSwitch(stack, &token, depth, LL[LLSPos(terminalTop(stack, depth))][LLSPos(token)]);
         }
 
 

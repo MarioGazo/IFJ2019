@@ -384,11 +384,6 @@ int assign(hTabItem_t* varRecord) {
     if (actualToken.tokenType == Identifier) { //abc = abc...
         PRINT_DEBUG("\tID\n");
 
-        //Ulozime si identifikator, nevieme ci ide o volanie funkcie alebo vyraz
-        hTabItem_t controlToken;
-        controlToken.key = actualToken.tokenAttribute.word;
-        controlToken.defined = TRUE;
-        controlToken.next = NULL;
 
         GET_TOKEN;
         //Volanie funkcie
