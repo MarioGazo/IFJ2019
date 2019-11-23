@@ -239,7 +239,7 @@ int commandList() {
         actualToken.tokenAttribute.intValue == keywordWhile) {  // while
         PRINT_DEBUG("\tWhile\n");
 
-        if ((errorCode = expression()) != PROG_OK) return errorCode;  // while <expr>
+        if ((errorCode = expression(in,&indentationStack, NULL)) != PROG_OK) return errorCode;  // while <expr>
 
         if (actualToken.tokenType != Colon)                     // while <expr>:
             return SYNTAX_ERR;
@@ -259,7 +259,7 @@ int commandList() {
                actualToken.tokenAttribute.intValue == keywordIf) {
         PRINT_DEBUG("\tIf & Else\n");
 
-        if ((errorCode = expression()) != PROG_OK) return errorCode;  // if <expr>
+        if ((errorCode = expression(in,&indentationStack, NULL)) != PROG_OK) return errorCode;  // if <expr>
 
         if (actualToken.tokenType != Colon)                     // if <expr>:
             return SYNTAX_ERR;
@@ -298,7 +298,7 @@ int commandList() {
         GET_TOKEN;
 
         expr = true;
-        if ((errorCode = expression()) != 0) return errorCode;     // value != None
+        if ((errorCode = expression(in,&indentationStack, &actualToken)) != 0) return errorCode;     // value != None
 
         // RETURN TMP -> tmp vysledok
 
@@ -417,7 +417,7 @@ int assign(hTabItem_t* varRecord) {
             // Riesi sa vyraz, musime odovzdat dva tokeny
             // controlToken a actualToken
             expr = true;
-            if ((errorCode = expression()) != 0) return  errorCode;
+            if ((errorCode = expression(in,&indentationStack, NULL)) != 0) return  errorCode;
 
             // MOVE var TMP -> tmp vysledok
             return PROG_OK;
@@ -428,7 +428,7 @@ int assign(hTabItem_t* varRecord) {
         PRINT_DEBUG("\tExpression\n");
 
         expr = true;
-        if ((errorCode = expression()) != 0) return  errorCode;
+        if ((errorCode = expression(in,&indentationStack, &actualToken)) != 0) return  errorCode;
 
         // MOVE var TMP -> tmp vysledok
         return PROG_OK;

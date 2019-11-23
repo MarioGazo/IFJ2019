@@ -4,10 +4,13 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#define RULEHEIGHT 14
+#define RULEHEIGHT 16
 #define RULEWIDTH 3
 
-
+FILE* in;
+dynamic_stack_t* iStack;
+//variables to deal with the getToken function
+int errN = 0;
 char LL[7][7] = {
 // +|- *|/|// (    )    i    EV   $
   {'>', '<', '<', '>', '<', '>', '>'}, //+
@@ -35,7 +38,9 @@ char LL[7][7] = {
   {99, Equals, 99},                                         //E -> E==E
   {RightBracket, 99, LeftBracket},                          //E -> (E) (in reverse because of the stack)
   {Identifier, (parserState_t) NULL, (parserState_t) NULL}, //E -> i ()
-  {String, (parserState_t) NULL, (parserState_t) NULL}      //E -> s
+  {String, (parserState_t) NULL, (parserState_t) NULL},      //E -> s
+  {Integer, (parserState_t) NULL, (parserState_t) NULL},      //E -> integer
+  {Double, (parserState_t) NULL, (parserState_t) NULL}      //E -> double
 };
 
 
@@ -82,8 +87,10 @@ int LLPos(token_t * token){
       return 5;
       break;
     case  EOL:
-    case  Comma:
+    case  Colon:
     case  EndOfFile:
+    case  Dedent:
+    case  Indent:
       return 6;
       break;
     default:
@@ -109,8 +116,10 @@ int LLSPos(token_t * token){
       return 4;
       break;
     case  EOL:
-    case  Comma:
+    case  Colon:
     case  EndOfFile:
+    case  Dedent:
+    case  Indent:
       return 6;
       break;
     default:
@@ -126,6 +135,14 @@ token_t * new_token(parserState_t type){
   return token;
 }
 token_t * getNewToken(){
+  token_t * token = calloc(1, sizeof(token_t));
+  *token = getToken(in,iStack);
+  if (token->tokenType == Error) errN = LEX_ERR;
+  if (token->tokenType == ErrorMalloc) errN = INTERNAL_ERR;
+  if (token->tokenType == ErrorIndent) errN = SYNTAX_ERR;
+  if(errN != 0) return NULL;
+  return token;
+  /*
   char  s;
   scanf(" %c", &s);
 
@@ -160,6 +177,7 @@ token_t * getNewToken(){
 
 
   };
+  */
 }
 int expSwitch( dynamic_symbol_stack_t * stack, token_t ** t, int * depth, char symbol){
   token_t * bufferT = NULL;
@@ -226,6 +244,7 @@ int expSwitch( dynamic_symbol_stack_t * stack, token_t ** t, int * depth, char s
        }
        break;
      case ' ': //Empty LL cell, meaning a syntax error
+        printf("%d\n", token->tokenType);
        printf("%s\n", "SYNTAX ERROR");
        return SYNTAX_ERR;
        break;
@@ -235,25 +254,31 @@ int expSwitch( dynamic_symbol_stack_t * stack, token_t ** t, int * depth, char s
   return 0;
 
 }
-int expression(token_t * token) {
+int expression(FILE* lIn, dynamic_stack_t* lIStack, token_t * t) {
+      //promote the passed variables to the global scope
+      in = lIn;
+      iStack = lIStack;
+
      dynamic_symbol_stack_t * stack = sym_stackInit();
      token_t * end = calloc(1, sizeof(token_t));
      int d;
      int * depth = &d;
      int retCode = 0;
      int mode = 0; //Which LLpos function to pick from. 0 means undecided. 1 is concatenation mode, -1 is expression mode. Any further attempt to change it while it has a non-zero value should result in an error.
-
+     token_t * token;
      end->tokenType = EOL;
      sym_stackPush(stack, end); //push $ as the first item of the stack
-     if(token==NULL){ //in case the token was not passed as the function argument, get a new one
+     if(t==NULL){ //in case the token was not passed as the function argument, get a new one
         token = getNewToken();
-
+     }else{
+        token = calloc(1, sizeof(token_t)); //turning the passed value into one that is compatible with the rest of the thing
+        *token = *t;
      }
 
      do{
          if(LLPos(token) == -1 && LLSPos(token) == -1){
            //The token wasnt recognized by neither function, meaning a syntax error
-           printf("TOKEN UNRECOGNIZED\n");
+           printf("TOKEN UNRECOGNIZED: %d\n", token->tokenType);
            sym_stackFree(stack);
            free(token);
            return SYNTAX_ERR;
@@ -298,7 +323,7 @@ int expression(token_t * token) {
 
         sym_stackPrint(stack);
 
-     }while(!(token->tokenType==EOL && sym_stackTopItem(stack)->tokenType==99 && (sym_stackTraverse(stack, 1)->tokenType== EOL || sym_stackTraverse(stack, 1)->tokenType== EndOfFile || sym_stackTraverse(stack, 1)->tokenType== Comma))); //The work is over when there is E$ on the stack and the token is one of the forementioned types
+     }while(!(sym_stackTraverse(stack, 1)->tokenType==EOL && sym_stackTopItem(stack)->tokenType==99 && (token->tokenType== EOL || token->tokenType== EndOfFile || token->tokenType== Colon|| token->tokenType== Dedent|| token->tokenType== Indent))); //The work is over when there is E$ on the stack and the token is one of the forementioned types
 
 
 

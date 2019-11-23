@@ -13,9 +13,10 @@
 #include <stdio.h>
 #include "dynamic-string.h"
 #include "dynamic-symstack.h"
+#include "dynamic-stack.h"
 #include "scanner.h"
 
-int expression();
+int expression(FILE* in, dynamic_stack_t* iStack, token_t * t) ;
 
 
 

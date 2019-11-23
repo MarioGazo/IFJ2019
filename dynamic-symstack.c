@@ -111,6 +111,7 @@ void sym_stackPrintTokenType(token_t * token){
       printf(")|");
       break;
     case Identifier:
+    case Integer:
       printf("I|");
       break;
     case  EOL:
@@ -155,7 +156,7 @@ token_t * sym_stackTraverse(dynamic_symbol_stack_t * stack, int howMuch){
 }
 
 void sym_stackDeepInsert(dynamic_symbol_stack_t * stack, token_t * token, int howMuch){
-  //Im starting to think that a linked list might have been a better idea... 
+  //Im starting to think that a linked list might have been a better idea...
   if(howMuch == 0){
     sym_stackPush(stack, token);
     return;
