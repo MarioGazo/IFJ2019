@@ -55,8 +55,8 @@ token_t getToken(FILE* in, dynamic_stack_t* indentationStack) {
                 if (c == '/') {
                     state = DivideWORest;           continue;
                 } else {
-                    ungetAndSetToken(in,c,DivideWRest); // /
-                    break;
+                    return ungetAndSetToken(in,c,DivideWRest); // /
+
                 }
 
             case DivideWORest:
