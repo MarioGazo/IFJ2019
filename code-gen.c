@@ -134,7 +134,7 @@
     "\n LABEL $function_print"                  \
     "\n PUSHFRAME"                              \
     "\n DEFVAR TF@%0"                           \
-    "\n MOVE TF@%0 LF@%0"                       \
+    "\n MOVE TF@%0 LF@pro_input"                \
     "\n WRITE TF@%0"                            \
     "\n POPFRAME"                               \
     "\n RETURN"
@@ -298,10 +298,11 @@ bool cg_fun_before_params()
     return true;
 }
 
-bool cg_fun_return(char *id_funkcie)
+bool cg_fun_return()
 {
     ADD_INSTRUCTION("MOVE LF@%navratova_hodnota GF@%vysledok_vyrazu");
-    ADD_CODE("JUMP $"); ADD_CODE(function_id); ADD_CODE("%return\n");
+    ADD_INSTRUCTION("POPFRAME");
+    ADD_INSTRUCTION("RETURN");
     return true;
 }
 
@@ -320,68 +321,65 @@ bool cg_var_default_value(char *ID_premenna, Data_type typ)
     return true;
 }
 
-static bool cg_label(char *ID_funkcie, int label_i, int label_d)
+static bool cg_label(char *ID_funkcie, int uni_a, int uni_b)
 {
-    ADD_CODE("LABEL $"); ADD_CODE(ID_funkcie); ADD_CODE("%"); ADD_CODE_INT(label_d);
-    ADD_CODE("%"); ADD_CODE_INT(label_i); ADD_CODE("\n");
+    ADD_CODE("LABEL $"); ADD_CODE(ID_funkcie); ADD_CODE("%"); ADD_CODE_INT(uni_a);
+    ADD_CODE("%"); ADD_CODE_INT(uni_b); ADD_CODE("\n");
     return true;
 }
 
-bool cg_if_head()
-{
-    ADD_INST("\n# If Then");
-    return true;
-}
-
-
-bool cg_if_start(char *ID_funkcie, int label_i, int label_d)
-{
-    ADD_CODE("JUMPIFEQ $"); ADD_CODE(ID_funkcie); ADD_CODE("%"); ADD_CODE_INT(label_d);
-    ADD_CODE("%"); ADD_CODE_INT(label_i); ADD_CODE(" GF@%exp_result bool@false\n");
-    return true;
-}
-
-
-bool cg_if_else_part(char *ID_funkcie, int label_i, int label_d)
-{
-    ADD_CODE("JUMP $"); ADD_CODE(ID_funkcie); ADD_CODE("%"); ADD_CODE_INT(label_d);
-    ADD_CODE("%"); ADD_CODE_INT(label_index + 1); ADD_CODE("\n");
-    ADD_INST("# Else");
-    if (!generate_label(ID_funkcie, label_i, label_d)) return false;
-    return true;
-}
-
-
-bool cg_if_end(char *ID_funkcie, int label_i, int label_d)
-{
-    ADD_INST("# End If");
-    if (!generate_label(ID_funkcie, label_i, label_d)) return false;
-    return true;
-}
-
-
-bool cg_while_head(char *ID_funkcie, int label_i, int label_d)
+bool cg_while_start(int uni_a, int uni_b)
 {
     ADD_INST("\n# Beginning of while");
-    if (!cg_label(ID_funkcie, label_i, label_d)) return false;
+    if (!cg_label("WHILE", uni_a, uni_b)) return false;
+
+    ADD_CODE("JUMPIFEQ $"); ADD_CODE("WHILE"); ADD_CODE("%"); ADD_CODE_INT(uni_b);
+    ADD_CODE("%"); ADD_CODE_INT(uni_a); ADD_CODE(" GF@%exp_result bool@false"); ADD_CODE("\n");
     return true;
 }
 
 
-bool cg_while_start(char *ID_funkcie, int label_i, int label_d)
+bool cg_while_end(int uni_a, int uni_b)
 {
-    ADD_CODE("JUMPIFEQ $"); ADD_CODE(ID_funkcie); ADD_CODE("%"); ADD_CODE_INT(label_d);
-    ADD_CODE("%"); ADD_CODE_INT(label_i); ADD_CODE(" GF@%exp_result bool@false"); ADD_CODE("\n");
-
-    return true;
-}
-
-
-bool cg_while_end(char *ID_funkcie, int label_i, int label_d)
-{
-    ADD_CODE("JUMP $"); ADD_CODE(ID_funkcie); ADD_CODE("%"); ADD_CODE_INT(label_d);
-    ADD_CODE("%"); ADD_CODE_INT(label_i - 1); ADD_CODE("\n");
+    ADD_CODE("JUMP $"); ADD_CODE("WHILE"); ADD_CODE("%"); ADD_CODE_INT(uni_a);
+    ADD_CODE("%"); ADD_CODE_INT(uni_b); ADD_CODE("\n");
     ADD_INST("# End of while");
-    if (!cg_label(ID_funkcie, label_i, label_d)) return false;
+
+    if (!cg_label("WHILE", uni_b, uni_a)) return false;
     return true;
+}
+
+
+bool cg_if_start(int uni_a, int uni_b)
+{
+    ADD_INST("\n# Begin of If Then");
+    ADD_CODE("JUMPIFEQ $"); ADD_CODE("IF"); ADD_CODE("%"); ADD_CODE_INT(uni_a);
+    ADD_CODE("%"); ADD_CODE_INT(uni_b); ADD_CODE(" GF@%exp_result bool@false\n");
+    return true;
+}
+
+
+bool cg_if_else_part(int uni_a, int uni_b)
+{
+    ADD_CODE("JUMP $"); ADD_CODE("IF"); ADD_CODE("%"); ADD_CODE_INT(uni_b);
+    ADD_CODE("%"); ADD_CODE_INT(uni_a); ADD_CODE("\n");
+    ADD_INST("# Else part");
+    if (!generate_label("IF", uni_a, uni_b)) return false;
+    return true;
+}
+
+
+bool cg_if_end(int uni_a, int uni_b)
+{
+    ADD_INST("# End If");
+    if (!generate_label("IF", uni_b, uni_a)) return false;
+    return true;
+}
+
+bool cg_print(char *hodnota, Data_type typ)
+{
+    ADD_INST("\n# Function PRINT");
+    ADD_CODE("MOVE LF@ "); ADD_CODE("pro_input"); ADD_CODE(" ");
+    ADD_CODE(typ); ADD_CODE("@"); ADD_CODE(hodnota);
+    cg_fun_call("function_print");
 }
