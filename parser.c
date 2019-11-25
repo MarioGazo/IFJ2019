@@ -70,10 +70,13 @@ int analyse(FILE* file) {
     in = file;
 
     // TODO gen main scope start
+    cg_main_scope_start();
     // TODO gen built in functions
+    cg_define_b_i_functions();
     // Spustenie analýzi
     errorCode = program();
     // TODO gen main scope end
+    cg_main_scope_end();
 
     // zistujeme ci boli vsetky volane funkcie definovane
     for (int i = 0; i < 236897; i++) {
@@ -164,8 +167,11 @@ int defFunction() {
     GET_AND_CHECK_TOKEN(Identifier);
 
     // TODO gen function start
+    cg_fun_start(dynamicStringGetText(actualToken.tokenAttribute));
     // TODO gen function retval
+    cg_fun_retval();
     // TODO gen function frame
+    cg_fun_before_params();
     funcRecord.key = actualToken.tokenAttribute.word;
     funcRecord.type = TypeFunction;
     funcRecord.defined = TRUE;
@@ -203,6 +209,7 @@ int defFunction() {
     TInsert(GlobalTable, funcRecord);
 
     // TODO gen function end
+    cg_fun_end(funcRecord.key);
     inFunc = false;
     return PROG_OK;
 }
@@ -248,6 +255,7 @@ int commandList() {
         PRINT_DEBUG("\tWhile\n");
 
         // TODO while loop head
+        cg_while_head()
         // TODO while loop start
         if ((errorCode = expression(in,&indentationStack, NULL)) != PROG_OK) return errorCode;  // while <expr>
 
