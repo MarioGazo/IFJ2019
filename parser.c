@@ -40,6 +40,8 @@
 token_t actualToken;
 FILE* in;
 dynamic_stack_t indentationStack;
+unsigned long uni_a = 0;
+unsigned long uni_b = 42;
 // Kód chybového hlásenia prekladača
 int errorCode;
 // Tabuľka symbolov
@@ -255,8 +257,10 @@ int commandList() {
         PRINT_DEBUG("\tWhile\n");
 
         // TODO while loop head
-        cg_while_head()
         // TODO while loop start
+
+        cg_while_start(uni_a, uni_b);
+
         if ((errorCode = expression(in,&indentationStack, NULL)) != PROG_OK) return errorCode;  // while <expr>
 
         if (actualToken.tokenType != Colon)                     // while <expr>:
@@ -267,6 +271,10 @@ int commandList() {
         if ((errorCode = commandList()) != PROG_OK) return errorCode;
 
         // TODO while loop end
+        cg_while_end(uni_a, uni_b);
+        uni_a += 1;
+        uni_b += 1;
+
         return (errorCode = commandListContOrEnd());
     // IF & ELSE
     // Vzor:  if (výraz): INDENT
@@ -280,6 +288,8 @@ int commandList() {
 
         // TODO if & else head
         // TODO if & else start
+        cg_if_start(uni_a, uni_b);
+
         if ((errorCode = expression(in,&indentationStack, NULL)) != PROG_OK) return errorCode;  // if <expr>
 
         if (actualToken.tokenType != Colon)                     // if <expr>:
@@ -291,6 +301,8 @@ int commandList() {
 
 
         // TODO else part
+        cg_if_else_part(uni_a, uni_b);
+
         GET_AND_CHECK_TOKEN(Keyword);
         if (actualToken.tokenAttribute.intValue != keywordElse) // if <expr>:
             return SYNTAX_ERR;                                  // __command_list
@@ -301,6 +313,10 @@ int commandList() {
         if ((errorCode = commandList()) != PROG_OK) return errorCode;
 
         // TODO if & else end
+        cg_if_end(uni_a, uni_b);
+        uni_a += 1;
+        uni_b += 1;
+
         return (errorCode = commandListContOrEnd());
     // PRINT
     } else if (actualToken.tokenType == Keyword &&
@@ -325,13 +341,18 @@ int commandList() {
         if ((errorCode = expression(in,&indentationStack, &actualToken)) != 0) return errorCode;     // value != None
 
         // TODO RETURN TMP -> tmp vysledok
+        cg_fun_return();
 
         return (errorCode = commandListContOrEnd());
     // PASS
     } else if (actualToken.tokenType == Keyword &&
                actualToken.tokenAttribute.intValue == keywordPass) {
         PRINT_DEBUG("\tPass\n");
-        // TODO PASS
+        // A: TODO PASS
+        // Q: Čo sa tú ma vypisovať?
+        // A: Asi nič.
+        // Q: A sme si istý?
+        // A: Nie.
         return (errorCode = commandListContOrEnd());
     // ID
     } else if (actualToken.tokenType == Identifier) {   // abc....abc = <value> / abc()
@@ -364,10 +385,12 @@ int commandList() {
             if ((funcRec = (TSearch(GlobalTable,varRecord.key))) != NULL) {
                 if (funcRec->value.intValue != varRecord.value.intValue)
                     return SEMPARAM_ERR;
-                // TODO function call
             } else {
+                varRecord.type = TypeFunction;
+                varRecord.defined = FALSE;
                 TInsert(GlobalTable,varRecord);
             }
+            cg_fun_call(funcRec->key);
             return (errorCode = commandListContOrEnd());
         } else {
             return SYNTAX_ERR;
@@ -383,16 +406,22 @@ int term() {
 
     if (actualToken.tokenType == DocumentString) {
         // TODO WRITE DocStr
+        cg_print(actualToken.tokenAttribute.word, "string");
     } else if (actualToken.tokenType == Identifier) {
         // TODO WRITE id value
+        cg_print(actualToken.tokenAttribute.word, "string");
     } else if (actualToken.tokenType == String) {
         // TODO WRITE str
+        cg_print(actualToken.tokenAttribute.word, "string");
     } else if (actualToken.tokenType == Integer) {
         // TODO WRITE int
+        cg_print(actualToken.tokenAttribute.intValue, "int");
     } else if (actualToken.tokenType == Double) {
         // TODO WRITE double
+        cg_print(actualToken.tokenAttribute.doubleValue, "double");
     } else if (actualToken.tokenType == Keyword && actualToken.tokenAttribute.intValue == keywordNone) {
         // TODO WRITE None
+        cg_print("None", "string");
     } else {
         return SYNTAX_ERR;
     }
@@ -401,9 +430,11 @@ int term() {
 
     if (actualToken.tokenType == RightBracket) {
         // TODO WRITE '\n' (\010)
+        cg_print("\n", "string");
         return PROG_OK;
     } else if (actualToken.tokenType == Comma) {
         // TODO WRITE _ <- medzera (\032)
+        cg_print(" ", "string");
         return (errorCode = term());
     } else {
         return SYNTAX_ERR;

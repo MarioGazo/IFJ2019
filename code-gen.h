@@ -42,26 +42,19 @@ bool cg_fun_convert_passed_param(Data_type z, Data_type do_, int index);
 //todo komentár
 bool cg_fun_pass_param(Token token, int index);
 //todo komentár
-bool cg_fun_return(char *id_funkcie);
+bool cg_fun_return();
 //todo komentár
 bool cg_var_declare(char *ID_premenna);
 //todo komentár
 bool cg_var_default_value(char *ID_premenna, Data_type typ);
 //todo komentár
-static bool cg_label(char *ID_funkcie, int label_i, int label_d);
-//todo komentár
-bool cg_if_head();
-//todo komentár
-bool cg_if_start(char *ID_funkcie, int label_i, int label_d);
-//todo komentár
-bool cg_if_else_part(char *ID_funkcie, int label_i, int label_d);
-//todo komentár
-bool cg_if_end(char *ID_funkcie, int label_i, int label_d);
-//todo komentár
-bool cg_while_head(char *ID_funkcie, int label_i, int label_d);
-//todo komentár
-bool cg_while_start(char *ID_funkcie, int label_i, int label_d);
-//todo komentár
-bool cg_while_end(char *ID_funkcie, int label_i, int label_d);
+static bool cg_label(char *ID_funkcie, int uni_a, int uni_b);
+
+bool cg_while_start(int uni_a, int uni_b);
+bool cg_while_end(int uni_a, int uni_b);
+bool cg_if_start(int uni_a, int uni_b);
+bool cg_if_else_part(int uni_a, int uni_b);
+bool cg_if_end(int uni_a, int uni_b);
+bool cg_print(char *hodnota, Data_type typ);
 
 #endif //VUT_FIT_IFJ2019_CODE_GEN_H
