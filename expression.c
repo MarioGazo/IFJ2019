@@ -11,6 +11,7 @@ FILE* in;
 dynamic_stack_t* iStack;
 //variables to deal with the getToken function
 int errN = 0;
+int zeroDivDanger = 0;
 char LL[7][7] = {
 // +|- *|/|// (    )    i    EV   $
   {'>', '<', '<', '>', '<', '>', '>'}, //+
@@ -182,7 +183,7 @@ token_t * getNewToken(){
 int expSwitch( dynamic_symbol_stack_t * stack, token_t ** t, int * depth, char symbol){
   token_t * bufferT = NULL;
   token_t * token  = *t;
-  parserState_t exp[RULEWIDTH];
+  token_t * exp[RULEWIDTH];
   switch(symbol){
      case '=':
 
@@ -200,7 +201,7 @@ int expSwitch( dynamic_symbol_stack_t * stack, token_t ** t, int * depth, char s
 
        //clear the comparison array
        for(int i = 0; i<RULEWIDTH; i++){
-         exp[i] = (parserState_t) NULL;
+         exp[i] = (token_t *) NULL;
        }
        int index = 0;
        int stop = 0;
@@ -208,8 +209,7 @@ int expSwitch( dynamic_symbol_stack_t * stack, token_t ** t, int * depth, char s
        do{
          bufferT = sym_stackPop(stack);
          if(bufferT->tokenType != 100){
-           exp[index] = bufferT->tokenType;
-           free(bufferT);
+           exp[index] = bufferT;
            index++;
          }else{
            free(bufferT);
@@ -217,13 +217,15 @@ int expSwitch( dynamic_symbol_stack_t * stack, token_t ** t, int * depth, char s
          }
 
        }while(!stop);
+
        //try to find a match
        int found = -1;
        printf("Match: ");
        for(int i = 0; i<RULEHEIGHT; i++){//go through all the rules and compare their token types
          int match = 0;
          for(int o = 0; o<RULEWIDTH; o++){
-           if(rules[i][o] == exp[o]){
+                                                                                        //sadly they are not the same kind of NULL
+           if((exp[o] != NULL &&  rules[i][o] == exp[o]->tokenType) || (exp[o] == NULL &&  rules[i][o] == (parserState_t) NULL) ){
              match ++; //each time a match is found, increase the match value by 1. If after this row match = RULEWIDTH, it means that the rule has been found and that it is this row
              printf("%d", i);
            }
@@ -234,13 +236,26 @@ int expSwitch( dynamic_symbol_stack_t * stack, token_t ** t, int * depth, char s
          }
        }
        printf("\n");
+
+                                          //to prevent attempting to reach the tokenAttribute of a NULL token. Hopefully if it finds the token to be NULL it wont carry on with the if statement
+       if((found == 2 || found == 3) && exp[2] != NULL && (exp[2]->tokenAttribute.intValue == 0 || exp[2]->tokenAttribute.doubleValue == 0.0 )){ //Zero div check
+        //Rules involving DIVISION                                                        if they try to divide by a string its an error regardless so its not like its a wrong way to test for zero
+
+         printf("%s\n", "DIVISION BY ZERO (or a string) ERROR");
+         return DIVZERO_ERR;
+       }
        if(found>-1){
-         sym_stackPush(stack, new_token(99)); //All rules are assumed to have a left side E, because they have. (E = 99)
+         sym_stackPush(stack, new_token(99)); //All rules are assumed to have a left side E, because they do. (E = 99)
          //TODO: printing out the expressions in target language
        }else{
 
          printf("%s\n", "SYNTAX ERROR RULE NOT FOUND");
          return SYNTAX_ERR;
+       }
+       for(int i = 0; i<3; i++){
+         if(exp[i]!=NULL){
+           free(exp[i]); //free the memory
+         }
        }
        break;
      case ' ': //Empty LL cell, meaning a syntax error
