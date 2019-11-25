@@ -182,7 +182,7 @@
     "\n POPFRAME"                                \
     "\n RETURN"
 
-static bool cg-define_b_i_functions
+static bool cg_define_b_i_functions()
 {
         ADD_INSTRUCTION(FUNCTION_INPUTS);
         ADD_INSTRUCTION(FUNCTION_INPUTI);
@@ -194,7 +194,7 @@ static bool cg-define_b_i_functions
         ADD_INSTRUCTION(FUNCTION_CHR);
 }
 
-bool generate_main_scope_start()
+bool cg_main_scope_start()
 {
     ADD_INSTRUCTION("\n# Zaciatok main");
     ADD_INSTRUCTION("LABEL $$main");
@@ -203,7 +203,7 @@ bool generate_main_scope_start()
     return true;
 }
 
-bool generate_main_scope_end()
+bool cg_main_scope_end()
 {
     ADD_INSTRUCTION("# Koniec main");
     ADD_INSTRUCTION("POPFRAME");
@@ -211,7 +211,7 @@ bool generate_main_scope_end()
     return true;
 }
 
-bool generate_function_start(char *id_funkcie)
+bool cg_fun_start(char *id_funkcie)
 {
     ADD_CODE("\n# Začiatok funkcie "); ADD_CODE(id_funkcie); ADD_CODE("\n");
     ADD_CODE("LABEL $"); ADD_CODE(id_funkcie); ADD_CODE("\n");
@@ -219,7 +219,7 @@ bool generate_function_start(char *id_funkcie)
     return true;
 }
 
-bool generate_function_end(char *id_funkcie)
+bool cg_fun_end(char *id_funkcie)
 {
     ADD_CODE("# Koniec funkcie "); ADD_CODE(id_funkcie); ADD_CODE("\n");
     ADD_CODE("LABEL $"); ADD_CODE(id_funkcie); ADD_CODE("%return\n");
@@ -228,7 +228,7 @@ bool generate_function_end(char *id_funkcie)
     return true;
 }
 
-static bool gen_default_value_type(TYP_datatyp typ)
+static bool cg_default_value_type(TYP_datatyp typ)
 {
     switch (typ)
     {
@@ -254,23 +254,23 @@ static bool gen_default_value_type(TYP_datatyp typ)
 }
 
 
-bool generate_function_retval(Data_type typ)
+bool cg_fun_retval(Data_type typ)
 {
     ADD_INSTRUCTION("DEFVAR LF@%navratova_hodnota");
     ADD_CODE("MOVE LF@%navratova_hodnota");
-    if (!gen_default_value_type(typ)) return false;
+    if (!cg_default_value_type(typ)) return false;
     ADD_CODE("\n");
     return true;
 }
 
-bool generate_function_call(char *id_funkcie)
+bool cg_fun_call(char *id_funkcie)
 {
     ADD_CODE("CALL $"); ADD_CODE(id_funkcie); ADD_CODE("\n");
 
     return true;
 }
 
-bool generate_function_retval_assign(char *ID_val_l, Data_type typ_l, Data_type navratovy_typ)
+bool cg_fun_retval_assign(char *ID_val_l, Data_type typ_l, Data_type navratovy_typ)
 {
     if (typ_l == TYPE_DOUBLE && navratovy_typ == TYPE_INT)
     {
@@ -284,7 +284,7 @@ bool generate_function_retval_assign(char *ID_val_l, Data_type typ_l, Data_type 
     return true;
 }
 
-bool generate_function_param_declare(char *id_parametra, int index)
+bool cg_fun_param_declare(char *id_parametra, int index)
 {
     ADD_CODE("DEFVAR LF@"); ADD_CODE(id_parametra); ADD_CODE("\n");
     ADD_CODE("MOVE LF@"); ADD_CODE(id_parametra); ADD_CODE(" LF@%"); ADD_CODE_INT(index); ADD_CODE("\n");
@@ -292,71 +292,49 @@ bool generate_function_param_declare(char *id_parametra, int index)
     return true;
 }
 
-bool generate_function_before_params()
+bool cg_fun_before_params()
 {
     ADD_INSTRUCTION("CREATEFRAME");
     return true;
 }
 
-bool generate_function_convert_passed_param(Data_type z, Data_type do_, int index)
-{
-    if (z == TYPE_INT && do_ == TYPE_DOUBLE)
-    {
-        ADD_CODE("INT2FLOAT TF@%"); ADD_CODE_INT(index); ADD_CODE(" TF@%"); ADD_CODE_INT(index); ADD_CODE("\n");
-    }
-    else if (z == TYPE_DOUBLE && do_ == TYPE_INT)
-    {
-        ADD_CODE("FLOAT2R2EINT TF@%"); ADD_CODE_INT(index); ADD_CODE(" TF@%"); ADD_CODE_INT(index); ADD_CODE("\n");
-    }
-    return true;
-}
-
-bool generate_function_pass_param(Token token, int index)
-{
-    ADD_CODE("DEFVAR TF@%"); ADD_CODE_INT(index); ADD_CODE("\n");
-    ADD_CODE("MOVE TF@%"); ADD_CODE_INT(index); ADD_CODE(" ");
-    if (!generate_term_value(token)) return false;
-    ADD_CODE("\n");
-    return true;
-}
-
-bool generate_function_return(char *id_funkcie)
+bool cg_fun_return(char *id_funkcie)
 {
     ADD_INSTRUCTION("MOVE LF@%navratova_hodnota GF@%vysledok_vyrazu");
     ADD_CODE("JUMP $"); ADD_CODE(function_id); ADD_CODE("%return\n");
     return true;
 }
 
-bool generate_var_declare(char *ID_premenna)
+bool cg_var_declare(char *ID_premenna)
 {
     ADD_CODE("DEFVAR LF@"); ADD_CODE(ID_premenna); ADD_CODE("\n");
     return true;
 }
 
-bool generate_var_default_value(char *ID_premenna, Data_type typ)
+bool cg_var_default_value(char *ID_premenna, Data_type typ)
 {
     ADD_CODE("MOVE LF@ "); ADD_CODE(ID_premenna); ADD_CODE(" ");
-    if (!generate_default_var_value(typ)) return false;
+    if (!cg_default_value_type(typ)) return false;
     ADD_CODE("\n");
 
     return true;
 }
 
-static bool generate_label(char *ID_funkcie, int label_i, int label_d)
+static bool cg_label(char *ID_funkcie, int label_i, int label_d)
 {
     ADD_CODE("LABEL $"); ADD_CODE(ID_funkcie); ADD_CODE("%"); ADD_CODE_INT(label_d);
     ADD_CODE("%"); ADD_CODE_INT(label_i); ADD_CODE("\n");
     return true;
 }
 
-bool generate_if_head()
+bool cg_if_head()
 {
     ADD_INST("\n# If Then");
     return true;
 }
 
 
-bool generate_if_start(char *ID_funkcie, int label_i, int label_d)
+bool cg_if_start(char *ID_funkcie, int label_i, int label_d)
 {
     ADD_CODE("JUMPIFEQ $"); ADD_CODE(ID_funkcie); ADD_CODE("%"); ADD_CODE_INT(label_d);
     ADD_CODE("%"); ADD_CODE_INT(label_i); ADD_CODE(" GF@%exp_result bool@false\n");
@@ -364,7 +342,7 @@ bool generate_if_start(char *ID_funkcie, int label_i, int label_d)
 }
 
 
-bool generate_if_else_part(char *ID_funkcie, int label_i, int label_d)
+bool cg_if_else_part(char *ID_funkcie, int label_i, int label_d)
 {
     ADD_CODE("JUMP $"); ADD_CODE(ID_funkcie); ADD_CODE("%"); ADD_CODE_INT(label_d);
     ADD_CODE("%"); ADD_CODE_INT(label_index + 1); ADD_CODE("\n");
@@ -374,7 +352,7 @@ bool generate_if_else_part(char *ID_funkcie, int label_i, int label_d)
 }
 
 
-bool generate_if_end(char *ID_funkcie, int label_i, int label_d)
+bool cg_if_end(char *ID_funkcie, int label_i, int label_d)
 {
     ADD_INST("# End If");
     if (!generate_label(ID_funkcie, label_i, label_d)) return false;
@@ -382,15 +360,15 @@ bool generate_if_end(char *ID_funkcie, int label_i, int label_d)
 }
 
 
-bool generate_while_head(char *ID_funkcie, int label_i, int label_d)
+bool cg_while_head(char *ID_funkcie, int label_i, int label_d)
 {
-    ADD_INST("\n# Do While");
-    if (!generate_label(function_id, label_i, label_d)) return false;
+    ADD_INST("\n# Beginning of while");
+    if (!cg_label(ID_funkcie, label_i, label_d)) return false;
     return true;
 }
 
 
-bool generate_while_start(char *ID_funkcie, int label_i, int label_d)
+bool cg_while_start(char *ID_funkcie, int label_i, int label_d)
 {
     ADD_CODE("JUMPIFEQ $"); ADD_CODE(ID_funkcie); ADD_CODE("%"); ADD_CODE_INT(label_d);
     ADD_CODE("%"); ADD_CODE_INT(label_i); ADD_CODE(" GF@%exp_result bool@false"); ADD_CODE("\n");
@@ -399,11 +377,11 @@ bool generate_while_start(char *ID_funkcie, int label_i, int label_d)
 }
 
 
-bool generate_while_end(char *ID_funkcie, int label_i, int label_d)
+bool cg_while_end(char *ID_funkcie, int label_i, int label_d)
 {
     ADD_CODE("JUMP $"); ADD_CODE(ID_funkcie); ADD_CODE("%"); ADD_CODE_INT(label_d);
     ADD_CODE("%"); ADD_CODE_INT(label_i - 1); ADD_CODE("\n");
-    ADD_INST("# Loop");
-    if (!generate_label(ID_funkcie, label_i, label_d)) return false;
+    ADD_INST("# End of while");
+    if (!cg_label(ID_funkcie, label_i, label_d)) return false;
     return true;
 }
