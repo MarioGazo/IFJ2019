@@ -12,7 +12,7 @@
 #include "error.h"
 #include "expression.h"
 
-#define DEBUG 1
+#define DEBUG 1 // TODO pred odovzdanim nastavit na 0
 
 #define TRUE 1
 #define FALSE 0
@@ -69,8 +69,11 @@ int analyse(FILE* file) {
     // Vstupné dáta zo STDIN
     in = file;
 
+    // TODO gen main scope start
+    // TODO gen built in functions
     // Spustenie analýzi
     errorCode = program();
+    // TODO gen main scope end
 
     // zistujeme ci boli vsetky volane funkcie definovane
     for (int i = 0; i < 236897; i++) {
@@ -96,7 +99,7 @@ int analyse(FILE* file) {
             return INTERNAL_ERR;
         }
 
-        fprintf(output, "%s", code.text); // TODO kontrola vypisu
+        fprintf(output, "%s", code.text);
         dynamicStringFree(&code);
         fclose(output);
 
@@ -160,6 +163,9 @@ int defFunction() {
     // DEDENT
     GET_AND_CHECK_TOKEN(Identifier);
 
+    // TODO gen function start
+    // TODO gen function retval
+    // TODO gen function frame
     funcRecord.key = actualToken.tokenAttribute.word;
     funcRecord.type = TypeFunction;
     funcRecord.defined = TRUE;
@@ -196,6 +202,7 @@ int defFunction() {
     // Uložíme funkciu do HashTable
     TInsert(GlobalTable, funcRecord);
 
+    // TODO gen function end
     inFunc = false;
     return PROG_OK;
 }
@@ -212,6 +219,7 @@ int param(hTabItem_t* funcRecord) {
     } else if (actualToken.tokenType == Identifier) {
         funcRecord->value.intValue++;
 
+        // TODO gen function param
         GET_TOKEN;
 
         // Syntaktická kontrola jednotlivých parametrov
@@ -239,6 +247,8 @@ int commandList() {
         actualToken.tokenAttribute.intValue == keywordWhile) {  // while
         PRINT_DEBUG("\tWhile\n");
 
+        // TODO while loop head
+        // TODO while loop start
         if ((errorCode = expression(in,&indentationStack, NULL)) != PROG_OK) return errorCode;  // while <expr>
 
         if (actualToken.tokenType != Colon)                     // while <expr>:
@@ -248,6 +258,7 @@ int commandList() {
         // __command_list
         if ((errorCode = commandList()) != PROG_OK) return errorCode;
 
+        // TODO while loop end
         return (errorCode = commandListContOrEnd());
     // IF & ELSE
     // Vzor:  if (výraz): INDENT
@@ -259,6 +270,8 @@ int commandList() {
                actualToken.tokenAttribute.intValue == keywordIf) {
         PRINT_DEBUG("\tIf & Else\n");
 
+        // TODO if & else head
+        // TODO if & else start
         if ((errorCode = expression(in,&indentationStack, NULL)) != PROG_OK) return errorCode;  // if <expr>
 
         if (actualToken.tokenType != Colon)                     // if <expr>:
@@ -268,6 +281,8 @@ int commandList() {
                                                                 // __command_list
         if ((errorCode = commandList()) != PROG_OK) return errorCode;
 
+
+        // TODO else part
         GET_AND_CHECK_TOKEN(Keyword);
         if (actualToken.tokenAttribute.intValue != keywordElse) // if <expr>:
             return SYNTAX_ERR;                                  // __command_list
@@ -277,6 +292,7 @@ int commandList() {
 
         if ((errorCode = commandList()) != PROG_OK) return errorCode;
 
+        // TODO if & else end
         return (errorCode = commandListContOrEnd());
     // PRINT
     } else if (actualToken.tokenType == Keyword &&
@@ -300,14 +316,14 @@ int commandList() {
         expr = true;
         if ((errorCode = expression(in,&indentationStack, &actualToken)) != 0) return errorCode;     // value != None
 
-        // RETURN TMP -> tmp vysledok
+        // TODO RETURN TMP -> tmp vysledok
 
         return (errorCode = commandListContOrEnd());
     // PASS
     } else if (actualToken.tokenType == Keyword &&
                actualToken.tokenAttribute.intValue == keywordPass) {
         PRINT_DEBUG("\tPass\n");
-
+        // TODO PASS
         return (errorCode = commandListContOrEnd());
     // ID
     } else if (actualToken.tokenType == Identifier) {   // abc....abc = <value> / abc()
@@ -322,6 +338,7 @@ int commandList() {
 
         if (actualToken.tokenType == Assign) {
 
+            // TODO defvar var
             if ((errorCode = assign(&varRecord)) != PROG_OK) return errorCode;
             // Uloženie premennej do HashTable
             if (inFunc) {
@@ -331,8 +348,18 @@ int commandList() {
             }
 
             return (errorCode = commandListContOrEnd());
-        } else if (actualToken.tokenType == LeftBracket) { // TODO kontrola poctu parametrov, pripade pridanie do hTab
+        } else if (actualToken.tokenType == LeftBracket) {
+
             param(&varRecord);
+            // Ide o funkciu, ak je definovaná, presvedčíme sa že sedí počet parametrov, inak ju pridáme do hTab
+            hTabItem_t* funcRec = NULL;
+            if ((funcRec = (TSearch(GlobalTable,varRecord.key))) != NULL) {
+                if (funcRec->value.intValue != varRecord.value.intValue)
+                    return SEMPARAM_ERR;
+                // TODO function call
+            } else {
+                TInsert(GlobalTable,varRecord);
+            }
             return (errorCode = commandListContOrEnd());
         } else {
             return SYNTAX_ERR;
@@ -347,17 +374,17 @@ int term() {
     GET_TOKEN;
 
     if (actualToken.tokenType == DocumentString) {
-        // WRITE DocStr
+        // TODO WRITE DocStr
     } else if (actualToken.tokenType == Identifier) {
-        // WRITE id value
+        // TODO WRITE id value
     } else if (actualToken.tokenType == String) {
-        // WRITE str
+        // TODO WRITE str
     } else if (actualToken.tokenType == Integer) {
-        // WRITE int
+        // TODO WRITE int
     } else if (actualToken.tokenType == Double) {
-        // WRITE double
+        // TODO WRITE double
     } else if (actualToken.tokenType == Keyword && actualToken.tokenAttribute.intValue == keywordNone) {
-        // WRITE None
+        // TODO WRITE None
     } else {
         return SYNTAX_ERR;
     }
@@ -365,10 +392,10 @@ int term() {
     GET_TOKEN;
 
     if (actualToken.tokenType == RightBracket) {
-        // WRITE '\n'
+        // TODO WRITE '\n' (\010)
         return PROG_OK;
     } else if (actualToken.tokenType == Comma) {
-        // WRITE _ <- medzera
+        // TODO WRITE _ <- medzera (\032)
         return (errorCode = term());
     } else {
         return SYNTAX_ERR;
@@ -402,16 +429,15 @@ int assign(hTabItem_t* varRecord) {
 
             if ((controlRecord = TSearch(GlobalTable, funcRecord.key)) != NULL) {
                 // Funkcia uz bola definovana, skontrolujeme, ci ma rovnaky pocet parametrov
-                if (controlRecord->value.intValue != funcRecord.value.intValue) {
+                if (controlRecord->value.intValue != funcRecord.value.intValue)
                     return SEMPARAM_ERR;
-                }
             } else {
                 // Uložíme funkciu do HashTable a budeme neskor zistovat jej definiciu
                 TInsert(GlobalTable, funcRecord);
             }
 
-            // JUMP <funcId>
-            // MOVE ID RetVal
+            // TODO function call
+            // TODO assign return value
         } else {
             // Volanie precedentnej analyzi
             // Riesi sa vyraz, musime odovzdat dva tokeny
@@ -419,7 +445,7 @@ int assign(hTabItem_t* varRecord) {
             expr = true;
             if ((errorCode = expression(in,&indentationStack, NULL)) != 0) return  errorCode;
 
-            // MOVE var TMP -> tmp vysledok
+            // TODO MOVE var TMP -> tmp vysledok
             return PROG_OK;
         }
         return PROG_OK;
@@ -430,7 +456,7 @@ int assign(hTabItem_t* varRecord) {
         expr = true;
         if ((errorCode = expression(in,&indentationStack, &actualToken)) != 0) return  errorCode;
 
-        // MOVE var TMP -> tmp vysledok
+        // TODO MOVE var TMP -> tmp vysledok
         return PROG_OK;
     // INPUTF()
     } else if (actualToken.tokenType == Keyword &&
@@ -440,7 +466,7 @@ int assign(hTabItem_t* varRecord) {
         GET_AND_CHECK_TOKEN(LeftBracket);
         GET_AND_CHECK_TOKEN(RightBracket);
 
-        // READ var float
+        // TODO READ var float
         varRecord->type = TypeDouble;
         return PROG_OK;
     // INPUTS()
@@ -451,7 +477,7 @@ int assign(hTabItem_t* varRecord) {
         GET_AND_CHECK_TOKEN(LeftBracket);
         GET_AND_CHECK_TOKEN(RightBracket);
 
-        // READ var string
+        // TODO READ var string
         varRecord->type = TypeString;
         return PROG_OK;
     // INPUTI()
@@ -462,7 +488,7 @@ int assign(hTabItem_t* varRecord) {
         GET_AND_CHECK_TOKEN(LeftBracket);
         GET_AND_CHECK_TOKEN(RightBracket);
 
-        // READ var int
+        // TODO READ var int
         varRecord->type = TypeInteger;
         return PROG_OK;
     // LEN(s)
@@ -472,9 +498,11 @@ int assign(hTabItem_t* varRecord) {
 
         GET_AND_CHECK_TOKEN(LeftBracket);
         GET_AND_CHECK_TOKEN(String);
-        // MOVE var STRLEN(s)
+        // TODO MOVE var STRLEN(s)
         GET_AND_CHECK_TOKEN(RightBracket);
 
+        // TODO function call len
+        // TODO function retval assign to var
         varRecord->type = TypeInteger;
         return PROG_OK;
     // SUBSTR(s,i,n)
@@ -484,17 +512,17 @@ int assign(hTabItem_t* varRecord) {
 
         GET_AND_CHECK_TOKEN(LeftBracket);
         GET_AND_CHECK_TOKEN(String);
-        // MOVE str String
+        // TODO MOVE str String
         GET_AND_CHECK_TOKEN(Comma);
         GET_AND_CHECK_TOKEN(Integer);
-        // MOVE int Int
+        // TODO MOVE int Int
         GET_AND_CHECK_TOKEN(Comma);
         GET_AND_CHECK_TOKEN(Integer);
-        // MOVE int Int
+        // TODO MOVE int Int
         GET_AND_CHECK_TOKEN(RightBracket);
 
-        // MOVE VAR s[i:n] (string)
-
+        // TODO function call substr
+        // TODO function retval assign to var
         varRecord->type = TypeString;
         return PROG_OK;
     // ORD(s,i)
@@ -504,13 +532,15 @@ int assign(hTabItem_t* varRecord) {
 
         GET_AND_CHECK_TOKEN(LeftBracket);
         GET_AND_CHECK_TOKEN(String);
-        // MOVE str String
+        // TODO MOVE str String
         GET_AND_CHECK_TOKEN(Comma);
         GET_AND_CHECK_TOKEN(Integer);
-        // MOVE int Int
+        // TODO MOVE int Int
         GET_AND_CHECK_TOKEN(RightBracket);
 
-        // MOVE var 's[i]' (int)
+        // TODO function call ord
+        // TODO function retval assign to var
+
         varRecord->type = TypeInteger;
         return PROG_OK;
     // CHR(i)
@@ -521,9 +551,11 @@ int assign(hTabItem_t* varRecord) {
         GET_AND_CHECK_TOKEN(LeftBracket);
         GET_AND_CHECK_TOKEN(Integer);
 
-        // MOVE str 'Int'
+        // TODO MOVE str 'Int'
         GET_AND_CHECK_TOKEN(RightBracket);
 
+        // TODO function call chr
+        // TODO function retval assign to var
         varRecord->type = TypeString;
         return PROG_OK;
     // ERROR
@@ -533,6 +565,7 @@ int assign(hTabItem_t* varRecord) {
 }
 
 int commandListContOrEnd() {
+    // Tu sa nič negeneruje
     PRINT_DEBUG("\tAnother command?\n");
 
     // ak bol priradeny vyraz terminalnym znakom bol bud EOL alebo Dedent
