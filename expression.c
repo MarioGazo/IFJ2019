@@ -238,7 +238,7 @@ int expSwitch( dynamic_symbol_stack_t * stack, token_t ** t, int * depth, char s
        printf("\n");
 
                                           //to prevent attempting to reach the tokenAttribute of a NULL token. Hopefully if it finds the token to be NULL it wont carry on with the if statement
-       if((found == 2 || found == 3) && exp[2] != NULL && (exp[2]->tokenAttribute.intValue == 0 || exp[2]->tokenAttribute.doubleValue == 0.0 )){ //Zero div check
+       if((found == 2 || found == 3) && exp[2] != NULL && (exp[2]->tokenAttribute.intValue == 0 && exp[2]->tokenAttribute.doubleValue == 0.0 )){ //Zero div check
         //Rules involving DIVISION                                                        if they try to divide by a string its an error regardless so its not like its a wrong way to test for zero
 
          printf("%s\n", "DIVISION BY ZERO (or a string) ERROR");
