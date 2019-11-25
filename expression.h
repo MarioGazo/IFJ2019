@@ -31,7 +31,7 @@ int LLSPos(token_t * token);
 token_t * getNewToken();
 
 //returns the first terminal in the stack
-token_t * terminalTop(dynamic_symbol_stack_t * stack);
+token_t * terminalTop(dynamic_symbol_stack_t * stack, int * depth);
 
 
 //Creates new token with the type as given. Used to create Nonterminal & shift tokens to push;
