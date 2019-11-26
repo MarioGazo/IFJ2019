@@ -71,6 +71,8 @@ int analyse(FILE* file) {
     // Vstupné dáta zo STDIN
     in = file;
 
+    // Nastavime viditelnost vysledneho kodu suboru code-gen.c
+    set_code_output(&code);
     // TODO gen main scope start
     cg_main_scope_start();
     // TODO gen built in functions
@@ -169,7 +171,7 @@ int defFunction() {
     GET_AND_CHECK_TOKEN(Identifier);
 
     // TODO gen function start
-    cg_fun_start(dynamicStringGetText(actualToken.tokenAttribute));
+    cg_fun_start(dynamicStringGetText(actualToken.tokenAttribute.word));
     // TODO gen function retval
     cg_fun_retval();
     // TODO gen function frame
@@ -211,7 +213,7 @@ int defFunction() {
     TInsert(GlobalTable, funcRecord);
 
     // TODO gen function end
-    cg_fun_end(funcRecord.key);
+    cg_fun_end(funcRecord.key.text);
     inFunc = false;
     return PROG_OK;
 }
@@ -390,7 +392,7 @@ int commandList() {
                 varRecord.defined = FALSE;
                 TInsert(GlobalTable,varRecord);
             }
-            cg_fun_call(funcRec->key);
+            cg_fun_call(funcRec->key.text);
             return (errorCode = commandListContOrEnd());
         } else {
             return SYNTAX_ERR;
@@ -406,19 +408,23 @@ int term() {
 
     if (actualToken.tokenType == DocumentString) {
         // TODO WRITE DocStr
-        cg_print(actualToken.tokenAttribute.word, "string");
+        cg_print(actualToken.tokenAttribute.word.text, TypeString);
     } else if (actualToken.tokenType == Identifier) {
         // TODO WRITE id value
-        cg_print(actualToken.tokenAttribute.word, "string");
+        cg_print(actualToken.tokenAttribute.word.text, TypeString);
     } else if (actualToken.tokenType == String) {
         // TODO WRITE str
-        cg_print(actualToken.tokenAttribute.word, "string");
+        cg_print(actualToken.tokenAttribute.word.text, TypeString);
     } else if (actualToken.tokenType == Integer) {
         // TODO WRITE int
-        cg_print(actualToken.tokenAttribute.intValue, "int");
+        char buffer[100];
+        sprintf(buffer,"%d",actualToken.tokenAttribute.intValue);
+        cg_print(buffer, TypeInteger);
     } else if (actualToken.tokenType == Double) {
         // TODO WRITE double
-        cg_print(actualToken.tokenAttribute.doubleValue, "double");
+        char buffer[100];
+        sprintf(buffer,"%a",actualToken.tokenAttribute.doubleValue);
+        cg_print(buffer, TypeDouble);
     } else if (actualToken.tokenType == Keyword && actualToken.tokenAttribute.intValue == keywordNone) {
         // TODO WRITE None
         cg_print("None", "string");

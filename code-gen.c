@@ -7,25 +7,26 @@
 
 #include "code-gen.h"
 #include "dynamic-string.h"
-#include "scanner.h"
 
 #include <limits.h>
 #include <stdio.h>
-#include <ctype.h>
+
+// Global code variable
+dynamicString_t code;
 
 #define MAX_NUMBER_OF_DIGITS UINT_MAX
-#define ADD_INSTRUCTION(_inst)\
+#define ADD_INST(_inst) \
     if(!dynamicStringAddString(&code,(_inst "\n"))) return false
 
-#define ADD_CODE\
+#define ADD_CODE(_code) \
     if(!dynamicStringAddString(&code, (_code))) return false
 
-#define ADD_CODE_INT(_code)\
-    do{
-        char string[MAX_NUMBER_OF_DIGITS];                          \
-        sprintf(string,"%d",_code);                                 \
-        ADD_CODE(string);                                           \
-    } while (1)                                                     \
+#define ADD_CODE_INT(_code) \
+    do {                                        \
+        char string[MAX_NUMBER_OF_DIGITS];      \
+        sprintf(string,"%d",_code);             \
+        ADD_CODE(string);                       \
+    } while (0)
 
 #define FUNCTION_LEN\
     "\n # Built-in function Len"                \
@@ -105,7 +106,7 @@
     "\n LABEL $chr$return"                                                  \
     "\n POPFRAME"                                                           \
     "\n RETURN"
-}
+
 #define FUNCTION_ORD\
 	"\n # Built-in function ORD"						\
 	"\n LABEL $ord"								\
@@ -154,7 +155,7 @@
     "\n RETURN"
 
 #define FUNCTION_INPUTI\
-"\n # Built-in function INPUTI"                  \
+    "\n # Built-in function INPUTI"              \
     "\n LABEL $function_inputi"                  \
     "\n PUSHFRAME"                               \
     "\n DEFVAR LF@%navratova_hodnota"            \
@@ -168,9 +169,8 @@
     "\n RETURN"
 
 #define FUNCTION_INPUTF\
-"\n # Built-in function INPUTF"                  \
+    "\n # Built-in function INPUTF"              \
     "\n LABEL $function_inputf"                  \
-    "\n PUSHFRAME"                               \
     "\n PUSHFRAME"                               \
     "\n DEFVAR LF@%navratova_hodnota"            \
     "\n MOVE LF@%navratova_hodnota LF@%1"        \
@@ -182,32 +182,38 @@
     "\n POPFRAME"                                \
     "\n RETURN"
 
+void set_code_output(dynamicString_t* output) {
+    code = *output;
+}
+
 static bool cg_define_b_i_functions()
 {
-        ADD_INSTRUCTION(FUNCTION_INPUTS);
-        ADD_INSTRUCTION(FUNCTION_INPUTI);
-        ADD_INSTRUCTION(FUNCTION_INPUTF);
-        ADD_INSTRUCTION(FUNCTION_PRINT);
-        ADD_INSTRUCTION(FUNCTION_LEN);
-        ADD_INSTRUCTION(FUNCTION_SUBSTR);
-        ADD_INSTRUCTION(FUNCTION_ORD);
-        ADD_INSTRUCTION(FUNCTION_CHR);
+    ADD_INST(FUNCTION_INPUTS);
+    ADD_INST(FUNCTION_INPUTI);
+    ADD_INST(FUNCTION_INPUTF);
+    ADD_INST(FUNCTION_PRINT);
+    ADD_INST(FUNCTION_LEN);
+    ADD_INST(FUNCTION_SUBSTR);
+    ADD_INST(FUNCTION_ORD);
+    ADD_INST(FUNCTION_CHR);
+    return true;
 }
 
 bool cg_main_scope_start()
 {
-    ADD_INSTRUCTION("\n# Zaciatok main");
-    ADD_INSTRUCTION("LABEL $$main");
-    ADD_INSTRUCTION("CREATEFRAME");
-    ADD_INSTRUCTION("PUSHFRAME");
+    ADD_INST(".IFJcode19");
+    ADD_INST("\n# Zaciatok main");
+    ADD_INST("LABEL $$main");
+    ADD_INST("CREATEFRAME");
+    ADD_INST("PUSHFRAME");
     return true;
 }
 
 bool cg_main_scope_end()
 {
-    ADD_INSTRUCTION("# Koniec main");
-    ADD_INSTRUCTION("POPFRAME");
-    ADD_INSTRUCTION("CLEARS");
+    ADD_INST("# Koniec main");
+    ADD_INST("POPFRAME");
+    ADD_INST("CLEARS");
     return true;
 }
 
@@ -223,28 +229,28 @@ bool cg_fun_end(char *id_funkcie)
 {
     ADD_CODE("# Koniec funkcie "); ADD_CODE(id_funkcie); ADD_CODE("\n");
     ADD_CODE("LABEL $"); ADD_CODE(id_funkcie); ADD_CODE("%return\n");
-    ADD_INSTRUCTION("POPFRAME");
-    ADD_INSTRUCTION("RETURN");
+    ADD_INST("POPFRAME");
+    ADD_INST("RETURN");
     return true;
 }
 
-static bool cg_default_value_type(TYP_datatyp typ)
+static bool cg_default_value_type(varType_t typ)
 {
     switch (typ)
     {
-        case TYP_INT:
+        case TypeInteger:
             ADD_CODE("int@0");
             break;
 
-        case TYP_DOUBLE:
+        case TypeDouble:
             ADD_CODE("float@0.0");
             break;
 
-        case TYP_STRING:
+        case TypeString:
             ADD_CODE("string@");
             break;
 
-        case TYP_BOOL:
+        case TypeBool:
             ADD_CODE("bool@false");
 
         default:
@@ -254,9 +260,9 @@ static bool cg_default_value_type(TYP_datatyp typ)
 }
 
 
-bool cg_fun_retval(Data_type typ)
+bool cg_fun_retval(varType_t typ)
 {
-    ADD_INSTRUCTION("DEFVAR LF@%navratova_hodnota");
+    ADD_INST("DEFVAR LF@%navratova_hodnota");
     ADD_CODE("MOVE LF@%navratova_hodnota");
     if (!cg_default_value_type(typ)) return false;
     ADD_CODE("\n");
@@ -270,13 +276,13 @@ bool cg_fun_call(char *id_funkcie)
     return true;
 }
 
-bool cg_fun_retval_assign(char *ID_val_l, Data_type typ_l, Data_type navratovy_typ)
+bool cg_fun_retval_assign(char *ID_val_l, varType_t typ_l, varType_t navratovy_typ)
 {
-    if (typ_l == TYPE_DOUBLE && navratovy_typ == TYPE_INT)
+    if (typ_l == TypeDouble && navratovy_typ == TypeInteger)
     {
         ADD_INST("INT2FLOAT TF@%retval TF@%retval");
     }
-    else if (typ_l == TYPE_INT && navratovy_typ == TYPE_DOUBLE)
+    else if (typ_l == TypeInteger && navratovy_typ == TypeDouble)
     {
         ADD_INST("FLOAT2R2EINT TF@%retval TF@%retval");
     }
@@ -294,15 +300,15 @@ bool cg_fun_param_declare(char *id_parametra, int index)
 
 bool cg_fun_before_params()
 {
-    ADD_INSTRUCTION("CREATEFRAME");
+    ADD_INST("CREATEFRAME");
     return true;
 }
 
 bool cg_fun_return()
 {
-    ADD_INSTRUCTION("MOVE LF@%navratova_hodnota GF@%vysledok_vyrazu");
-    ADD_INSTRUCTION("POPFRAME");
-    ADD_INSTRUCTION("RETURN");
+    ADD_INST("MOVE LF@%navratova_hodnota GF@%vysledok_vyrazu");
+    ADD_INST("POPFRAME");
+    ADD_INST("RETURN");
     return true;
 }
 
@@ -312,7 +318,7 @@ bool cg_var_declare(char *ID_premenna)
     return true;
 }
 
-bool cg_var_default_value(char *ID_premenna, Data_type typ)
+bool cg_var_default_value(char *ID_premenna, varType_t typ)
 {
     ADD_CODE("MOVE LF@ "); ADD_CODE(ID_premenna); ADD_CODE(" ");
     if (!cg_default_value_type(typ)) return false;
@@ -364,7 +370,7 @@ bool cg_if_else_part(int uni_a, int uni_b)
     ADD_CODE("JUMP $"); ADD_CODE("IF"); ADD_CODE("%"); ADD_CODE_INT(uni_b);
     ADD_CODE("%"); ADD_CODE_INT(uni_a); ADD_CODE("\n");
     ADD_INST("# Else part");
-    if (!generate_label("IF", uni_a, uni_b)) return false;
+    if (!cg_label("IF", uni_a, uni_b)) return false;
     return true;
 }
 
@@ -372,14 +378,36 @@ bool cg_if_else_part(int uni_a, int uni_b)
 bool cg_if_end(int uni_a, int uni_b)
 {
     ADD_INST("# End If");
-    if (!generate_label("IF", uni_b, uni_a)) return false;
+    if (!cg_label("IF", uni_b, uni_a)) return false;
     return true;
 }
 
-bool cg_print(char *hodnota, Data_type typ)
+bool cg_print(char *hodnota, varType_t typ)
 {
     ADD_INST("\n# Function PRINT");
     ADD_CODE("MOVE LF@ "); ADD_CODE("pro_input"); ADD_CODE(" ");
-    ADD_CODE(typ); ADD_CODE("@"); ADD_CODE(hodnota);
+    if (cg_type(typ) != true)
+        return false;
+    ADD_CODE("@"); ADD_CODE(hodnota);
     cg_fun_call("function_print");
+    return true;
 }
+
+bool cg_type(varType_t type) {
+        switch (type) {
+            case TypeInteger:
+                ADD_CODE("int");
+                return true;
+            case TypeString:
+                ADD_CODE("string");
+                return true;
+            case TypeDouble:
+                ADD_CODE("float");
+                return true;
+            case TypeBool:
+                ADD_CODE("bool");
+                return true;
+            default:
+                return false;
+        }
+    }
