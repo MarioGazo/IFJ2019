@@ -58,6 +58,8 @@ bool cg_if_start(int uni_a, int uni_b);
 bool cg_if_else_part(int uni_a, int uni_b);
 bool cg_if_end(int uni_a, int uni_b);
 bool cg_print(char *hodnota, varType_t typ);
+bool cg_input(hTabItem_t variable);
 bool cg_type(varType_t type);
+bool cg_frame(char which);
 
 #endif //VUT_FIT_IFJ2019_CODE_GEN_H

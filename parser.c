@@ -407,27 +407,30 @@ int term() {
     GET_TOKEN;
 
     if (actualToken.tokenType == DocumentString) {
-        // TODO WRITE DocStr
         cg_print(actualToken.tokenAttribute.word.text, TypeString);
     } else if (actualToken.tokenType == Identifier) {
-        // TODO WRITE id value
-        cg_print(actualToken.tokenAttribute.word.text, TypeString);
+        hTabItem_t *var;
+        if ((var = TSearch(GlobalTable,actualToken.tokenAttribute.word)) != NULL) {
+            if (cg_frame('G') == false)                  return INTERNAL_ERR;
+            if (cg_print(var->key.text,var->type) == false)     return INTERNAL_ERR;
+        } else if ((var = TSearch(LocalTable,actualToken.tokenAttribute.word)) != NULL) {
+            if (cg_frame('L') == false)                  return INTERNAL_ERR;
+            if (cg_print(var->key.text,var->type) == false)     return INTERNAL_ERR;
+        } else {
+            return SEMPROG_ERR; // nedefinovana premenna
+        }
     } else if (actualToken.tokenType == String) {
-        // TODO WRITE str
-        cg_print(actualToken.tokenAttribute.word.text, TypeString);
+        if (cg_print(actualToken.tokenAttribute.word.text, TypeString) == false) return INTERNAL_ERR;
     } else if (actualToken.tokenType == Integer) {
-        // TODO WRITE int
         char buffer[100];
         sprintf(buffer,"%d",actualToken.tokenAttribute.intValue);
-        cg_print(buffer, TypeInteger);
+        if (cg_print(buffer, TypeInteger) == false)             return INTERNAL_ERR;
     } else if (actualToken.tokenType == Double) {
-        // TODO WRITE double
         char buffer[100];
         sprintf(buffer,"%a",actualToken.tokenAttribute.doubleValue);
-        cg_print(buffer, TypeDouble);
+        if (cg_print(buffer, TypeDouble) == false)              return INTERNAL_ERR;
     } else if (actualToken.tokenType == Keyword && actualToken.tokenAttribute.intValue == keywordNone) {
-        // TODO WRITE None
-        cg_print("None", "string");
+        if (cg_print("None", TypeNone) == false)                return INTERNAL_ERR;
     } else {
         return SYNTAX_ERR;
     }
@@ -435,12 +438,10 @@ int term() {
     GET_TOKEN;
 
     if (actualToken.tokenType == RightBracket) {
-        // TODO WRITE '\n' (\010)
-        cg_print("\n", "string");
+        if (cg_print("\n", TypeString) == false) return INTERNAL_ERR;
         return PROG_OK;
     } else if (actualToken.tokenType == Comma) {
-        // TODO WRITE _ <- medzera (\032)
-        cg_print(" ", "string");
+        if (cg_print(" ", TypeString) == false)  return INTERNAL_ERR;
         return (errorCode = term());
     } else {
         return SYNTAX_ERR;
@@ -511,8 +512,8 @@ int assign(hTabItem_t* varRecord) {
         GET_AND_CHECK_TOKEN(LeftBracket);
         GET_AND_CHECK_TOKEN(RightBracket);
 
-        // TODO READ var float
         varRecord->type = TypeDouble;
+        if (cg_input(*varRecord) == false) return INTERNAL_ERR;
         return PROG_OK;
     // INPUTS()
     } else if (actualToken.tokenType == Keyword &&
@@ -522,8 +523,8 @@ int assign(hTabItem_t* varRecord) {
         GET_AND_CHECK_TOKEN(LeftBracket);
         GET_AND_CHECK_TOKEN(RightBracket);
 
-        // TODO READ var string
         varRecord->type = TypeString;
+        if (cg_input(*varRecord) == false) return INTERNAL_ERR;
         return PROG_OK;
     // INPUTI()
     } else if (actualToken.tokenType == Keyword &&
@@ -533,8 +534,8 @@ int assign(hTabItem_t* varRecord) {
         GET_AND_CHECK_TOKEN(LeftBracket);
         GET_AND_CHECK_TOKEN(RightBracket);
 
-        // TODO READ var int
         varRecord->type = TypeInteger;
+        if (cg_input(*varRecord) == false) return INTERNAL_ERR;
         return PROG_OK;
     // LEN(s)
     } else if (actualToken.tokenType == Keyword &&

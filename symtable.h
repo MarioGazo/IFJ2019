@@ -21,7 +21,8 @@ typedef enum {
     TypeDouble,
     TypeString,
     TypeFunction,
-    TypeBool
+    TypeBool,
+    TypeNone
 } varType_t;
 
 /**

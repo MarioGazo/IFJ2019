@@ -130,68 +130,12 @@ dynamicString_t code;
 	"\n POPFRAME"								\
 	"\n RETURN"
 
-#define FUNCTION_PRINT\
-    "\n # Built-in function PRINT"              \
-    "\n LABEL $function_print"                  \
-    "\n PUSHFRAME"                              \
-    "\n DEFVAR TF@%0"                           \
-    "\n MOVE TF@%0 LF@pro_input"                \
-    "\n WRITE TF@%0"                            \
-    "\n POPFRAME"                               \
-    "\n RETURN"
-
-#define FUNCTION_INPUTS\
-    "\n # Built-in function INPUTS"              \
-    "\n LABEL $function_inputs"                  \
-    "\n PUSHFRAME"                               \
-    "\n DEFVAR LF@%navratova_hodnota"            \
-    "\n MOVE LF@%navratova_hodnota LF@%1"        \
-    "\n DEFVAR LF@param2"                        \
-    "\n MOVE LF@param2 LF@%2"                    \
-    "\n MOVE LF@param2 string@string"            \
-    "\n READ LF@navratova_hodnota LF@param2"     \
-    "\n MOVE LF@%navratova_hodnota string@"      \
-    "\n POPFRAME"                                \
-    "\n RETURN"
-
-#define FUNCTION_INPUTI\
-    "\n # Built-in function INPUTI"              \
-    "\n LABEL $function_inputi"                  \
-    "\n PUSHFRAME"                               \
-    "\n DEFVAR LF@%navratova_hodnota"            \
-    "\n MOVE LF@%navratova_hodnota LF@%1"        \
-    "\n DEFVAR LF@param2"                        \
-    "\n MOVE LF@param2 LF@%2"                    \
-    "\n MOVE LF@param2 int@int"                  \
-    "\n READ LF@navratova_hodnota LF@param2"     \
-    "\n MOVE LF@%navratova_hodnota int@"         \
-    "\n POPFRAME"                                \
-    "\n RETURN"
-
-#define FUNCTION_INPUTF\
-    "\n # Built-in function INPUTF"              \
-    "\n LABEL $function_inputf"                  \
-    "\n PUSHFRAME"                               \
-    "\n DEFVAR LF@%navratova_hodnota"            \
-    "\n MOVE LF@%navratova_hodnota LF@%1"        \
-    "\n DEFVAR LF@param2"                        \
-    "\n MOVE LF@param2 LF@%2"                    \
-    "\n MOVE LF@param2 float@0x0p+0@float@0x0p+0"\
-    "\n READ LF@navratova_hodnota LF@param2"     \
-    "\n MOVE LF@%navratova_hodnota float@0x0p+0@"\
-    "\n POPFRAME"                                \
-    "\n RETURN"
-
 void set_code_output(dynamicString_t* output) {
     code = *output;
 }
 
 static bool cg_define_b_i_functions()
 {
-    ADD_INST(FUNCTION_INPUTS);
-    ADD_INST(FUNCTION_INPUTI);
-    ADD_INST(FUNCTION_INPUTF);
-    ADD_INST(FUNCTION_PRINT);
     ADD_INST(FUNCTION_LEN);
     ADD_INST(FUNCTION_SUBSTR);
     ADD_INST(FUNCTION_ORD);
@@ -385,27 +329,65 @@ bool cg_if_end(int uni_a, int uni_b)
 bool cg_print(char *hodnota, varType_t typ)
 {
     ADD_INST("\n# Function PRINT");
-    ADD_CODE("MOVE LF@ "); ADD_CODE("pro_input"); ADD_CODE(" ");
-    if (cg_type(typ) != true)
-        return false;
-    ADD_CODE("@"); ADD_CODE(hodnota);
-    cg_fun_call("function_print");
-    return true;
+    switch (typ) {
+        case TypeInteger:
+        case TypeDouble:
+            ADD_CODE("WRITE string@"); ADD_CODE(hodnota);
+            return true;
+        case TypeNone:
+            ADD_CODE("WRITE string@None");
+        case TypeString:
+            ADD_CODE("WRITE string@");
+            for (unsigned long i = 0; i < strlen(hodnota); i++) {
+                if (hodnota[i] < 32 || hodnota[i] == 35 || hodnota[i] == 92) {
+                    char buffer[4];
+                    sprintf(buffer,"%d",hodnota[i]);
+                    ADD_CODE("\\0"); ADD_CODE(buffer);
+                } else {
+                    char c[1];
+                    c[0] = hodnota[i];
+                    ADD_CODE(c);
+                }
+            }
+            return true;
+        default:
+            return false;
+    }
 }
 
 bool cg_type(varType_t type) {
-        switch (type) {
-            case TypeInteger:
-                ADD_CODE("int");
+    switch (type) {
+        case TypeInteger:
+            ADD_CODE("int");        return true;
+        case TypeString:
+            ADD_CODE("string");     return true;
+        case TypeDouble:
+            ADD_CODE("float");      return true;
+        case TypeBool:
+            ADD_CODE("bool");       return true;
+        default:
+            return false;
+    }
+}
+
+bool cg_input(hTabItem_t variable) {
+    ADD_INST("# Reading variable");
+    ADD_CODE("READ"); ADD_CODE(variable.key.text);  if (cg_type(variable.type) == false)
+                                                                    return false;
+    ADD_CODE("\n");
+    return true;
+    }
+
+bool cg_frame(char which) {
+        switch(which) {
+            case 'G':
+                ADD_CODE("GF@");
                 return true;
-            case TypeString:
-                ADD_CODE("string");
+            case 'L':
+                ADD_CODE("LF@");
                 return true;
-            case TypeDouble:
-                ADD_CODE("float");
-                return true;
-            case TypeBool:
-                ADD_CODE("bool");
+            case 'T':
+                ADD_CODE("TF@");
                 return true;
             default:
                 return false;
