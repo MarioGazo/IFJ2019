@@ -1,6 +1,9 @@
-//
-// Created by Mário Gažo on 8.10.19.
-//
+/**
+ * Implementation of imperative language IFJ2019 compiler
+ * @file expression.h
+ * @author Vojtěch Golda (xgolda02)
+ * @brief Expression parser interface
+ */
 
 #ifndef VUT_FIT_IFJ2019_EXPRESSION_H
 #define VUT_FIT_IFJ2019_EXPRESSION_H
@@ -18,9 +21,6 @@
 
 int expression(FILE* in, dynamic_stack_t* iStack, token_t * t) ;
 
-
-
-
 //given a token, retruns an LL table position
 int LLPos(token_t * token);
 
@@ -33,12 +33,10 @@ token_t * getNewToken();
 //returns the first terminal in the stack
 token_t * terminalTop(dynamic_symbol_stack_t * stack, int * depth);
 
-
 //Creates new token with the type as given. Used to create Nonterminal & shift tokens to push;
 token_t * new_token(parserState_t type);
 
-
 //switch to decide what to do with a given char from the LL table
-int expSwitch( dynamic_symbol_stack_t * stack, token_t ** t, int * depth,  char symbol);
+int expSwitch( dynamic_symbol_stack_t * stack, token_t ** t, const int * depth,  char symbol);
 
 #endif //VUT_FIT_IFJ2019_EXPRESSION_H

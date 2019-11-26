@@ -40,8 +40,9 @@
 token_t actualToken;
 FILE* in;
 dynamic_stack_t indentationStack;
-unsigned long uni_a = 0;
-unsigned long uni_b = 42;
+// Jedinečné hodnoty pre každé náveštie
+unsigned int uni_a = 0;
+unsigned int uni_b = 42;
 // Kód chybového hlásenia prekladača
 int errorCode;
 // Tabuľka symbolov
@@ -54,7 +55,6 @@ bool inBody = false;    // prebieha citanie instrukcii v tele hlavneho programu
 
 // Výsledný kód
 dynamicString_t code;
-FILE * output;
 
 // Hlavný program
 int analyse(FILE* file) {
@@ -73,21 +73,22 @@ int analyse(FILE* file) {
 
     // Nastavime viditelnost vysledneho kodu suboru code-gen.c
     set_code_output(&code);
-    // TODO gen main scope start
-    cg_main_scope_start();
-    // TODO gen built in functions
-    cg_define_b_i_functions();
+
+    if (cg_main_scope_start() == false)     return INTERNAL_ERR;    // Začiatok hlavného rámca
+    if (cg_define_b_i_functions() == false) return INTERNAL_ERR;    // Definicia vstavaných funkcii
+
     // Spustenie analýzi
     errorCode = program();
-    // TODO gen main scope end
-    cg_main_scope_end();
+
+    if (cg_main_scope_end() == false)       return INTERNAL_ERR;    // Koniec hlavného rámca
 
     // zistujeme ci boli vsetky volane funkcie definovane
     for (int i = 0; i < 236897; i++) {
         if (GlobalTable->variables[i] != NULL) {
             if (GlobalTable->variables[i]->type == TypeFunction &&
                 GlobalTable->variables[i]->defined != TRUE) {
-                return SEMPROG_ERR;
+                errorCode = SEMPROG_ERR;
+                break;
             }
         }
     }
@@ -97,24 +98,7 @@ int analyse(FILE* file) {
     TFree(LocalTable);
     stackFree(&indentationStack);
 
-    // Ak je program korektný, je výsledný kód vypísaný do súboru
-    if (errorCode == PROG_OK) {
-        output = fopen("prg.out","w+");
-
-        // Zlyhanie pri tvorbe súboru na výpis
-        if (output == NULL) {
-            return INTERNAL_ERR;
-        }
-
-        fprintf(output, "%s", code.text);
-        dynamicStringFree(&code);
-        fclose(output);
-
-        return PROG_OK;
-    } else {
-        dynamicStringFree(&code);
-        return errorCode;
-    }
+    return code_write_out(errorCode);
 }
 
 // Hlavný mechanizmus spracovávania programu
@@ -159,29 +143,25 @@ int program() {
 
 // 1. Vetva - Spracovávanie používateľom definovanej funkcie
 int defFunction() {
-    // Záznamy funkcie
-
-    hTabItem_t funcRecord; // zaznam funkcie
-    hTabItem_t* controlRecord;
-
     // Prechádzame konštukciu funkcie a kontolujeme syntaktickú správnosť zápisu
     // Vzor: def id ( zoznam_parametrov ) : INDENT
     //          sekvencia príkazov <- EOL po kazdom prikaze
     // DEDENT
     GET_AND_CHECK_TOKEN(Identifier);
 
-    // TODO gen function start
-    cg_fun_start(dynamicStringGetText(actualToken.tokenAttribute.word));
-    // TODO gen function retval
-    cg_fun_retval();
-    // TODO gen function frame
-    cg_fun_before_params();
+    // Hlavička funkcie
+    if (cg_fun_start(actualToken.tokenAttribute.word.text) == false) return  INTERNAL_ERR;
+    // Návratová hodnota funkcie
+    if (cg_fun_retval() == false) return INTERNAL_ERR;
+    // Nový rámec
+    if (cg_fun_before_params() == false) return INTERNAL_ERR;
+
+    // Záznam funkcie
+    hTabItem_t funcRecord;
     funcRecord.key = actualToken.tokenAttribute.word;
     funcRecord.type = TypeFunction;
     funcRecord.defined = TRUE;
-
     funcRecord.next = NULL;
-
 
     GET_AND_CHECK_TOKEN(LeftBracket);
 
@@ -190,6 +170,7 @@ int defFunction() {
     if ((errorCode = param(&funcRecord)) != PROG_OK) return errorCode;
 
     // Ak uz bola funkcia pouzita, je v HashTable, skontolujeme len pocet parametrov
+    hTabItem_t* controlRecord;
     if ((controlRecord = TSearch(GlobalTable, funcRecord.key)) != NULL){
         // Redefinicia funkcie
         if (controlRecord->defined) return SEMPROG_ERR;
@@ -212,32 +193,33 @@ int defFunction() {
     // Uložíme funkciu do HashTable
     TInsert(GlobalTable, funcRecord);
 
-    // TODO gen function end
-    cg_fun_end(funcRecord.key.text);
+    // Koniec tela funkcie
+    if (cg_fun_end(funcRecord.key.text) == false) return INTERNAL_ERR;
     inFunc = false;
     return PROG_OK;
 }
 
-// 1a. Vetva - Spracovávanie parametra/parametrov funkcie
+// 1a. Vetva - Spracovávame parametre funkcie a zároveň si ukladáme ich počet
 int param(hTabItem_t* funcRecord) {
     PRINT_DEBUG("Parameters\n");
 
     GET_TOKEN;
 
-    // Spracovávame parametre funkcie a zároveň si ukladáme ich počet
-    if (actualToken.tokenType == RightBracket) {            // def foo()
+    // Funkcia bez parametrov
+    if (actualToken.tokenType == RightBracket) {
         return PROG_OK;
     } else if (actualToken.tokenType == Identifier) {
         funcRecord->value.intValue++;
 
-        // TODO gen function param
-        ADD_INST("DEFVAR LF@param"); ADD_CODE(funcRecord->value.intValue);
-        ADD_CODE("MOVE LF@param"); ADD_CODE(funcRecord->value.intValue); ADD_CODE(" LF@%"); ADD_CODE(funcRecord->value.intValue);
+        // Definovanie parametrov funkcie v lokálnom rámci jedinečním číselným identifikátorom
+        if (cg_fun_param_declare(actualToken.tokenAttribute.word.text) == false)  return INTERNAL_ERR;
+
         GET_TOKEN;
 
-        // Syntaktická kontrola jednotlivých parametrov
+        // Koniec parametrov
         if (actualToken.tokenType == RightBracket) {        // def foo(a)
             return PROG_OK;
+        // Nasleduje daľší parameter
         } else if (actualToken.tokenType == Comma) {        // def foo(a,
             return param(funcRecord);
         } else {
@@ -251,32 +233,30 @@ int param(hTabItem_t* funcRecord) {
 // 2. Vetva - Spracovávanie programových konštrukcií a vstavaných príkazov
 int commandList() {
     PRINT_DEBUG("Command\n");
-
     // WHILE
     // Vzor: while (výraz): INDENT
     //          sekvencia prikazov <- EOL po kazdom prikaze
     //       DEDENT
     if (actualToken.tokenType == Keyword &&
-        actualToken.tokenAttribute.intValue == keywordWhile) {  // while
+        actualToken.tokenAttribute.intValue == keywordWhile) {
         PRINT_DEBUG("\tWhile\n");
 
-        // TODO while loop head
-        // TODO while loop start
-        cg_while_start(uni_a, uni_b);
+        // Začiatok while cyklu
+        if (cg_while_start(uni_a, uni_b) == false)  return INTERNAL_ERR;
 
-        if ((errorCode = expression(in,&indentationStack, NULL)) != PROG_OK) return errorCode;  // while <expr>
+        // Podmienka ďaľšej iterácie cyklu
+        if ((errorCode = expression(in,&indentationStack, NULL)) != PROG_OK) return errorCode;
 
-        if (actualToken.tokenType != Colon)                     // while <expr>:
-            return SYNTAX_ERR;
+        if (actualToken.tokenType != Colon)         return SYNTAX_ERR;
+        GET_AND_CHECK_TOKEN(Indent);
 
-        GET_AND_CHECK_TOKEN(Indent);                            // while <expr>:
-        // __command_list
+        // Zoznam príkazov v tele cyklu
         if ((errorCode = commandList()) != PROG_OK) return errorCode;
 
-        // TODO while loop end
-        cg_while_end(uni_a, uni_b);
-        uni_a += 1;
-        uni_b += 1;
+        // Koniec while cyklu
+        if (cg_while_end(uni_a, uni_b) == false)    return INTERNAL_ERR;
+
+        uni_a++;     uni_b++;
 
         return (errorCode = commandListContOrEnd());
     // IF & ELSE
@@ -289,36 +269,32 @@ int commandList() {
                actualToken.tokenAttribute.intValue == keywordIf) {
         PRINT_DEBUG("\tIf & Else\n");
 
-        // TODO if & else head
-        // TODO if & else start
+        // Začiatok vetvenia
         cg_if_start(uni_a, uni_b);
 
-        if ((errorCode = expression(in,&indentationStack, NULL)) != PROG_OK) return errorCode;  // if <expr>
+        // Podmienka vetvenia
+        if ((errorCode = expression(in,&indentationStack, NULL)) != PROG_OK) return errorCode;
 
-        if (actualToken.tokenType != Colon)                     // if <expr>:
-            return SYNTAX_ERR;
+        if (actualToken.tokenType != Colon)         return SYNTAX_ERR;
+        GET_AND_CHECK_TOKEN(Indent);
 
-        GET_AND_CHECK_TOKEN(Indent);                            // if <expr>:
-                                                                // __command_list
+        // Vetva pri splnení podmienky
         if ((errorCode = commandList()) != PROG_OK) return errorCode;
 
-
-        // TODO else part
-        cg_if_else_part(uni_a, uni_b);
+        // Náveštie pri nesplnení podmeinky
+        if (cg_if_else_part(uni_a, uni_b) == false) return INTERNAL_ERR;
 
         GET_AND_CHECK_TOKEN(Keyword);
-        if (actualToken.tokenAttribute.intValue != keywordElse) // if <expr>:
-            return SYNTAX_ERR;                                  // __command_list
-                                                                // else:
-        GET_AND_CHECK_TOKEN(Colon);                             // __command_list
-        GET_AND_CHECK_TOKEN(Indent);                            //
+        if (actualToken.tokenAttribute.intValue != keywordElse) return SYNTAX_ERR;
+        GET_AND_CHECK_TOKEN(Colon);
+        GET_AND_CHECK_TOKEN(Indent);
 
+        // Vetva pri nesplnení podmienky
         if ((errorCode = commandList()) != PROG_OK) return errorCode;
 
-        // TODO if & else end
-        cg_if_end(uni_a, uni_b);
-        uni_a += 1;
-        uni_b += 1;
+        // Koniec vetvenia
+        if (cg_if_end(uni_a, uni_b) == false)       return INTERNAL_ERR;
+        uni_a++;     uni_b++;
 
         return (errorCode = commandListContOrEnd());
     // PRINT
@@ -326,9 +302,10 @@ int commandList() {
                actualToken.tokenAttribute.intValue == keywordPrint) {
         PRINT_DEBUG("\tPrint\n");
 
-        GET_AND_CHECK_TOKEN(LeftBracket);                       // print(
-        PRINT_DEBUG("Terms\n");
-        if ((errorCode = term()) != PROG_OK) return errorCode;  // print(...)
+        GET_AND_CHECK_TOKEN(LeftBracket);
+        PRINT_DEBUG("\t\tTerms\n");
+        // Výpis termov
+        if ((errorCode = term()) != PROG_OK) return errorCode;
 
         return (errorCode = commandListContOrEnd());
     // RETURN
@@ -336,15 +313,16 @@ int commandList() {
                actualToken.tokenAttribute.intValue == keywordReturn) {
         PRINT_DEBUG("\tReturn\n");
 
+        // Príraz návratu sa môže nachádzať len v tele funkcie
         if (!inFunc) return SYNTAX_ERR;
 
-        GET_TOKEN;
-
+        GET_TOKEN; // TODO možno sa nema volať
         expr = true;
-        if ((errorCode = expression(in,&indentationStack, &actualToken)) != 0) return errorCode;     // value != None
+        if ((errorCode = expression(in,&indentationStack, &actualToken)) != 0) return errorCode;
 
         // TODO RETURN TMP -> tmp vysledok
-        cg_fun_return();
+        // Návrat z tela funkcie
+        if (cg_fun_return() == false) return INTERNAL_ERR;
 
         return (errorCode = commandListContOrEnd());
     // PASS
@@ -358,7 +336,7 @@ int commandList() {
         // A: Nie.
         return (errorCode = commandListContOrEnd());
     // ID
-    } else if (actualToken.tokenType == Identifier) {   // abc....abc = <value> / abc()
+    } else if (actualToken.tokenType == Identifier) {
         PRINT_DEBUG("\tID\n");
 
         hTabItem_t varRecord; // zaznam premennej
@@ -369,15 +347,14 @@ int commandList() {
         GET_TOKEN;
 
         if (actualToken.tokenType == Assign) {
+            // Deklarácia novej premennej
+            if (cg_var_declare(varRecord.key.text,inFunc) == false) return INTERNAL_ERR;
 
-            // TODO defvar var
-            if (inFunc) {
-                ADD_INST("DEFVAR LF@"); ADD_CODE(varRecord.key);
-            } else {
-                ADD_INST("DEFVAR GF@"); ADD_CODE(varRecord.key);
-            }
-
+            // Aby bola deklarovaná, musí jej byť priradená hodnota
             if ((errorCode = assign(&varRecord)) != PROG_OK) return errorCode;
+
+            // TODO ak nie je premenná celkovo definovana v tele programu tak je lokálna?
+            // TODO v takom prípade ak inBody -> Global, inak Local a Local free vždy ked skončí Command list
             // Uloženie premennej do HashTable
             if (inFunc) {
                 TInsert(LocalTable, varRecord);
@@ -387,10 +364,11 @@ int commandList() {
 
             return (errorCode = commandListContOrEnd());
         } else if (actualToken.tokenType == LeftBracket) {
-
-            param(&varRecord);
             // Ide o funkciu, ak je definovaná, presvedčíme sa že sedí počet parametrov, inak ju pridáme do hTab
+            param(&varRecord);
             hTabItem_t* funcRec = NULL;
+
+
             if ((funcRec = (TSearch(GlobalTable,varRecord.key))) != NULL) {
                 if (funcRec->value.intValue != varRecord.value.intValue)
                     return SEMPARAM_ERR;
@@ -399,7 +377,10 @@ int commandList() {
                 varRecord.defined = FALSE;
                 TInsert(GlobalTable,varRecord);
             }
-            cg_fun_call(funcRec->key.text);
+
+            // Skáčeme do tela funkcie
+            if (cg_fun_call(funcRec->key.text) == false) return INTERNAL_ERR;
+
             return (errorCode = commandListContOrEnd());
         } else {
             return SYNTAX_ERR;
@@ -410,32 +391,39 @@ int commandList() {
     }
 }
 
-int term() {
+int term() { // DONE
     GET_TOKEN;
 
+    // Výpis dokumentačného reťazca
     if (actualToken.tokenType == DocumentString) {
         cg_print(actualToken.tokenAttribute.word.text, TypeString);
+    // Výpis hodnoty identifikátora
     } else if (actualToken.tokenType == Identifier) {
         hTabItem_t *var;
+        // Nachádza sa v globálnej hashT
         if ((var = TSearch(GlobalTable,actualToken.tokenAttribute.word)) != NULL) {
-            if (cg_frame('G') == false)                  return INTERNAL_ERR;
             if (cg_print(var->key.text,var->type) == false)     return INTERNAL_ERR;
+        // Nachádza sa v lokálnej hashT
         } else if ((var = TSearch(LocalTable,actualToken.tokenAttribute.word)) != NULL) {
-            if (cg_frame('L') == false)                  return INTERNAL_ERR;
             if (cg_print(var->key.text,var->type) == false)     return INTERNAL_ERR;
+        // ID nebol definovaný -> ERROR
         } else {
-            return SEMPROG_ERR; // nedefinovana premenna
+            return SEMPROG_ERR; // nedefinovana premenna TODO možno má vypýsať None
         }
+    // Výpis reťazca
     } else if (actualToken.tokenType == String) {
         if (cg_print(actualToken.tokenAttribute.word.text, TypeString) == false) return INTERNAL_ERR;
+    // Výpis celého čísla prevedeného na text
     } else if (actualToken.tokenType == Integer) {
         char buffer[100];
         sprintf(buffer,"%d",actualToken.tokenAttribute.intValue);
         if (cg_print(buffer, TypeInteger) == false)             return INTERNAL_ERR;
+    // Výpis desatinného čísla prevedeného na text
     } else if (actualToken.tokenType == Double) {
         char buffer[100];
         sprintf(buffer,"%a",actualToken.tokenAttribute.doubleValue);
         if (cg_print(buffer, TypeDouble) == false)              return INTERNAL_ERR;
+    // Výpis neznámej hodnoty
     } else if (actualToken.tokenType == Keyword && actualToken.tokenAttribute.intValue == keywordNone) {
         if (cg_print("None", TypeNone) == false)                return INTERNAL_ERR;
     } else {
@@ -444,10 +432,13 @@ int term() {
 
     GET_TOKEN;
 
+    // Končí výpis alebo nasledujú dalšie termy?
     if (actualToken.tokenType == RightBracket) {
+        // Koniec výpisu -> EOL
         if (cg_print("\n", TypeString) == false) return INTERNAL_ERR;
         return PROG_OK;
     } else if (actualToken.tokenType == Comma) {
+        // Ďaľší term -> medzera
         if (cg_print(" ", TypeString) == false)  return INTERNAL_ERR;
         return (errorCode = term());
     } else {
@@ -489,14 +480,15 @@ int assign(hTabItem_t* varRecord) {
                 TInsert(GlobalTable, funcRecord);
             }
 
-            // TODO function call
-            cg_fun_call(funcRecord.key);
-            // TODO assign return value
-            if (inFunc) {
-                ADD_INST("MOVE LF@"); ADD_CODE(varRecord.key); ADD_CODE(" TF@navratova_hodnota");
-            } else {
-                ADD_INST("MOVE GF@"); ADD_CODE(varRecord.key); ADD_CODE(" TF@navratova_hodnota");
-            }
+            // Skáčeme do tela funkcie
+            if (cg_fun_call(funcRecord.key.text) == false) return INTERNAL_ERR;
+
+            // Priradzujeme návratovú hodnotu funkcie
+            // TODO použiť cg_fun_retval_assign() ?, takto sa neokontroluje malloc
+            if (inFunc) { ADD_CODE("MOVE LF@"); } else { ADD_CODE("MOVE GF@"); }
+            ADD_CODE(varRecord->key.text); ADD_CODE(" TF@navratova_hodnota");
+
+            return PROG_OK;
         } else {
             // Volanie precedentnej analyzi
             // Riesi sa vyraz, musime odovzdat dva tokeny
@@ -505,14 +497,11 @@ int assign(hTabItem_t* varRecord) {
             if ((errorCode = expression(in,&indentationStack, NULL)) != 0) return  errorCode;
 
             // TODO MOVE var TMP -> tmp vysledok
-            if (inFunc) {
-                ADD_INST("MOVE LF@"); ADD_CODE(varRecord.key); ADD_CODE(" TF@navratova_hodnota");
-            } else {
-                ADD_INST("MOVE GF@"); ADD_CODE(varRecord.key); ADD_CODE(" TF@navratova_hodnota");
-            }
+            if (inFunc) { ADD_CODE("MOVE LF@"); } else { ADD_CODE("MOVE GF@"); }
+            ADD_CODE(varRecord->key.text); ADD_CODE(" TF@navratova_hodnota");
+
             return PROG_OK;
         }
-        return PROG_OK;
     // EXPRESSION()
     } else if (actualToken.tokenType == Double || actualToken.tokenType == Integer) {
         PRINT_DEBUG("\tExpression\n");
@@ -520,14 +509,12 @@ int assign(hTabItem_t* varRecord) {
         expr = true;
         if ((errorCode = expression(in,&indentationStack, &actualToken)) != 0) return  errorCode;
 
-        // TODO MOVE var TMP -> tmp vysledok
-        if (inFunc) {
-            ADD_INST("MOVE LF@"); ADD_CODE(varRecord.key); ADD_CODE(" TF@navratova_hodnota");
-        } else {
-            ADD_INST("MOVE GF@"); ADD_CODE(varRecord.key); ADD_CODE(" TF@navratova_hodnota");
-        }
+        // Priradenie výsledku výrazu
+        if (inFunc) { ADD_CODE("MOVE LF@"); } else { ADD_CODE("MOVE GF@"); }
+        ADD_CODE(varRecord->key.text); ADD_CODE(" TF@navratova_hodnota");
+
         return PROG_OK;
-    // INPUTF()
+    // INPUTF() DONE
     } else if (actualToken.tokenType == Keyword &&
                actualToken.tokenAttribute.intValue == keywordInputf) {
         PRINT_DEBUG("\tInputf\n");
@@ -536,9 +523,10 @@ int assign(hTabItem_t* varRecord) {
         GET_AND_CHECK_TOKEN(RightBracket);
 
         varRecord->type = TypeDouble;
-        if (cg_input(*varRecord) == false) return INTERNAL_ERR;
+        if (cg_input(*varRecord,inFunc) == false) return INTERNAL_ERR;
+
         return PROG_OK;
-    // INPUTS()
+    // INPUTS() DONE
     } else if (actualToken.tokenType == Keyword &&
                actualToken.tokenAttribute.intValue == keywordInputs) {
         PRINT_DEBUG("\tInputs\n");
@@ -547,9 +535,10 @@ int assign(hTabItem_t* varRecord) {
         GET_AND_CHECK_TOKEN(RightBracket);
 
         varRecord->type = TypeString;
-        if (cg_input(*varRecord) == false) return INTERNAL_ERR;
+        if (cg_input(*varRecord,inFunc) == false) return INTERNAL_ERR;
+
         return PROG_OK;
-    // INPUTI()
+    // INPUTI() DONE
     } else if (actualToken.tokenType == Keyword &&
                actualToken.tokenAttribute.intValue == keywordInputi) {
         PRINT_DEBUG("\tInputi\n");
@@ -558,7 +547,8 @@ int assign(hTabItem_t* varRecord) {
         GET_AND_CHECK_TOKEN(RightBracket);
 
         varRecord->type = TypeInteger;
-        if (cg_input(*varRecord) == false) return INTERNAL_ERR;
+        if (cg_input(*varRecord,inFunc) == false) return INTERNAL_ERR;
+
         return PROG_OK;
     // LEN(s)
     } else if (actualToken.tokenType == Keyword &&
@@ -574,15 +564,11 @@ int assign(hTabItem_t* varRecord) {
 
         GET_AND_CHECK_TOKEN(RightBracket);
 
-        // TODO function call len
-        cg_fun_call("FUNCTION_LEN");
+        // Volanie vstavanej funkcie len
+        if (cg_fun_call("FUNCTION_LEN") == false) return INTERNAL_ERR;
 
-        // TODO function retval assign to var
-        if (inFunc) {
-            ADD_INST("MOVE LF@"); ADD_CODE(varRecord->key); ADD_CODE(" TF@navratova_hodnota");
-        } else {
-            ADD_INST("MOVE GF@"); ADD_CODE(varRecord->key); ADD_CODE(" TF@navratova_hodnota");
-        }
+        // Priradenie dĺžky zadaného retazca
+        if (cg_frame_assign_retval(*varRecord, inFunc) == false) return INTERNAL_ERR;
 
         varRecord->type = TypeInteger;
         return PROG_OK;
@@ -601,22 +587,21 @@ int assign(hTabItem_t* varRecord) {
         GET_AND_CHECK_TOKEN(Integer);
         // TODO MOVE int Int
         ADD_CODE("DEFVAR TF@%2");
-        ADD_CODE("MOVE TF@%2 int@"); ADD_CODE(dynamicStringGetText(actualToken.tokenAttribute.intValue));
+        ADD_CODE("MOVE TF@%2 int@");
+        ADD_CODE_INT(actualToken.tokenAttribute.intValue);
         GET_AND_CHECK_TOKEN(Comma);
         GET_AND_CHECK_TOKEN(Integer);
         // TODO MOVE int Int
         ADD_CODE("DEFVAR TF@%3");
-        ADD_CODE("MOVE TF@%3 int@"); ADD_CODE(dynamicStringGetText(actualToken.tokenAttribute.intValue));
+        ADD_CODE("MOVE TF@%3 int@"); ADD_CODE_INT(actualToken.tokenAttribute.intValue);
         GET_AND_CHECK_TOKEN(RightBracket);
 
-        // TODO function call substr
-        cg_fun_call("FUNCTION_SUBSTR");
-        // TODO function retval assign to var
-        if (inFunc) {
-            ADD_INST("MOVE LF@"); ADD_CODE(varRecord->key); ADD_CODE(" TF@navratova_hodnota");
-        } else {
-            ADD_INST("MOVE GF@"); ADD_CODE(varRecord->key); ADD_CODE(" TF@navratova_hodnota");
-        }
+        // Volanie vstavanej funkcie substr
+        if (cg_fun_call("FUNCTION_SUBSTR") == false) return INTERNAL_ERR;
+
+        // Priradenie podreťazca
+        if (cg_frame_assign_retval(*varRecord, inFunc) == false) return INTERNAL_ERR;
+
         varRecord->type = TypeString;
         return PROG_OK;
     // ORD(s,i)
@@ -634,17 +619,16 @@ int assign(hTabItem_t* varRecord) {
         GET_AND_CHECK_TOKEN(Integer);
         // TODO MOVE int Int
         ADD_CODE("DEFVAR TF@%2");
-        ADD_CODE("MOVE TF@%2 int@"); ADD_CODE(dynamicStringGetText(actualToken.tokenAttribute.intValue));
+        ADD_CODE("MOVE TF@%2 int@");
+        ADD_CODE_INT(actualToken.tokenAttribute.intValue);
         GET_AND_CHECK_TOKEN(RightBracket);
 
-        // TODO function call ord
-        cg_fun_call("FUNCTION_ORD");
-        // TODO function retval assign to var
-        if (inFunc) {
-            ADD_INST("MOVE LF@"); ADD_CODE(varRecord->key); ADD_CODE(" TF@navratova_hodnota");
-        } else {
-            ADD_INST("MOVE GF@"); ADD_CODE(varRecord->key); ADD_CODE(" TF@navratova_hodnota");
-        }
+        // Volanie vstavanej funkcie ord
+        if (cg_fun_call("FUNCTION_ORD") == false) return INTERNAL_ERR;
+
+        // Priradenie ordinálnej hodnoty
+        if (cg_frame_assign_retval(*varRecord, inFunc) == false) return INTERNAL_ERR;
+
         varRecord->type = TypeInteger;
         return PROG_OK;
     // CHR(i)
@@ -658,17 +642,16 @@ int assign(hTabItem_t* varRecord) {
         // TODO MOVE str 'Int'
         ADD_CODE("CREATEFRAME");
         ADD_CODE("DEFVAR TF@%1");
-        ADD_CODE("MOVE TF@%1 int@"); ADD_CODE(dynamicStringGetText(actualToken.tokenAttribute.intValue));
+        ADD_CODE("MOVE TF@%1 int@");
+        ADD_CODE_INT(actualToken.tokenAttribute.intValue);
         GET_AND_CHECK_TOKEN(RightBracket);
 
-        // TODO function call chr
+        // Volanie vstavanej funkcie chr
         cg_fun_call("FUNCTION_CHR");
-        // TODO function retval assign to var
-        if (inFunc) {
-            ADD_INST("MOVE LF@"); ADD_CODE(varRecord->key); ADD_CODE(" TF@navratova_hodnota");
-        } else {
-            ADD_INST("MOVE GF@"); ADD_CODE(varRecord->key); ADD_CODE(" TF@navratova_hodnota");
-        }
+
+        // Priradenie znaku
+        if (cg_frame_assign_retval(*varRecord, inFunc) == false) return INTERNAL_ERR;
+
         varRecord->type = TypeString;
         return PROG_OK;
     // ERROR
@@ -681,10 +664,11 @@ int commandListContOrEnd() {
     // Tu sa nič negeneruje
     PRINT_DEBUG("\tAnother command?\n");
 
-    // ak bol priradeny vyraz terminalnym znakom bol bud EOL alebo Dedent
+    // Pri spracovaní výrazov bol načítaný posledný (terminálny) token
     if (expr) { expr = false; } else { GET_TOKEN; }
 
-    // ak je citany prikaz v tele programu, musi byt zakonceny EOL
+    // V tele programu musí byť každý príkaz ukončený koncom riadku,
+    // výnimka nastáva len v prípade konca programu
     if (inBody && (actualToken.tokenType == EOL || actualToken.tokenType == EndOfFile)) {
         inBody = false;
         return PROG_OK;
@@ -692,7 +676,7 @@ int commandListContOrEnd() {
         return SYNTAX_ERR;
     }
 
-    // ak je citany prikaz v tele cyklu, if-u alebo funkcie, konci pri tokene Dedent a pokracuje pri EOL
+    // Dedent v sekvencii príkazov zančí koniec, EOL, že nasleduje další prikaz
     if (actualToken.tokenType == Dedent) {
         return PROG_OK;
     } else if (actualToken.tokenType == EOL) {
