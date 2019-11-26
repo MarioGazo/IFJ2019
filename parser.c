@@ -231,6 +231,8 @@ int param(hTabItem_t* funcRecord) {
         funcRecord->value.intValue++;
 
         // TODO gen function param
+        ADD_INST("DEFVAR LF@param"); ADD_CODE(funcRecord->value.intValue);
+        ADD_CODE("MOVE LF@param"); ADD_CODE(funcRecord->value.intValue); ADD_CODE(" LF@%"); ADD_CODE(funcRecord->value.intValue);
         GET_TOKEN;
 
         // Syntaktická kontrola jednotlivých parametrov
@@ -260,7 +262,6 @@ int commandList() {
 
         // TODO while loop head
         // TODO while loop start
-
         cg_while_start(uni_a, uni_b);
 
         if ((errorCode = expression(in,&indentationStack, NULL)) != PROG_OK) return errorCode;  // while <expr>
@@ -370,6 +371,12 @@ int commandList() {
         if (actualToken.tokenType == Assign) {
 
             // TODO defvar var
+            if (inFunc) {
+                ADD_INST("DEFVAR LF@"); ADD_CODE(varRecord.key);
+            } else {
+                ADD_INST("DEFVAR GF@"); ADD_CODE(varRecord.key);
+            }
+
             if ((errorCode = assign(&varRecord)) != PROG_OK) return errorCode;
             // Uloženie premennej do HashTable
             if (inFunc) {
@@ -483,7 +490,13 @@ int assign(hTabItem_t* varRecord) {
             }
 
             // TODO function call
+            cg_fun_call(funcRecord.key);
             // TODO assign return value
+            if (inFunc) {
+                ADD_INST("MOVE LF@"); ADD_CODE(varRecord.key); ADD_CODE(" TF@navratova_hodnota");
+            } else {
+                ADD_INST("MOVE GF@"); ADD_CODE(varRecord.key); ADD_CODE(" TF@navratova_hodnota");
+            }
         } else {
             // Volanie precedentnej analyzi
             // Riesi sa vyraz, musime odovzdat dva tokeny
@@ -492,6 +505,11 @@ int assign(hTabItem_t* varRecord) {
             if ((errorCode = expression(in,&indentationStack, NULL)) != 0) return  errorCode;
 
             // TODO MOVE var TMP -> tmp vysledok
+            if (inFunc) {
+                ADD_INST("MOVE LF@"); ADD_CODE(varRecord.key); ADD_CODE(" TF@navratova_hodnota");
+            } else {
+                ADD_INST("MOVE GF@"); ADD_CODE(varRecord.key); ADD_CODE(" TF@navratova_hodnota");
+            }
             return PROG_OK;
         }
         return PROG_OK;
@@ -503,6 +521,11 @@ int assign(hTabItem_t* varRecord) {
         if ((errorCode = expression(in,&indentationStack, &actualToken)) != 0) return  errorCode;
 
         // TODO MOVE var TMP -> tmp vysledok
+        if (inFunc) {
+            ADD_INST("MOVE LF@"); ADD_CODE(varRecord.key); ADD_CODE(" TF@navratova_hodnota");
+        } else {
+            ADD_INST("MOVE GF@"); ADD_CODE(varRecord.key); ADD_CODE(" TF@navratova_hodnota");
+        }
         return PROG_OK;
     // INPUTF()
     } else if (actualToken.tokenType == Keyword &&
@@ -545,10 +568,22 @@ int assign(hTabItem_t* varRecord) {
         GET_AND_CHECK_TOKEN(LeftBracket);
         GET_AND_CHECK_TOKEN(String);
         // TODO MOVE var STRLEN(s)
+        ADD_CODE("CREATEFRAME");
+        ADD_CODE("DEFVAR TF@%1");
+        ADD_CODE("MOVE TF@%1 string@"); ADD_CODE(dynamicStringGetText(actualToken.tokenAttribute.word));
+
         GET_AND_CHECK_TOKEN(RightBracket);
 
         // TODO function call len
+        cg_fun_call("FUNCTION_LEN");
+
         // TODO function retval assign to var
+        if (inFunc) {
+            ADD_INST("MOVE LF@"); ADD_CODE(varRecord->key); ADD_CODE(" TF@navratova_hodnota");
+        } else {
+            ADD_INST("MOVE GF@"); ADD_CODE(varRecord->key); ADD_CODE(" TF@navratova_hodnota");
+        }
+
         varRecord->type = TypeInteger;
         return PROG_OK;
     // SUBSTR(s,i,n)
@@ -559,16 +594,29 @@ int assign(hTabItem_t* varRecord) {
         GET_AND_CHECK_TOKEN(LeftBracket);
         GET_AND_CHECK_TOKEN(String);
         // TODO MOVE str String
+        ADD_CODE("CREATEFRAME");
+        ADD_CODE("DEFVAR TF@%1");
+        ADD_CODE("MOVE TF@%1 string@"); ADD_CODE(dynamicStringGetText(actualToken.tokenAttribute.word));
         GET_AND_CHECK_TOKEN(Comma);
         GET_AND_CHECK_TOKEN(Integer);
         // TODO MOVE int Int
+        ADD_CODE("DEFVAR TF@%2");
+        ADD_CODE("MOVE TF@%2 int@"); ADD_CODE(dynamicStringGetText(actualToken.tokenAttribute.intValue));
         GET_AND_CHECK_TOKEN(Comma);
         GET_AND_CHECK_TOKEN(Integer);
         // TODO MOVE int Int
+        ADD_CODE("DEFVAR TF@%3");
+        ADD_CODE("MOVE TF@%3 int@"); ADD_CODE(dynamicStringGetText(actualToken.tokenAttribute.intValue));
         GET_AND_CHECK_TOKEN(RightBracket);
 
         // TODO function call substr
+        cg_fun_call("FUNCTION_SUBSTR");
         // TODO function retval assign to var
+        if (inFunc) {
+            ADD_INST("MOVE LF@"); ADD_CODE(varRecord->key); ADD_CODE(" TF@navratova_hodnota");
+        } else {
+            ADD_INST("MOVE GF@"); ADD_CODE(varRecord->key); ADD_CODE(" TF@navratova_hodnota");
+        }
         varRecord->type = TypeString;
         return PROG_OK;
     // ORD(s,i)
@@ -579,14 +627,24 @@ int assign(hTabItem_t* varRecord) {
         GET_AND_CHECK_TOKEN(LeftBracket);
         GET_AND_CHECK_TOKEN(String);
         // TODO MOVE str String
+        ADD_CODE("CREATEFRAME");
+        ADD_CODE("DEFVAR TF@%1");
+        ADD_CODE("MOVE TF@%1 string@"); ADD_CODE(dynamicStringGetText(actualToken.tokenAttribute.word));
         GET_AND_CHECK_TOKEN(Comma);
         GET_AND_CHECK_TOKEN(Integer);
         // TODO MOVE int Int
+        ADD_CODE("DEFVAR TF@%2");
+        ADD_CODE("MOVE TF@%2 int@"); ADD_CODE(dynamicStringGetText(actualToken.tokenAttribute.intValue));
         GET_AND_CHECK_TOKEN(RightBracket);
 
         // TODO function call ord
+        cg_fun_call("FUNCTION_ORD");
         // TODO function retval assign to var
-
+        if (inFunc) {
+            ADD_INST("MOVE LF@"); ADD_CODE(varRecord->key); ADD_CODE(" TF@navratova_hodnota");
+        } else {
+            ADD_INST("MOVE GF@"); ADD_CODE(varRecord->key); ADD_CODE(" TF@navratova_hodnota");
+        }
         varRecord->type = TypeInteger;
         return PROG_OK;
     // CHR(i)
@@ -598,10 +656,19 @@ int assign(hTabItem_t* varRecord) {
         GET_AND_CHECK_TOKEN(Integer);
 
         // TODO MOVE str 'Int'
+        ADD_CODE("CREATEFRAME");
+        ADD_CODE("DEFVAR TF@%1");
+        ADD_CODE("MOVE TF@%1 int@"); ADD_CODE(dynamicStringGetText(actualToken.tokenAttribute.intValue));
         GET_AND_CHECK_TOKEN(RightBracket);
 
         // TODO function call chr
+        cg_fun_call("FUNCTION_CHR");
         // TODO function retval assign to var
+        if (inFunc) {
+            ADD_INST("MOVE LF@"); ADD_CODE(varRecord->key); ADD_CODE(" TF@navratova_hodnota");
+        } else {
+            ADD_INST("MOVE GF@"); ADD_CODE(varRecord->key); ADD_CODE(" TF@navratova_hodnota");
+        }
         varRecord->type = TypeString;
         return PROG_OK;
     // ERROR
