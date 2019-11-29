@@ -391,7 +391,7 @@ int commandList() {
     }
 }
 
-int term() { // DONE
+int term() {
     GET_TOKEN;
 
     // Výpis dokumentačného reťazca
@@ -400,7 +400,7 @@ int term() { // DONE
     // Výpis hodnoty identifikátora
     } else if (actualToken.tokenType == Identifier) {
         hTabItem_t *var;
-        // Nachádza sa v globálnej hashT
+        // Nachádza sa v globálnej hashT TODO cisla
         if ((var = TSearch(GlobalTable,actualToken.tokenAttribute.word)) != NULL) {
             if (cg_print(var->key.text,var->type) == false)     return INTERNAL_ERR;
         // Nachádza sa v lokálnej hashT

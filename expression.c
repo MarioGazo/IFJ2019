@@ -264,7 +264,9 @@ int expSwitch( dynamic_symbol_stack_t * stack, token_t ** t, const int * depth, 
 
             break;
         case ' ': //Empty LL cell, meaning a syntax error
-            //printf("%d\n", token->tokenType);
+            if (DEBUG)
+                printf("%d\n", token->tokenType);
+
             PRINT_DEBUG("SYNTAX ERROR\n");
             return SYNTAX_ERR;
     }
@@ -299,7 +301,9 @@ int expression(FILE* lIn, dynamic_stack_t* lIStack, token_t* t) {
     do {
         if (LLPos(token) == -1 && LLSPos(token) == -1) {
             //The token wasnt recognized by neither function, meaning a syntax error
-            //printf("TOKEN UNRECOGNIZED: %d\n", token->tokenType);
+            if (DEBUG)
+                printf("TOKEN UNRECOGNIZED: %d\n", token->tokenType);
+
             sym_stackFree(stack);
             free(token);
             return SYNTAX_ERR;

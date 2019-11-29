@@ -112,7 +112,7 @@ bool cg_fun_call(char *id_funkcie)
     return true;
 }
 
-// TODO možno netreba kontrolovat navratovy typ ked sa premenna pretypuje podla toho čo jej je priradené
+/*/ TODO možno netreba kontrolovat navratovy typ ked sa premenna pretypuje podla toho čo jej je priradené
 bool cg_fun_retval_assign(char *ID_val_l, varType_t typ_l, varType_t navratovy_typ)
 {
     if (typ_l == TypeDouble && navratovy_typ == TypeInteger)
@@ -125,7 +125,7 @@ bool cg_fun_retval_assign(char *ID_val_l, varType_t typ_l, varType_t navratovy_t
     }
     ADD_CODE("MOVE LF@"); ADD_CODE(ID_val_l); ADD_CODE(" TF@%retval\n");
     return true;
-}
+}*/
 
 bool cg_fun_before_params()
 {
@@ -149,7 +149,7 @@ bool cg_var_declare(char* varName, bool inFunc)
     return true;
 }
 
-static bool cg_default_value_type(varType_t typ)
+/*static bool cg_default_value_type(varType_t typ)
 {
     switch (typ)
     {
@@ -172,9 +172,9 @@ static bool cg_default_value_type(varType_t typ)
             return false;
     }
     return true;
-}
+}*/
 
-// TODO možno nebue treba
+/*/ TODO možno nebue treba
 bool cg_var_default_value(char *varName, varType_t typ)
 {
     ADD_CODE("MOVE LF@ "); ADD_CODE(varName); ADD_CODE(" ");
@@ -182,7 +182,7 @@ bool cg_var_default_value(char *varName, varType_t typ)
     ADD_CODE("\n");
 
     return true;
-}
+}*/
 
 bool cg_label(char* funcName, unsigned int uni_a,unsigned int uni_b)
 {
@@ -308,4 +308,5 @@ bool cg_input(hTabItem_t variable,bool inFunc) {
 bool cg_frame_assign_retval(hTabItem_t variable, bool inFunc) {
     if (inFunc) { ADD_CODE("MOVE LF@"); } else { ADD_CODE("MOVE GF@"); }
     ADD_CODE(variable.key.text); ADD_CODE(" TF@navratova_hodnota");
+    return true;
 }

@@ -175,7 +175,7 @@ bool cg_fun_before_params();
  */
 bool cg_fun_end(char *id_funkcie);
 //todo komentár
-static bool cg_default_value_type(varType_t typ);
+//static bool cg_default_value_type(varType_t typ);
 bool cg_var_default_value(char* varName, varType_t typ);
 /**
  * @brief Jump to function label with option of return
@@ -187,10 +187,10 @@ bool cg_fun_call(char *id_funkcie);
  */
 bool cg_fun_retval();
 //todo komentár
-bool cg_fun_param(int value);
+//bool cg_fun_param(int value);
 
 //todo komentár
-bool cg_fun_retval_assign(char *ID_val_l, varType_t typ_l, varType_t navratovy_typ);
+//bool cg_fun_retval_assign(char *ID_val_l, varType_t typ_l, varType_t navratovy_typ);
 
 /**
  * @brief Define local parameter of function
@@ -198,9 +198,9 @@ bool cg_fun_retval_assign(char *ID_val_l, varType_t typ_l, varType_t navratovy_t
 bool cg_fun_param_declare(char *id_parametra);
 
 //todo komentár
-bool cg_fun_convert_passed_param(varType_t z, varType_t do_, int index);
+//bool cg_fun_convert_passed_param(varType_t z, varType_t do_, int index);
 //todo komentár
-bool cg_fun_pass_param(token_t token, int index);
+//bool cg_fun_pass_param(token_t token, int index);
 
 /**
  * @brief Function return and popframe
