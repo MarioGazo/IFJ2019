@@ -116,7 +116,6 @@ int program() {
     if (actualToken.tokenType == EndOfFile) {
         PRINT_DEBUG("End of program\n");
 
-        GET_AND_CHECK_TOKEN(EOL);
         return PROG_OK;
     // Používateľom definovaná funkcia
     } else if (actualToken.tokenType == Keyword &&
@@ -351,7 +350,7 @@ int commandList() {
             if (cg_var_declare(varRecord.key.text,inFunc) == false) return INTERNAL_ERR;
 
             // Aby bola deklarovaná, musí jej byť priradená hodnota
-            if ((errorCode = assign(&varRecord)) != PROG_OK) return errorCode;
+            if ((errorCode = (assign(&varRecord))) != PROG_OK) return errorCode;
 
             // TODO ak nie je premenná celkovo definovana v tele programu tak je lokálna?
             // TODO v takom prípade ak inBody -> Global, inak Local a Local free vždy ked skončí Command list
@@ -396,36 +395,36 @@ int term() {
 
     // Výpis dokumentačného reťazca
     if (actualToken.tokenType == DocumentString) {
-        cg_print(actualToken.tokenAttribute.word.text, TypeString);
+        cg_print_literal(actualToken.tokenAttribute.word.text, TypeString);
     // Výpis hodnoty identifikátora
     } else if (actualToken.tokenType == Identifier) {
         hTabItem_t *var;
-        // Nachádza sa v globálnej hashT TODO cisla
+        // Nachádza sa v globálnej hashT
         if ((var = TSearch(GlobalTable,actualToken.tokenAttribute.word)) != NULL) {
-            if (cg_print(var->key.text,var->type) == false)     return INTERNAL_ERR;
+            if (cg_print_id(var,true) == false)     return INTERNAL_ERR;
         // Nachádza sa v lokálnej hashT
         } else if ((var = TSearch(LocalTable,actualToken.tokenAttribute.word)) != NULL) {
-            if (cg_print(var->key.text,var->type) == false)     return INTERNAL_ERR;
+            if (cg_print_id(var,false) == false)     return INTERNAL_ERR;
         // ID nebol definovaný -> ERROR
         } else {
             return SEMPROG_ERR; // nedefinovana premenna TODO možno má vypýsať None
         }
     // Výpis reťazca
     } else if (actualToken.tokenType == String) {
-        if (cg_print(actualToken.tokenAttribute.word.text, TypeString) == false) return INTERNAL_ERR;
+        if (cg_print_literal(actualToken.tokenAttribute.word.text, TypeString) == false) return INTERNAL_ERR;
     // Výpis celého čísla prevedeného na text
     } else if (actualToken.tokenType == Integer) {
         char buffer[100];
         sprintf(buffer,"%d",actualToken.tokenAttribute.intValue);
-        if (cg_print(buffer, TypeInteger) == false)             return INTERNAL_ERR;
+        if (cg_print_literal(buffer, TypeInteger) == false)             return INTERNAL_ERR;
     // Výpis desatinného čísla prevedeného na text
     } else if (actualToken.tokenType == Double) {
         char buffer[100];
         sprintf(buffer,"%a",actualToken.tokenAttribute.doubleValue);
-        if (cg_print(buffer, TypeDouble) == false)              return INTERNAL_ERR;
+        if (cg_print_literal(buffer, TypeDouble) == false)              return INTERNAL_ERR;
     // Výpis neznámej hodnoty
     } else if (actualToken.tokenType == Keyword && actualToken.tokenAttribute.intValue == keywordNone) {
-        if (cg_print("None", TypeNone) == false)                return INTERNAL_ERR;
+        if (cg_print_literal("None", TypeNone) == false)                return INTERNAL_ERR;
     } else {
         return SYNTAX_ERR;
     }
@@ -435,11 +434,11 @@ int term() {
     // Končí výpis alebo nasledujú dalšie termy?
     if (actualToken.tokenType == RightBracket) {
         // Koniec výpisu -> EOL
-        if (cg_print("\n", TypeString) == false) return INTERNAL_ERR;
+        if (cg_print_literal("\n", TypeString) == false) return INTERNAL_ERR;
         return PROG_OK;
     } else if (actualToken.tokenType == Comma) {
         // Ďaľší term -> medzera
-        if (cg_print(" ", TypeString) == false)  return INTERNAL_ERR;
+        if (cg_print_literal(" ", TypeString) == false)  return INTERNAL_ERR;
         return (errorCode = term());
     } else {
         return SYNTAX_ERR;

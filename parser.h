@@ -60,7 +60,7 @@ int term();
  *
  * @return Error code
  */
- int assign(hTabItem_t* varRecord);
+int assign(hTabItem_t* varRecord);
 
 /**
  * @brief Makes code more readable

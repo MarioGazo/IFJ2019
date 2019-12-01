@@ -8,7 +8,6 @@
 #include "code-gen.h"
 #include "dynamic-string.h"
 
-#include <limits.h>
 #include <stdio.h>
 
 // Global code variable
@@ -61,7 +60,7 @@ bool cg_main_scope_start()
 
 bool cg_main_scope_end()
 {
-    ADD_INST("# Koniec main");
+    ADD_INST("\n# Koniec main");
     ADD_INST("POPFRAME");
     ADD_INST("CLEARS");
     return true;
@@ -239,8 +238,9 @@ bool cg_if_end(unsigned int uni_a, unsigned int uni_b)
 }
 
 // WRITE <symb>
-bool cg_print(char* value, varType_t typ) {
-    ADD_INST("\n# Function PRINT");
+bool cg_print_literal(char* value, varType_t typ) {
+    ADD_INST("\n# Function PRINT LITERAL");
+
     // Výpis celého čísla, desatinného čísla alebo reťazca?
     switch (typ) {
         case TypeInteger:
@@ -261,15 +261,26 @@ bool cg_print(char* value, varType_t typ) {
                     sprintf(buffer,"%d",value[i]);
                     ADD_CODE("\\0"); ADD_CODE(buffer);
                 } else {
-                    char c[1];
+                    char c[2];
+                    c[1] = '\0';
                     c[0] = value[i];
                     ADD_CODE(c);
                 }
             }
+            ADD_CODE("\n");
             return true;
         default:
             return false;
     }
+}
+
+bool cg_print_id(hTabItem_t* varRecord, bool global) {
+    ADD_INST("\n# Function PRINT ID");
+
+    ADD_CODE("WRITE ");
+    if (global) { ADD_CODE("GF@"); } else { ADD_CODE("LF%"); }
+    ADD_CODE(varRecord->key.text); ADD_CODE("\n");
+    return true;
 }
 
 // Výpis typu podla hodnoty z enum-u

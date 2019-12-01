@@ -16,7 +16,7 @@
  * @union Token attribute is a number or a string
  */
 typedef union {
-    int intValue;
+    unsigned int intValue;
     double doubleValue;
     dynamicString_t word;
 } tokenAttribute_t;
@@ -160,7 +160,7 @@ double strToDouble(const char* string);
  * @param base Base of the number
  * @return Whole number
  */
-int strToInt(const char* string, int base);
+unsigned int strToInt(const char* string, int base);
 
 /**
  * @brief Prints out state for debugging purposes

@@ -1,0 +1,114 @@
+.IFJcode19
+
+# Zaciatok main
+LABEL $$main
+CREATEFRAME
+PUSHFRAME
+
+# Built-in function Len
+LABEL $function_len
+PUSHFRAME
+DEFVAR LF@%navratova_hodnota
+STRLEN LF@%navratova_hodnota LF@%0
+POPFRAME
+RETURN
+
+# Built-in function SubStr
+LABEL $substr
+PUSHFRAME
+DEFVAR LF@%navratova_hodnota
+MOVE LF@%navratova_hodnota string@
+DEFVAR LF@dlzka_str
+CREATEFRAME
+DEFVAR TF@%0
+MOVE TF@%0 LF@%0
+CALL $length
+MOVE LF@dlzka_str TF@%navratova_hodnota
+DEFVAR LF@navratova_podmienka
+LT LF@navratova_podmienka LF@dlzka_str int@0
+JUMPIFEQ $substr$return LF@navratova_podmienka bool@true
+EQ LF@navratova_podmienka LF@dlzka_str int@0
+JUMPIFEQ $substr$return LF@navratova_podmienka bool@true
+LT LF@navratova_podmienka LF@%1 int@0
+JUMPIFEQ $substr$return LF@navratova_podmienka bool@true
+EQ LF@navratova_podmienka LF@%1 int@0
+JUMPIFEQ $substr$return LF@navratova_podmienka bool@true
+GT LF@navratova_podmienka LF@%1 LF@dlzka_str
+JUMPIFEQ $substr$return LF@navratova_podmienka bool@true
+EQ LF@navratova_podmienka LF@%2 int@0
+JUMPIFEQ $substr$return LF@navratova_podmienka bool@true
+DEFVAR LF@maximum_n
+MOVE LF@maximum_n LF@dlzka_str
+SUB LF@maximum_n LF@maximum_n LF@%1
+ADD LF@maximum_n LF@maximum_n int@1
+DEFVAR LF@edit_n_podmienka
+LT LF@edit_n_podmienka LF@%2 int@0
+JUMPIFEQ $substr$edit_n LF@edit_n_podmienka bool@true
+GT LF@edit_n_podmienka LF@%2 LF@maximum_n
+JUMPIFEQ $substr$edit_n LF@edit_n_podmienka bool@true
+JUMP $substr$process
+LABEL $substr$edit_n
+MOVE LF@%2 LF@maximum_n
+LABEL $substr$process
+DEFVAR LF@index
+MOVE LF@index LF@%1
+SUB LF@index LF@index int@1
+DEFVAR LF@char
+DEFVAR LF@procesna_podmienka
+LABEL $substr$process_loop
+GETCHAR LF@char LF@%0 LF@index
+CONCAT LF@%navratova_hodnota LF@%navratova_hodnota LF@char
+ADD LF@index LF@index int@1
+SUB LF@%2 LF@%2 int@1
+GT LF@procesna_podmienka LF@%2 int@0
+JUMPIFEQ $substr$process_loop LF@procesna_podmienka bool@true
+LABEL $substr$return
+POPFRAME
+RETURN
+
+# Built-in function ORD
+LABEL $ord
+PUSHFRAME
+DEFVAR LF@%navratova_hodnota
+MOVE LF@%navratova_hodnota int@0
+DEFVAR LF@podmienena_dlzka
+LT LF@podmienena_dlzka LF@%1 int@1
+JUMPIFEQ $ord$return LF@podmienena_dlzka bool@true
+DEFVAR LF@dlzka_stringu
+CREATEFRAME
+DEFVAR TF@%0
+MOVE TF@%0 LF@%0
+CALL $length
+MOVE LF@dlzka_stringu TF@%navratova_hodnota
+GT LF@podmienena_dlzka LF@%1 LF@dlzka_stringu
+JUMPIFEQ $ord$return LF@podmienena_dlzka bool@true
+SUB LF@%1 LF@%1 int@1
+STRI2INT LF@%navratova_hodnota LF@%0 LF@%1
+LABEL $ord$return
+POPFRAME
+RETURN
+
+# Built-in function Chr
+LABEL $chr
+PUSHFRAME
+DEFVAR LF@%navratova_hodnota
+MOVE LF@%navratova_hodnota string@
+DEFVAR LF@rozsah_podm
+LT LF@rozsah_podm LF@%0 int@0
+JUMPIFEQ $chr$return LF@rozsah_podm bool@true
+GT LF@rozsah_podm LF@%0 int@255
+JUMPIFEQ $chr$return LF@rozsah_podm bool@true
+INT2CHAR LF@%navratova_hodnota LF@%0
+LABEL $chr$return
+POPFRAME
+RETURN
+
+# Function PRINT
+WRITE string@Hello world!\010
+
+# Function PRINT
+WRITE string@\010
+
+# Koniec main
+POPFRAME
+CLEARS

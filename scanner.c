@@ -10,6 +10,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <stdlib.h>
+#include <limits.h>
 
 token_t getToken(FILE* in, dynamic_stack_t* indentationStack) {
 
@@ -625,11 +626,12 @@ double strToDouble(const char* string) {
     return strtod(string, NULL);
 }
 
-int strToInt(const char* string, int base) {
-    return strtol(string,NULL,base);
+unsigned int strToInt(const char* string, int base) {
+    return strtol(string,NULL,base) % UINT_MAX;
 }
 
 void printToken(dynamic_stack_t * indentationStack, token_t actualToken) {
+    printf("TOKEN: ");
     switch (actualToken.tokenType) {
         case Plus:
             printf("Plus\n");
