@@ -256,7 +256,7 @@ bool cg_print_literal(char* value, varType_t typ) {
             ADD_CODE("WRITE string@");
             // Špeciálne znaky treba previezť na escape sekvencie v tvare \xyz
             for (unsigned long i = 0; i < strlen(value); i++) {
-                if (value[i] < 32 || value[i] == 35 || value[i] == 92) {
+                if (value[i] <= 32 || value[i] == 35 || value[i] == 92) {
                     char buffer[4];
                     sprintf(buffer,"%d",value[i]);
                     ADD_CODE("\\0"); ADD_CODE(buffer);
