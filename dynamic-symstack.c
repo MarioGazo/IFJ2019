@@ -120,10 +120,10 @@ void sym_stackPrintTokenType(token_t * token){
     case  Equals:
       printf("=|");
       break;
-    case 99:
+    case Nonterminal:
       printf("E|");
       break;
-    case 100:
+    case Shift:
       printf("<|");
       break;
     default:

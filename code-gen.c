@@ -316,8 +316,8 @@ bool cg_input(hTabItem_t variable,bool inFunc) {
 }
 
 // Priradenie návratovej hodnoty vstavanej funkcie do premennej v lokálnom alebo globálnom rámci
-bool cg_frame_assign_retval(hTabItem_t variable, bool inFunc) {
-    if (inFunc) { ADD_CODE("MOVE LF@"); } else { ADD_CODE("MOVE GF@"); }
+bool cg_frame_assign_retval(hTabItem_t variable, bool local) {
+    if (local) { ADD_CODE("MOVE LF@"); } else { ADD_CODE("MOVE GF@"); }
     ADD_CODE(variable.key.text); ADD_CODE(" TF@navratova_hodnota");
     return true;
 }

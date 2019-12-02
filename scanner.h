@@ -50,12 +50,12 @@ typedef enum parserState {
     Dedent,                // 22 EOL....space count < stack top
     OneQuoteStart,         // 23 "
     TwoQuoteStart,         // 24 ""
-    DocumentStringStart,        // 25 """blabla
+    DocumentStringStart,   // 25 """blabla
     OneQuoteEnd,           // 26 """blabla"
     TwoQuoteEnd,           // 27 """blabla""
-    DocumentString,     // 28 """blabla"""
+    DocumentString,        // 28 """blabla"""
     StringStart,           // 29 '
-    String,             // 30 'blabla'
+    String,                // 30 'blabla'
     IdOrKw,                // 31 string of characters
     Keyword,               // 32 string is a keyword
     Identifier,            // 33 string is an identifier (key for hashtable)
@@ -67,8 +67,8 @@ typedef enum parserState {
     BinaryNum,             // 39 0b1010_1010
     OctalNum,              // 40 0o252
     HexadecimalNum,        // 41 0xAA
-    Shift = 100,                 // 42 Shift type for prec analy
-    Nonterminal = 99,           // 43 Nonterminal for prec analy
+    Shift = 100,           // 42 Shift type for prec analy
+    Nonterminal = 99,      // 43 Nonterminal for prec analy
     Error = -1,            // -1 lexical error
     ErrorIndent = -2,      // -2 indentation error
     ErrorMalloc = -3,      // -3 internal error

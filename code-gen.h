@@ -267,6 +267,6 @@ bool cg_type(varType_t type);
 /**
  * @brief Assigns return value of built in function to variable
  */
-bool cg_frame_assign_retval(hTabItem_t variable, bool inFunc);
+bool cg_frame_assign_retval(hTabItem_t variable, bool local);
 
 #endif //VUT_FIT_IFJ2019_CODE_GEN_H

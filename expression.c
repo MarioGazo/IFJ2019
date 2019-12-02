@@ -35,18 +35,18 @@ char LL[7][7] = {
 
 //Rules to pick from. 99 = E (Nonterminal)
 parserState_t rules[RULEHEIGHT][RULEWIDTH] = {
-    {99, Plus, 99},                                             // E -> E+E
-    {99, Minus, 99},                                            // E -> E-E
-    {99, DivideWRest, 99},                                      // E -> E/E
-    {99, DivideWORest, 99},                                     // E -> E//E
-    {99, Multiply, 99},                                         // E -> E*E
-    {99, NotEqual, 99},                                         // E -> E!=E
-    {99, SmallerOrEqual, 99},                                   // E -> E>=E
-    {99, Smaller, 99},                                          // E -> E>E
-    {99, Bigger, 99},                                           // E -> E<E
-    {99, BiggerOrEqual, 99},                                    // E -> E<=E
-    {99, Equals, 99},                                           // E -> E==E
-    {RightBracket, 99, LeftBracket},                            // E -> (E) (in reverse because of the stack)
+    {Nonterminal, Plus, Nonterminal},                           // E -> E+E
+    {Nonterminal, Minus, Nonterminal},                          // E -> E-E
+    {Nonterminal, DivideWRest, Nonterminal},                    // E -> E/E
+    {Nonterminal, DivideWORest, Nonterminal},                   // E -> E//E
+    {Nonterminal, Multiply, Nonterminal},                       // E -> E*E
+    {Nonterminal, NotEqual, Nonterminal},                       // E -> E!=E
+    {Nonterminal, SmallerOrEqual, Nonterminal},                 // E -> E>=E
+    {Nonterminal, Smaller, Nonterminal},                        // E -> E>E
+    {Nonterminal, Bigger, Nonterminal},                         // E -> E<E
+    {Nonterminal, BiggerOrEqual, Nonterminal},                  // E -> E<=E
+    {Nonterminal, Equals, Nonterminal},                         // E -> E==E
+    {RightBracket, Nonterminal, LeftBracket},                   // E -> (E) (in reverse because of the stack)
     {Identifier, (parserState_t) NULL, (parserState_t) NULL},   // E -> i ()
     {String, (parserState_t) NULL, (parserState_t) NULL},       // E -> s
     {Integer, (parserState_t) NULL, (parserState_t) NULL},      // E -> integer
@@ -54,8 +54,8 @@ parserState_t rules[RULEHEIGHT][RULEWIDTH] = {
 };
 
 
-token_t * terminalTop(dynamic_symbol_stack_t * stack, int * depth) {
-    token_t * token = sym_stackTopItem(stack);
+token_t* terminalTop(dynamic_symbol_stack_t * stack, int * depth) {
+    token_t* token = sym_stackTopItem(stack);
     int i = 0;
 
     while(token != NULL && token->tokenType == 99) {
@@ -130,7 +130,7 @@ token_t* new_token(parserState_t type){
 }
 
 token_t* getNewToken() {
-    token_t * token = calloc(1, sizeof(token_t));
+    token_t* token = calloc(1, sizeof(token_t));
     *token = getToken(in,iStack);
     if (token->tokenType == Error)       errN = LEX_ERR;
     if (token->tokenType == ErrorMalloc) errN = INTERNAL_ERR;
@@ -173,10 +173,10 @@ token_t* getNewToken() {
   */
 }
 
-int expSwitch( dynamic_symbol_stack_t * stack, token_t ** t, const int * depth, char symbol){
-    token_t * bufferT = NULL;
-    token_t * token  = *t;
-    token_t * exp[RULEWIDTH];
+int expSwitch( dynamic_symbol_stack_t* stack, token_t** t, const int* depth, char symbol){
+    token_t* bufferT = NULL;
+    token_t* token  = *t;
+    token_t* exp[RULEWIDTH];
     switch(symbol){
         case '=':
             sym_stackPush(stack, token);
@@ -193,12 +193,12 @@ int expSwitch( dynamic_symbol_stack_t * stack, token_t ** t, const int * depth, 
         case '>':
             //clear the comparison array
             for(int i = 0; i<RULEWIDTH; i++){
-                exp[i] = (token_t *) NULL;
+                exp[i] = (token_t*) NULL;
             }
             int index = 0;
             int stop = 0;
-            // fill the array with token types from max RULEWIDTH (probably 3) top items from the stack (until the shift
-            // token) and then dispose of them (including the shift one) as they are no longer necessary
+            // fill the array with token types from max RULEWIDTH (probably 3) top items from the stack (until the
+            // shift token) and then dispose of them (including the shift one) as they are no longer necessary
             do {
                 bufferT = sym_stackPop(stack);
                 if(bufferT->tokenType != 100) {
@@ -214,7 +214,7 @@ int expSwitch( dynamic_symbol_stack_t * stack, token_t ** t, const int * depth, 
             //try to find a match
             int found = -1;
             PRINT_DEBUG("Match: ");
-            for(int i = 0; i<RULEHEIGHT; i++) {// go through all the rules and compare their token types
+            for(int i = 0; i<RULEHEIGHT; i++) { // go through all the rules and compare their token types
                 int match = 0;
                 for(int o = 0; o<RULEWIDTH; o++) {
                     //sadly they are not the same kind of NULL
@@ -241,23 +241,24 @@ int expSwitch( dynamic_symbol_stack_t * stack, token_t ** t, const int * depth, 
                  exp[2] != NULL &&
                 (exp[2]->tokenAttribute.intValue == 0 &&
                  exp[2]->tokenAttribute.doubleValue == 0.0 )) { //Zero div check
-            // Rules involving DIVISION
-            // If they try to divide by a string its an error regardless so its not like its a wrong way to test for zero
+            // Rules involving DIVISION, If they try to divide by a string its an error
+            // regardless so its not like its a wrong way to test for zero
 
             PRINT_DEBUG("DIVISION BY ZERO (or a string) ERROR\n");
             return DIVZERO_ERR;
             }
 
             if(found>-1) {
-                sym_stackPush(stack, new_token(99)); //All rules are assumed to have a left side E, because they do. (E = 99)
+                //All rules are assumed to have a left side E, because they do. (E = 99)
+                sym_stackPush(stack, new_token(99));
                 //TODO: printing out the expressions in target language
             } else {
                 PRINT_DEBUG("SYNTAX ERROR RULE NOT FOUND\n");
                 return SYNTAX_ERR;
             }
 
-            for(int i = 0; i<3; i++){
-                if(exp[i]!=NULL){
+            for(int i = 0; i<3; i++) {
+                if(exp[i]!=NULL) {
                     free(exp[i]); //free the memory
                 }
             }
@@ -290,12 +291,11 @@ int expression(FILE* lIn, dynamic_stack_t* lIStack, token_t* t, token_t* control
     end->tokenType = EOL;
     sym_stackPush(stack, end); // Push $ as the first item of the stack
 
-    if(t == NULL) { // In case the token was not passed as the function argument, get a new one
-        token = getNewToken();
+    if(controlToken == NULL) { // In case the token was not passed as the function argument, get a new one
+        token = t;
     } else {
         // Turning the passed value into one that is compatible with the rest of the thing
-        token = calloc(1, sizeof(token_t));
-        *token = *t;
+        token = controlToken;
     }
 
     do {
@@ -344,9 +344,9 @@ int expression(FILE* lIn, dynamic_stack_t* lIStack, token_t* t, token_t* control
         }
 
         sym_stackPrint(stack);
-    } while(!(sym_stackTraverse(stack, 1)->tokenType==EOL && sym_stackTopItem(stack)->tokenType==99 &&
-               (token->tokenType== EOL || token->tokenType== EndOfFile || token->tokenType== Colon ||
-                token->tokenType== Dedent|| token->tokenType== Indent)));
+    } while(!(sym_stackTraverse(stack, 1)->tokenType ==EOL && sym_stackTopItem(stack)->tokenType == 99 &&
+               (token->tokenType == EOL || token->tokenType == EndOfFile || token->tokenType == Colon ||
+                token->tokenType == Dedent || token->tokenType == Indent)));
     //The work is over when there is E$ on the stack and the token is one of the forementioned types
 
      sym_stackFree(stack);
