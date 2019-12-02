@@ -28,11 +28,11 @@
 #define ADD_CODE_INT(_code) \
     do {                                        \
         char string[MAX_NUMBER_OF_DIGITS];      \
-        sprintf(string,"%ud",_code);             \
+        sprintf(string,"%ud",_code);            \
         ADD_CODE(string);                       \
     } while (0)
 
-#define FUNCTION_LEN\
+#define FUNCTION_LEN \
     "\n# Built-in function Len"                \
     "\nLABEL $function_len"                    \
     "\nPUSHFRAME"                              \
@@ -41,7 +41,7 @@
     "\nPOPFRAME"                               \
     "\nRETURN"
 
-#define FUNCTION_SUBSTR\
+#define FUNCTION_SUBSTR \
     "\n# Built-in function SubStr"                                             \
     "\nLABEL $substr"                                                          \
     "\nPUSHFRAME"                                                              \
@@ -95,7 +95,7 @@
     "\nPOPFRAME"                                                               \
     "\nRETURN"
 
-#define FUNCTION_CHR\
+#define FUNCTION_CHR \
     "\n# Built-in function Chr"                                            \
     "\nLABEL $chr"                                                         \
     "\nPUSHFRAME"                                                          \
@@ -111,27 +111,27 @@
     "\nPOPFRAME"                                                           \
     "\nRETURN"
 
-#define FUNCTION_ORD\
-	"\n# Built-in function ORD"						\
-	"\nLABEL $ord"								\
-	"\nPUSHFRAME"								\
-	"\nDEFVAR LF@%navratova_hodnota"					\
+#define FUNCTION_ORD \
+	"\n# Built-in function ORD"						        \
+	"\nLABEL $ord"								            \
+	"\nPUSHFRAME"								            \
+	"\nDEFVAR LF@%navratova_hodnota"					    \
 	"\nMOVE LF@%navratova_hodnota int@0"					\
-	"\nDEFVAR LF@podmienena_dlzka"						\
+	"\nDEFVAR LF@podmienena_dlzka"						    \
 	"\nLT LF@podmienena_dlzka LF@%1 int@1"					\
-	"\nJUMPIFEQ $ord$return LF@podmienena_dlzka bool@true"			\
-	"\nDEFVAR LF@dlzka_stringu"						\
-	"\nCREATEFRAME"							\
-	"\nDEFVAR TF@%0"							\
-	"\nMOVE TF@%0 LF@%0"							\
-	"\nCALL $length"							\
+	"\nJUMPIFEQ $ord$return LF@podmienena_dlzka bool@true"  \
+	"\nDEFVAR LF@dlzka_stringu"						        \
+	"\nCREATEFRAME"							                \
+	"\nDEFVAR TF@%0"							            \
+	"\nMOVE TF@%0 LF@%0"							        \
+	"\nCALL $length"							            \
 	"\nMOVE LF@dlzka_stringu TF@%navratova_hodnota"			\
-	"\nGT LF@podmienena_dlzka LF@%1 LF@dlzka_stringu"			\
-	"\nJUMPIFEQ $ord$return LF@podmienena_dlzka bool@true"			\
-	"\nSUB LF@%1 LF@%1 int@1"						\
-	"\nSTRI2INT LF@%navratova_hodnota LF@%0 LF@%1"				\
-	"\nLABEL $ord$return"							\
-	"\nPOPFRAME"								\
+	"\nGT LF@podmienena_dlzka LF@%1 LF@dlzka_stringu"   	\
+	"\nJUMPIFEQ $ord$return LF@podmienena_dlzka bool@true"	\
+	"\nSUB LF@%1 LF@%1 int@1"						        \
+	"\nSTRI2INT LF@%navratova_hodnota LF@%0 LF@%1"		    \
+	"\nLABEL $ord$return"							        \
+	"\nPOPFRAME"								            \
 	"\nRETURN"
 
 /**
@@ -257,7 +257,7 @@ bool cg_print_id(hTabItem_t* varRecord, bool global);
 /**
  * @brief Reads value
  */
-bool cg_input(hTabItem_t variable, bool inFunc);
+bool cg_input(hTabItem_t variable, bool local);
 
 /**
  * @brief Type enum to text
@@ -268,5 +268,17 @@ bool cg_type(varType_t type);
  * @brief Assigns return value of built in function to variable
  */
 bool cg_frame_assign_retval(hTabItem_t variable, bool local);
+
+bool cg_math_operation(parserState_t operation, char* var, char* op1, char* op2);
+
+bool cg_stack_push_id(char* symb, bool local);
+
+bool cg_stack_push_literal(varType_t type, char* val);
+
+bool cg_clear_stack();
+
+bool cg_cat_literal(char* var, char* op1, char* op2);
+
+bool cg_cat_id(char* var, bool local1, char* op1, bool local2, char* op2, bool local3);
 
 #endif //VUT_FIT_IFJ2019_CODE_GEN_H

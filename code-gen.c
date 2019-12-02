@@ -140,6 +140,13 @@ bool cg_fun_return()
     return true;
 }
 
+// Priradenie návratovej hodnoty vstavanej funkcie do premennej v lokálnom alebo globálnom rámci
+bool cg_frame_assign_retval(hTabItem_t variable, bool local) {
+    if (local) { ADD_CODE("MOVE LF@"); } else { ADD_CODE("MOVE GF@"); }
+    ADD_CODE(variable.key.text); ADD_CODE(" TF@navratova_hodnota");
+    return true;
+}
+
 bool cg_var_declare(char* varName, bool inFunc)
 {
     ADD_CODE("DEFVAR ");
@@ -274,11 +281,11 @@ bool cg_print_literal(char* value, varType_t typ) {
     }
 }
 
-bool cg_print_id(hTabItem_t* varRecord, bool global) {
+bool cg_print_id(hTabItem_t* varRecord, bool local) {
     ADD_INST("\n# Function PRINT ID");
 
     ADD_CODE("WRITE ");
-    if (global) { ADD_CODE("GF@"); } else { ADD_CODE("LF%"); }
+    if (local) { ADD_CODE("GF@"); } else { ADD_CODE("LF%"); }
     ADD_CODE(varRecord->key.text); ADD_CODE("\n");
     return true;
 }
@@ -287,23 +294,23 @@ bool cg_print_id(hTabItem_t* varRecord, bool global) {
 bool cg_type(varType_t type) {
     switch (type) {
         case TypeInteger:
-            ADD_CODE("int");        return true;
+            ADD_CODE("int@");        return true;
         case TypeString:
-            ADD_CODE("string");     return true;
+            ADD_CODE("string@");     return true;
         case TypeDouble:
-            ADD_CODE("float");      return true;
+            ADD_CODE("float@");      return true;
         case TypeBool:
-            ADD_CODE("bool");       return true;
+            ADD_CODE("bool@");       return true;
         default:
             return false;
     }
 }
 
 // READ <var> <type>
-bool cg_input(hTabItem_t variable,bool inFunc) {
+bool cg_input(hTabItem_t variable,bool local) {
     // Je premenná uložená v lokálnom alebo globálnom rámci?
     ADD_INST("# Reading variable");
-    if (inFunc) { ADD_CODE("READ LF@"); } else { ADD_CODE("READ GF@"); }
+    if (local) { ADD_CODE("READ LF@"); } else { ADD_CODE("READ GF@"); }
 
     // Meno premennej
     ADD_CODE(variable.key.text); ADD_CODE(" ");
@@ -315,9 +322,112 @@ bool cg_input(hTabItem_t variable,bool inFunc) {
     return true;
 }
 
-// Priradenie návratovej hodnoty vstavanej funkcie do premennej v lokálnom alebo globálnom rámci
-bool cg_frame_assign_retval(hTabItem_t variable, bool local) {
-    if (local) { ADD_CODE("MOVE LF@"); } else { ADD_CODE("MOVE GF@"); }
-    ADD_CODE(variable.key.text); ADD_CODE(" TF@navratova_hodnota");
+// Operácia nad operandmi a premenná do ktorej je výsledok priradený
+bool cg_math_operation(parserState_t operation, char* var, char* op1, char* op2) {
+    switch (operation) {
+        case Plus:
+            ADD_CODE("ADD ");  ADD_CODE(" ");
+                       ADD_CODE(var); ADD_CODE(" ");
+                       ADD_CODE(op1); ADD_CODE(" ");
+                       ADD_CODE(op2); ADD_CODE("\n");
+            break;
+        case Minus:
+            ADD_CODE("SUB ");  ADD_CODE(" ");
+                       ADD_CODE(var); ADD_CODE(" ");
+                       ADD_CODE(op1); ADD_CODE(" ");
+                       ADD_CODE(op2); ADD_CODE("\n");
+            break;
+        case Multiply:
+            ADD_CODE("MUL ");  ADD_CODE(" ");
+                       ADD_CODE(var); ADD_CODE(" ");
+                       ADD_CODE(op1); ADD_CODE(" ");
+                       ADD_CODE(op2); ADD_CODE("\n");
+            break;
+        case DivideWRest:
+            ADD_CODE("DIV ");  ADD_CODE(" ");
+                       ADD_CODE(var); ADD_CODE(" ");
+                       ADD_CODE(op1); ADD_CODE(" ");
+                       ADD_CODE(op2); ADD_CODE("\n");
+            break;
+        case DivideWORest:
+            ADD_CODE("IDIV ");  ADD_CODE(" ");
+                        ADD_CODE(var); ADD_CODE(" ");
+                        ADD_CODE(op1); ADD_CODE(" ");
+                        ADD_CODE(op2); ADD_CODE("\n");
+            break;
+        default:
+            return false;
+    }
+
+    return true;
+}
+
+// Uloženie hodnoty symb na vrchol dátoveho zasobniku
+bool cg_stack_push_id(char* symb, bool local) {
+    ADD_CODE("PUSHS "); if (local) {ADD_CODE("LF@");} else {ADD_CODE("GF@");} ADD_CODE(symb);
+
+    return true;
+}
+
+// Uloženie hodnoty symb na vrchol dátoveho zasobniku
+bool cg_stack_push_literal(varType_t type, char* val) {
+    ADD_CODE("PUSHS ");
+
+    if (cg_type(type) == false)     return false;
+
+    ADD_CODE(val); ADD_CODE("\n");
+
+    return true;
+}
+
+// Uloženie hodnoty symb na vrchol dátoveho zasobniku
+bool cg_stack_pop_id(char* var, bool local) {
+    ADD_CODE("POPS ");
+    if (local) { ADD_CODE("LF@"); } else { ADD_CODE("GF@"); }
+    ADD_CODE(var); ADD_CODE("\n");
+
+    return true;
+}
+
+// Clear stack
+bool cg_clear_stack() {
+    ADD_INST("CLEARS");
+
+    return true;
+}
+
+// Operácia nad operandmi na vrchole dátového zásobníka
+bool cg_math_operation_stack(parserState_t operation) {
+    switch (operation) {
+        case Plus:
+            ADD_INST("ADDS");       return true;
+        case Minus:
+            ADD_INST("SUBS");       return true;
+        case Multiply:
+            ADD_INST("MULS");       return true;
+        case DivideWRest:
+            ADD_INST("DIVS");       return true;
+        case DivideWORest:
+            ADD_INST("IDIVS");      return true;
+        default:
+            return false;
+    }
+}
+
+// Konkatenácia operandov a priradenie premennej
+bool cg_cat_literal(char* var, char* op1, char* op2) {
+    ADD_CODE("CONCAT"); ADD_CODE(var); ADD_CODE(op1); ADD_CODE(op2); ADD_CODE("\n");
+
+    return true;
+}
+
+// Konkatenácia operandov a priradenie premennej
+bool cg_cat_id(char* var, bool local1, char* op1, bool local2, char* op2, bool local3) {
+    ADD_CODE("CONCAT");
+    if (local1) { ADD_CODE("LF@"); } else { ADD_CODE("GF@"); } ADD_CODE(var);
+    if (local2) { ADD_CODE("LF@"); } else { ADD_CODE("GF@"); } ADD_CODE(op1);
+    if (local3) { ADD_CODE("LF@"); } else { ADD_CODE("GF@"); } ADD_CODE(op2);
+    ADD_CODE("\n");
+
     return true;
 }
