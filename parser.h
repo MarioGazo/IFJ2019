@@ -68,4 +68,11 @@ int assign(hTabItem_t* varRecord);
  * @return Error code
  */
  int commandListContOrEnd();
+
+ /**
+  * @brief Finds and returns item in hash table
+  *
+  * @return Pointer to item, or NULL if not found
+  */
+ hTabItem_t* isInLocalOrGlobalhTab();
 #endif //VUT_FIT_IFJ2019_PARSER_H

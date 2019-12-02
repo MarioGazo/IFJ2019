@@ -273,7 +273,7 @@ int expSwitch( dynamic_symbol_stack_t * stack, token_t ** t, const int * depth, 
     return PROG_OK;
 }
 
-int expression(FILE* lIn, dynamic_stack_t* lIStack, token_t* t) {
+int expression(FILE* lIn, dynamic_stack_t* lIStack, token_t* t, token_t* controlToken) {
     //promote the passed variables to the global scope
     in = lIn;
     iStack = lIStack;

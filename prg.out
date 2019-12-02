@@ -103,10 +103,10 @@ LABEL $chr$return
 POPFRAME
 RETURN
 
-# Function PRINT
-WRITE string@Hello world!\010
+# Function PRINT LITERAL
+WRITE string@Hello\032world!\010
 
-# Function PRINT
+# Function PRINT LITERAL
 WRITE string@\010
 
 # Koniec main
