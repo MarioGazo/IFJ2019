@@ -175,11 +175,8 @@ int defFunction() {
         if (controlRecord->defined) return SEMPROG_ERR;
 
         // Funkcia uz bola pouzita, skontrolujeme, ci ma rovnaky pocet parametrov
-        if (controlRecord->value.intValue != funcRecord.value.intValue){
+        if (controlRecord->value.intValue != funcRecord.value.intValue) {
             return SEMPARAM_ERR;
-        } else {
-            inFunc = false;
-            return PROG_OK;
         }
     }
 
@@ -239,13 +236,14 @@ int commandList() {
     if (actualToken.tokenType == Identifier) {
         PRINT_DEBUG("\tID\n");
 
+        dynamicString_t name = actualToken.tokenAttribute.word;
+
         GET_TOKEN;
 
         switch (actualToken.tokenType) {
             case Assign: {
                 hTabItem_t varRecord; // zaznam premennej
-                varRecord.key = actualToken.tokenAttribute.word;
-                varRecord.defined = TRUE;
+                varRecord.key = name;
                 varRecord.next = NULL;
 
                 // Deklarácia novej premennej
@@ -269,16 +267,16 @@ int commandList() {
             case LeftBracket: {
                 // Ide o funkciu, ak je definovaná, presvedčíme sa že sedí počet parametrov, inak ju pridáme do hTab
                 hTabItem_t funcRecord; // zaznam premennej
-                funcRecord.key = actualToken.tokenAttribute.word;
-                funcRecord.defined = TRUE;
+                funcRecord.key = name;
                 funcRecord.next = NULL;
+                funcRecord.value.intValue = 0;
 
                 param(&funcRecord);
-                hTabItem_t *funcRec = NULL;
 
-
-                if ((funcRec = (TSearch(GlobalTable, funcRecord.key))) != NULL) {
-                    if (funcRec->value.intValue != funcRecord.value.intValue)
+                hTabItem_t *controlRecord = NULL;
+                if ((controlRecord = TSearch(GlobalTable, funcRecord.key)) != NULL) {
+                    printf("control: %d func: %d\n",controlRecord->value.intValue,funcRecord.value.intValue);
+                    if (controlRecord->value.intValue != funcRecord.value.intValue)
                         return SEMPARAM_ERR;
                 } else {
                     funcRecord.type = TypeFunction;
