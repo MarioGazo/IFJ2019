@@ -1,5 +1,5 @@
 # all symbols
-+ - * : ( ) / // != < <= > >= = == #abc
++ - * : ( ) / // != < <= > >= = ==
 a abc abcde
 def if else
 'abcdef' '\nabcdef' '\\\\'

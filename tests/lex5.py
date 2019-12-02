@@ -2,8 +2,8 @@
 """
 abc
 def
-ghi
+    ghi
 """
 """abc"""
 #abcdef
-"""abc"""
+"""abc""

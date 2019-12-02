@@ -305,12 +305,12 @@ token_t getToken(FILE* in, dynamic_stack_t* indentationStack) {
                     state = Identifier;            continue;
                 }
 
-                if (isdigit(c) || c == '_') {
-                    state = Identifier;            continue;
-                }
-
                 if (isKeyword(actualToken.tokenAttribute.word.text) != -1) {
                     state = Keyword;               continue; // if, else, while
+                }
+
+                if (isdigit(c) || c == '_') {
+                    state = Identifier;            continue;
                 }
 
                 continue;
