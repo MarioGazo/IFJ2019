@@ -179,11 +179,6 @@ bool cg_code_footer();
 bool cg_fun_start(char *id_funkcie);
 
 /**
- * @brief Creates new local frame
- */
-bool cg_fun_before_params();
-
-/**
  * @brief Function return and local frame destruction
  */
 bool cg_fun_end(char *id_funkcie);
@@ -192,11 +187,6 @@ bool cg_fun_end(char *id_funkcie);
  * @brief Jump to function label with option of return
  */
 bool cg_fun_call(char *id_funkcie);
-
-/**
- * @brief Function return value definition
- */
-bool cg_fun_retval();
 
 bool cg_assign_expr_result(char* variable, bool local);
 //todo komentár

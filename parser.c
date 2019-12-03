@@ -143,12 +143,8 @@ int defFunction() {
     // DEDENT
     GET_AND_CHECK_TOKEN(Identifier);
 
-    // Hlavička funkcie
+    // Hlavička funkcie + novy ramec
     if (cg_fun_start(actualToken.tokenAttribute.word.text) == false) return  INTERNAL_ERR;
-    // Návratová hodnota funkcie
-    if (cg_fun_retval() == false) return INTERNAL_ERR;
-    // Nový rámec
-    if (cg_fun_before_params() == false) return INTERNAL_ERR;
 
     // Záznam funkcie
     hTabItem_t funcRecord;
