@@ -147,19 +147,24 @@ void set_code_output(dynamicString_t *output);
 int code_write_out(int errorCode);
 
 /**
+ * @brief Code header
+ */
+bool cg_code_header();
+
+/**
  * @brief Built in functions definition
  */
 bool cg_define_b_i_functions();
 
 /**
- * @brief Main scope start
+ * @brief Main scope
  */
-bool cg_main_scope_start();
+bool cg_main_scope();
 
 /**
  * @brief Main scope end
  */
-bool cg_main_scope_end();
+bool cg_code_footer();
 
 /**
  * @brief Function start label
@@ -175,9 +180,7 @@ bool cg_fun_before_params();
  * @brief Function return and local frame destruction
  */
 bool cg_fun_end(char *id_funkcie);
-//todo komentár
-//static bool cg_default_value_type(varType_t typ);
-bool cg_var_default_value(char* varName, varType_t typ);
+
 /**
  * @brief Jump to function label with option of return
  */
@@ -187,9 +190,8 @@ bool cg_fun_call(char *id_funkcie);
  * @brief Function return value definition
  */
 bool cg_fun_retval();
-//todo komentár
-//bool cg_fun_param(int value);
 
+bool cg_assign_expr_result(char* variable, bool local);
 //todo komentár
 //bool cg_fun_retval_assign(char *ID_val_l, varType_t typ_l, varType_t navratovy_typ);
 

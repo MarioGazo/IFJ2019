@@ -39,30 +39,43 @@ int code_write_out(int errorCode) {
     }
 }
 
+bool cg_code_header()
+{
+    ADD_INST(".IFJcode19");
+    ADD_INST("# Program start");
+
+    ADD_INST("DEFVAR GF@expr_result");
+
+    ADD_INST("JUMP $$main");
+
+    return true;
+}
+
 bool cg_define_b_i_functions()
 {
     ADD_INST(FUNCTION_LEN);
     ADD_INST(FUNCTION_SUBSTR);
     ADD_INST(FUNCTION_ORD);
     ADD_INST(FUNCTION_CHR);
+
     return true;
 }
 
-bool cg_main_scope_start()
-{
-    ADD_INST(".IFJcode19");
+bool cg_main_scope() {
     ADD_INST("\n# Zaciatok main");
     ADD_INST("LABEL $$main");
     ADD_INST("CREATEFRAME");
     ADD_INST("PUSHFRAME");
+
     return true;
 }
 
-bool cg_main_scope_end()
+bool cg_code_footer()
 {
     ADD_INST("\n# Koniec main");
     ADD_INST("POPFRAME");
     ADD_INST("CLEARS");
+
     return true;
 }
 
@@ -71,79 +84,46 @@ bool cg_fun_start(char *id_funkcie)
     ADD_CODE("\n# Začiatok funkcie "); ADD_CODE(id_funkcie); ADD_CODE("\n");
     ADD_CODE("LABEL $"); ADD_CODE(id_funkcie); ADD_CODE("\n");
     ADD_INST("PUSHFRAME");
+    ADD_INST("CREATEFRAME");
+
     return true;
 }
 
 bool cg_fun_end(char *id_funkcie)
 {
-    ADD_CODE("# Koniec funkcie "); ADD_CODE(id_funkcie); ADD_CODE("\n");
+    ADD_CODE("\n# Koniec funkcie "); ADD_CODE(id_funkcie); ADD_CODE("\n");
     ADD_CODE("LABEL $"); ADD_CODE(id_funkcie); ADD_CODE("%return\n");
     ADD_INST("POPFRAME");
     ADD_INST("RETURN");
     return true;
 }
 
-bool cg_fun_retval()
-{
-    ADD_INST("DEFVAR LF@%navratova_hodnota");
-    ADD_CODE("MOVE LF@%navratova_hodnota nil@nil");
-    ADD_CODE("\n");
-    return true;
-}
-
 bool cg_fun_param_declare(char *id_parametra)
 {
     ADD_CODE("DEFVAR LF@"); ADD_CODE(id_parametra); ADD_CODE("\n");
-    ADD_CODE("MOVE LF@"); ADD_CODE(id_parametra); ADD_CODE(" LF@%"); ADD_CODE("\n");
-    return true;
-} // TODO použiť vrchnú alebo spodnú?
-/*bool cg_fun_param(int value) {
-    ADD_INST("DEFVAR LF@param"); ADD_CODE_INT(value);
-    ADD_CODE("MOVE LF@param"); ADD_CODE_INT(value);
-    ADD_CODE(" LF@%"); ADD_CODE_INT(value); // TODO tu má byť asi int@...
+
     return true;
 }
-*/
 
 bool cg_fun_call(char *id_funkcie)
 {
     ADD_CODE("CALL $"); ADD_CODE(id_funkcie); ADD_CODE("\n");
-    return true;
-}
 
-/*/ TODO možno netreba kontrolovat navratovy typ ked sa premenna pretypuje podla toho čo jej je priradené
-bool cg_fun_retval_assign(char *ID_val_l, varType_t typ_l, varType_t navratovy_typ)
-{
-    if (typ_l == TypeDouble && navratovy_typ == TypeInteger)
-    {
-        ADD_INST("INT2FLOAT TF@%retval TF@%retval");
-    }
-    else if (typ_l == TypeInteger && navratovy_typ == TypeDouble)
-    {
-        ADD_INST("FLOAT2R2EINT TF@%retval TF@%retval");
-    }
-    ADD_CODE("MOVE LF@"); ADD_CODE(ID_val_l); ADD_CODE(" TF@%retval\n");
-    return true;
-}*/
-
-bool cg_fun_before_params()
-{
-    ADD_INST("CREATEFRAME");
     return true;
 }
 
 bool cg_fun_return()
 {
-    ADD_INST("MOVE LF@%navratova_hodnota GF@%vysledok_vyrazu");
-    ADD_INST("POPFRAME"); // TODO keď sa ruší rámec pri konci funkcie tak asi netreba aj pri returne
+    ADD_INST("POPFRAME");
     ADD_INST("RETURN");
     return true;
 }
 
-// Priradenie návratovej hodnoty vstavanej funkcie do premennej v lokálnom alebo globálnom rámci
-bool cg_frame_assign_retval(hTabItem_t variable, bool local) {
-    if (local) { ADD_CODE("MOVE LF@"); } else { ADD_CODE("MOVE GF@"); }
-    ADD_CODE(variable.key.text); ADD_CODE(" TF@navratova_hodnota");
+bool cg_assign_expr_result(char* variable, bool local) {
+    ADD_CODE("MOVE ");
+    if (local) { ADD_CODE("LF@"); } else { ADD_CODE("GF@"); }
+    ADD_CODE(variable);     ADD_CODE("\n");
+
     return true;
 }
 
@@ -154,41 +134,6 @@ bool cg_var_declare(char* varName, bool inFunc)
     ADD_CODE(varName); ADD_CODE("\n");
     return true;
 }
-
-/*static bool cg_default_value_type(varType_t typ)
-{
-    switch (typ)
-    {
-        case TypeInteger:
-            ADD_CODE("int@0");
-            break;
-
-        case TypeDouble:
-            ADD_CODE("float@0.0");
-            break;
-
-        case TypeString:
-            ADD_CODE("string@");
-            break;
-
-        case TypeBool:
-            ADD_CODE("bool@false");
-
-        default:
-            return false;
-    }
-    return true;
-}*/
-
-/*/ TODO možno nebue treba
-bool cg_var_default_value(char *varName, varType_t typ)
-{
-    ADD_CODE("MOVE LF@ "); ADD_CODE(varName); ADD_CODE(" ");
-    if (!cg_default_value_type(typ)) return false;
-    ADD_CODE("\n");
-
-    return true;
-}*/
 
 bool cg_label(char* funcName, unsigned int uni_a,unsigned int uni_b)
 {
