@@ -143,6 +143,11 @@ token_t* getNewToken() {
     token_t* token = calloc(1, sizeof(token_t));
 
     *token = getToken(in,iStack);
+
+    if (DEBUG) {
+        printToken(iStack, *token);
+    }
+
     if (token->tokenType == Error)       errN = LEX_ERR;
     if (token->tokenType == ErrorMalloc) errN = INTERNAL_ERR;
     if (token->tokenType == ErrorIndent) errN = SYNTAX_ERR;

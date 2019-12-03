@@ -320,7 +320,7 @@ token_t getToken(FILE* in, dynamic_stack_t* indentationStack) {
                 if (isalpha(c) || isdigit(c) || c == '_') {
                     if (dynamicStringAddChar(&actualToken.tokenAttribute.word,c) == false) {
                         state = ErrorMalloc;       continue; // malloc error
-                    }
+                    } else { continue; }
                 } else {
                     ungetc(c,in);
                     actualToken.tokenType = Identifier;        return  actualToken;

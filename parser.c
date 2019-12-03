@@ -291,7 +291,7 @@ int commandList() {
             }
 
             default: {
-                PRINT_DEBUG("\tWEXPRESSION\n");
+                PRINT_DEBUG("\tEXPRESSION\n");
 
                 expr = true;
 
@@ -323,19 +323,20 @@ int commandList() {
                 if (cg_while_start(uni_a, uni_b) == false) return INTERNAL_ERR;
 
                 // Podmienka ďaľšej iterácie cyklu, posielame aktuálny token
+                GET_TOKEN;
                 if ((errorCode = expression(in, &indentationStack, &actualToken, NULL, 1)) != PROG_OK) return errorCode;
 
                 if (actualToken.tokenType != Colon) return SYNTAX_ERR;
                 GET_AND_CHECK_TOKEN(Indent);
 
                 // Zoznam príkazov v tele cyklu
+                GET_TOKEN;
                 if ((errorCode = commandList()) != PROG_OK) return errorCode;
 
                 // Koniec while cyklu
                 if (cg_while_end(uni_a, uni_b) == false) return INTERNAL_ERR;
 
-                uni_a++;
-                uni_b++;
+                uni_a++;        uni_b++;
                 break;
 
             case keywordIf:
@@ -354,9 +355,11 @@ int commandList() {
                 if ((errorCode = expression(in, &indentationStack, &actualToken, NULL, 1)) != PROG_OK) return errorCode; //tested
 
                 if (actualToken.tokenType != Colon) return SYNTAX_ERR;
+
                 GET_AND_CHECK_TOKEN(Indent);
 
                 // Vetva pri splnení podmienky
+                GET_TOKEN;
                 if ((errorCode = commandList()) != PROG_OK) return errorCode;
 
                 // Náveštie pri nesplnení podmeinky
@@ -368,12 +371,12 @@ int commandList() {
                 GET_AND_CHECK_TOKEN(Indent);
 
                 // Vetva pri nesplnení podmienky
+                GET_TOKEN;
                 if ((errorCode = commandList()) != PROG_OK) return errorCode;
 
                 // Koniec vetvenia
                 if (cg_if_end(uni_a, uni_b) == false) return INTERNAL_ERR;
-                uni_a++;
-                uni_b++;
+                uni_a++;        uni_b++;
                 break;
 
             case keywordPrint:
@@ -928,8 +931,6 @@ int commandListContOrEnd() {
     if (inBody && (actualToken.tokenType == EOL || actualToken.tokenType == EndOfFile)) {
         inBody = false;
         return PROG_OK;
-    } else if (inBody) {
-        return SYNTAX_ERR;
     }
 
     // Dedent v sekvencii príkazov zančí koniec, EOL, že nasleduje další prikaz

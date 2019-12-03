@@ -103,25 +103,12 @@ LABEL $chr$return
 POPFRAME
 RETURN
 
-# Začiatok funkcie abc
-LABEL $abc
-PUSHFRAME
-DEFVAR LF@%navratova_hodnota
-MOVE LF@%navratova_hodnota nil@nil
-CREATEFRAME
-
-# Function PRINT LITERAL
-WRITE string@Hello\032World\010
-
-# Function PRINT LITERAL
-WRITE string@\010
-# Koniec funkcie abc
-LABEL $abc%return
-POPFRAME
-RETURN
-CALL $abc
-CALL $abc
-CALL $abc
+# Beginning of while
+LABEL $WHILE%0d%42d
+JUMPIFEQ $WHILE%42d%0d GF@%exp_result bool@false
+JUMP $WHILE%0d%42d
+# End of while
+LABEL $WHILE%42d%0d
 
 # Koniec main
 POPFRAME
