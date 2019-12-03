@@ -237,7 +237,7 @@ int commandList() {
         PRINT_DEBUG("\tID\n");
 
         dynamicString_t name = actualToken.tokenAttribute.word;
-
+        token_t controlToken = actualToken; //uloz aktualni token pro pripad ze bude potreba
         GET_TOKEN;
 
         switch (actualToken.tokenType) {
@@ -291,13 +291,13 @@ int commandList() {
             }
 
             default: {
-                PRINT_DEBUG("\tEXPRESSION\n");
+                PRINT_DEBUG("\tWEXPRESSION\n");
 
                 expr = true;
-                token_t *controlToken = &actualToken;
+
 
                 // Posielame aktualny a predchádzajúci token
-                if ((errorCode = expression(in, &indentationStack, &actualToken, controlToken)) != 0) return errorCode;
+                if ((errorCode = expression(in, &indentationStack, &actualToken, &controlToken, 2)) != 0) return errorCode; //untested
 
                 return (errorCode = commandListContOrEnd());
             }
@@ -308,7 +308,7 @@ int commandList() {
         expr = true;
 
         // Posielame aktuálny token
-        if ((errorCode = expression(in,&indentationStack, &actualToken, NULL)) != 0) return  errorCode;
+        if ((errorCode = expression(in,&indentationStack, &actualToken, NULL, 1)) != 0) return  errorCode;
 
         return (errorCode = commandListContOrEnd());
     } else if (actualToken.tokenType == Keyword) {
@@ -323,7 +323,7 @@ int commandList() {
                 if (cg_while_start(uni_a, uni_b) == false) return INTERNAL_ERR;
 
                 // Podmienka ďaľšej iterácie cyklu, posielame aktuálny token
-                if ((errorCode = expression(in, &indentationStack, &actualToken, NULL)) != PROG_OK) return errorCode;
+                if ((errorCode = expression(in, &indentationStack, &actualToken, NULL, 1)) != PROG_OK) return errorCode;
 
                 if (actualToken.tokenType != Colon) return SYNTAX_ERR;
                 GET_AND_CHECK_TOKEN(Indent);
@@ -350,7 +350,8 @@ int commandList() {
                 cg_if_start(uni_a, uni_b);
 
                 // Podmienka vetvenia, posielame aktuálny token
-                if ((errorCode = expression(in, &indentationStack, &actualToken, NULL)) != PROG_OK) return errorCode;
+                GET_TOKEN; // nacti prvni token z vyrazu aby jsme mohli pouzit case 1
+                if ((errorCode = expression(in, &indentationStack, &actualToken, NULL, 1)) != PROG_OK) return errorCode; //tested
 
                 if (actualToken.tokenType != Colon) return SYNTAX_ERR;
                 GET_AND_CHECK_TOKEN(Indent);
@@ -393,7 +394,8 @@ int commandList() {
                 expr = true;
 
                 // Posielame aktuálny token
-                if ((errorCode = expression(in, &indentationStack, &actualToken, NULL)) != 0) return errorCode;
+                GET_TOKEN;//precti prvni token z vyrazu pro aby jsme mohli pouzit case 1 a predat adresu actualToken
+                if ((errorCode = expression(in, &indentationStack, &actualToken, NULL, 1)) != 0) return errorCode; //tested
 
                 // TODO RETURN TMP -> tmp vysledok
                 // Návrat z tela funkcie
@@ -663,7 +665,7 @@ int assign(hTabItem_t* varRecord) {
     PRINT_DEBUG("ASSIGNMENT\n");
 
     GET_TOKEN;
-
+    token_t controlToken = actualToken; //uloz token pro pripad ze by se mohl hodit
     // ID
     if (actualToken.tokenType == Identifier) { //abc = abc...
         GET_TOKEN;
@@ -698,11 +700,10 @@ int assign(hTabItem_t* varRecord) {
         } else {
             PRINT_DEBUG("\tEXPRESSION\n");
             expr = true;
-            token_t* controlToken = &actualToken;
 
             // Volanie precedentnej analyzi
             // Posielame aktuálny a predchádzajúci token
-            if ((errorCode = expression(in, &indentationStack, &actualToken,controlToken)) != 0) return errorCode;
+            if ((errorCode = expression(in, &indentationStack, &actualToken, &controlToken, 2)) != 0) return errorCode; //tested
 
             return PROG_OK;
         }
@@ -712,7 +713,7 @@ int assign(hTabItem_t* varRecord) {
         expr = true;
 
         // Posielame aktuálny token
-        if ((errorCode = expression(in, &indentationStack, &actualToken, NULL)) != 0) return errorCode;
+        if ((errorCode = expression(in, &indentationStack, &actualToken, NULL, 1)) != 0) return errorCode; //tested
 
         return PROG_OK;
     } else if (actualToken.tokenType == Keyword) {

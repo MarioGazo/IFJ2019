@@ -21,6 +21,10 @@
 FILE* in;
 dynamic_stack_t* iStack;
 //variables to deal with the getToken function
+token_t* microStack = NULL;
+
+
+
 int errN = 0;
 char LL[7][7] = {
   // +|- *|/|// (    )    i    EV   $
@@ -130,7 +134,14 @@ token_t* new_token(parserState_t type){
 }
 
 token_t* getNewToken() {
+
+    if(microStack != NULL){ // If there is a token on the microStack, return that one instead of a new one and clear it
+        token_t* token = microStack;
+        microStack = NULL;
+        return token;
+    }
     token_t* token = calloc(1, sizeof(token_t));
+
     *token = getToken(in,iStack);
     if (token->tokenType == Error)       errN = LEX_ERR;
     if (token->tokenType == ErrorMalloc) errN = INTERNAL_ERR;
@@ -198,7 +209,7 @@ int expSwitch( dynamic_symbol_stack_t* stack, token_t** t, const int* depth, cha
             int index = 0;
             int stop = 0;
             // fill the array with token types from max RULEWIDTH (probably 3) top items from the stack (until the
-            // shift token) and then dispose of them (including the shift one) as they are no longer necessary
+            // shift token) and then discard the shift token
             do {
                 bufferT = sym_stackPop(stack);
                 if(bufferT->tokenType != 100) {
@@ -274,7 +285,7 @@ int expSwitch( dynamic_symbol_stack_t* stack, token_t** t, const int* depth, cha
     return PROG_OK;
 }
 
-int expression(FILE* lIn, dynamic_stack_t* lIStack, token_t* t, token_t* controlToken) {
+int expression(FILE* lIn, dynamic_stack_t* lIStack, token_t* t, token_t* controlToken, int amountOfPassedTokens){
     //promote the passed variables to the global scope
     in = lIn;
     iStack = lIStack;
@@ -291,11 +302,24 @@ int expression(FILE* lIn, dynamic_stack_t* lIStack, token_t* t, token_t* control
     end->tokenType = EOL;
     sym_stackPush(stack, end); // Push $ as the first item of the stack
 
-    if(controlToken == NULL) { // In case the token was not passed as the function argument, get a new one
-        token = t;
-    } else {
-        // Turning the passed value into one that is compatible with the rest of the thing
-        token = controlToken;
+    switch(amountOfPassedTokens){
+      case 0: // No tokens were passed so just get a new one
+        token = getNewToken();
+        break;
+      case 1:
+        token = calloc(1, sizeof(token_t));  // Only one token was passed so use that one instead of a new one
+        *token = *t;
+        break;
+      case 2: // Two were passed - im assuming that controlToken comes before t, (TODO: maybe switch them)
+        token = calloc(1, sizeof(token_t)); //both of these should end up on the stack at some point
+        microStack = calloc(1, sizeof(token_t));
+        *token = *controlToken;
+
+
+        //simulate 'returning' a token to the scanner using the microStack and an if statement in the getNewToken() function
+        *microStack = *t;
+        break;
+
     }
 
     do {
@@ -350,6 +374,10 @@ int expression(FILE* lIn, dynamic_stack_t* lIStack, token_t* t, token_t* control
     //The work is over when there is E$ on the stack and the token is one of the forementioned types
 
      sym_stackFree(stack);
+     if(t!=NULL){
+       *t = *token; //return the last token
+     }
+
      free(token);
      return PROG_OK;
 }
