@@ -9,6 +9,7 @@
 #include "dynamic-symstack.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include "code-gen.h"
 
 #define DEBUG 1 // TODO set to 0
 #define RULEHEIGHT 16
@@ -26,6 +27,7 @@ dynamic_stack_t* iStack;
 dynamic_symbol_stack_t * operations;
 dynamic_symbol_stack_t * operands;
 token_t* microStack = NULL;
+static unsigned int uni_2_a = 0;
 
 
 
@@ -316,6 +318,153 @@ int expSwitch( dynamic_symbol_stack_t* stack, token_t** t, const int* depth, cha
             return SYNTAX_ERR;
     }
     return PROG_OK;
+}
+
+int cg_count(dynamic_symbol_stack_t *operations, int type_op_1, int type_op_2){
+
+    token_t *operation  = calloc(1, sizeof(token_t));
+
+    // Rozdelime si pripady podla typov operandov
+    if (type_op_1 == Identifier){
+        if (type_op_2 == Identifier){
+            // dve premenne, musime zistit ich datove typy
+            cg_stack_pop_id("op_1", false);
+            cg_stack_pop_id("op_2", false);
+
+            cg_stack_push_id("op_2", false);
+            cg_stack_push_id("op_1", false);
+
+            cg_type_of_symb("typ_op_1", "op_1");
+            cg_type_of_symb("typ_op_2", "op_2");
+
+            cg_jump("JUMPIFEQ", "data_control", uni_2_a, "final", "LF@typ_op_1", "LF@typ_op_2");
+            cg_jump("JUMPIFNEQ", "data_control", uni_2_a, "not_string", "LF@typ_op_1", "string@string");
+            cg_jump("JUMPIFNEQ", "data_control", uni_2_a, "not_string", "LF@typ_op_2", "string@string");
+
+            cg_exit(4);
+
+            cg_flag_gen("data_control", uni_2_a, "not_string");
+            cg_jump("JUMPIFEQ", "data_control", uni_2_a, "convert_int", "LF@typ_op_1", "string@int");
+
+            cg_stack_pop_id("op_1", false);
+            cg_stack_int2float();
+            cg_stack_push_id("op_1", false);
+
+            cg_jump("JUMP", "data_control", uni_2_a, "final", "", "");
+
+            cg_flag_gen("data_control", uni_2_a, "convert_int");
+            cg_stack_int2float();
+
+            cg_flag_gen("data_control", uni_2_a, "final");
+        } else {
+            // minimalne type_op_2 nie je premenna, musime teda zistit, ci je mozne spustenie operacie
+            cg_stack_pop_id("op_1", false);
+            cg_type_of_symb("typ_op_1", "op_1");
+            cg_stack_push_id("op_1", false);
+
+            if (type_op_2 == Integer){
+                cg_jump("JUMPIFEQ", "data_control", uni_2_a, "final", "LF@typ_op_1", "string@int");
+                cg_jump("JUMPIFEQ", "data_control", uni_2_a, "convert", "LF@typ_op_1", "string@float");
+
+                cg_exit(4);
+
+                cg_flag_gen("data_control", uni_2_a, "convert");
+
+                cg_stack_pop_id("op_1", false);
+                cg_stack_int2float();
+                cg_stack_push_id("op_1", false);
+
+                cg_flag_gen("data_control", uni_2_a, "final");
+            }
+
+            if (type_op_2 == Double){
+                cg_jump("JUMPIFEQ", "data_control", uni_2_a, "convert", "LF@typ_op_1", "string@int");
+                cg_jump("JUMPIFEQ", "data_control", uni_2_a, "final", "LF@typ_op_1", "string@float");
+
+                cg_exit(4);
+
+                cg_flag_gen("data_control", uni_2_a, "convert");
+                cg_stack_int2float();
+
+                cg_flag_gen("data_control", uni_2_a, "final");
+            }
+
+            if (type_op_2 == String){
+                cg_jump("JUMPIFEQ", "data_control", uni_2_a, "final", "LF@typ_op_1", "string@string");
+
+                cg_exit(4);
+
+                cg_flag_gen("data_control", uni_2_a, "final");
+            }
+
+        }
+    } else {
+        // minimalne type_op_1 nie je premenna, musime teda zistit, ci je mozne spustenie operacie
+        cg_stack_pop_id("op_1", false);
+        cg_stack_pop_id("op_2", false);
+
+        cg_stack_push_id("op_2", false);
+        cg_stack_push_id("op_1", false);
+
+        cg_type_of_symb("typ_op_2", "op_2");
+
+        if (type_op_1 == Integer){
+            cg_jump("JUMPIFEQ", "data_control", uni_2_a, "final", "LF@typ_op_2", "string@int");
+            cg_jump("JUMPIFEQ", "data_control", uni_2_a, "convert", "LF@typ_op_2", "string@float");
+
+            cg_exit(4);
+
+            cg_flag_gen("data_control", uni_2_a, "convert");
+            cg_stack_int2float();
+
+            cg_flag_gen("data_control", uni_2_a, "final");
+        }
+
+        if (type_op_1 == Double){
+            cg_jump("JUMPIFEQ", "data_control", uni_2_a, "convert", "LF@typ_op_2", "string@int");
+            cg_jump("JUMPIFEQ", "data_control", uni_2_a, "final", "LF@typ_op_2", "string@float");
+
+            cg_exit(4);
+
+            cg_flag_gen("data_control", uni_2_a, "convert");
+
+            cg_stack_pop_id("op_1", false);
+            cg_stack_int2float();
+            cg_stack_push_id("op_1", false);
+
+            cg_flag_gen("data_control", uni_2_a, "final");
+        }
+
+        if (type_op_1 == String){
+            cg_jump("JUMPIFEQ", "data_control", uni_2_a, "final", "LF@typ_op_2", "string@string");
+
+            cg_exit(4);
+
+            cg_flag_gen("data_control", uni_2_a, "final");
+        }
+    }
+
+    // Nacitame operaciu
+    operation = sym_stackPop(operations);
+
+    // Vykoname operaciu
+    cg_math_operation_stack(operation->tokenType);
+
+    free(operation);
+    uni_2_a = uni_2_a + 1;
+
+    if (type_op_1 == type_op_2){
+        return type_op_1;
+    } else if ((type_op_1 == Identifier) || (type_op_2 == Identifier)){
+        return Identifier;
+    } else if ((type_op_1 == Double) || (type_op_2 == Double)){
+        return Double;
+    } else if ((type_op_1 == String) || (type_op_2 == String)) {
+        return String;
+    } else {
+        return Integer;
+    }
+
 }
 
 int expression(FILE* lIn, dynamic_stack_t* lIStack, token_t* t, token_t* controlToken, int amountOfPassedTokens){

@@ -431,3 +431,34 @@ bool cg_cat_id(char* var, bool local1, char* op1, bool local2, char* op2, bool l
 
     return true;
 }
+
+// Dynamicke zistenie typu premmennej
+bool cg_type_of_symb(char* var, char* symb){
+    ADD_CODE("TYPE LF@"); ADD_CODE(var); ADD_CODE(" LF@"); ADD_CODE(symb); ADD_CODE("\n");
+    return true;
+}
+
+// Vytvorenie navestia
+bool cg_flag_gen(char* a_part, int number, char* b_part){
+    ADD_CODE("LABEL $"); ADD_CODE(a_part); ADD_CODE("$"); ADD_CODE_INT(number); ADD_CODE("$"); ADD_CODE(b_part); ADD_CODE("\n");
+    return true;
+}
+
+// Konverzia int na double
+bool cg_stack_int2float(){
+    ADD_CODE("INT2FLOATS"); ADD_CODE("\n");
+    return true;
+}
+
+// Exit z programu pocas interpretacie
+bool cg_exit(int errorNum){
+    ADD_CODE("EXIT int@"); ADD_CODE_INT(errorNum); ADD_CODE("\n");
+    return true;
+}
+
+// JUMP - vsetky varianty
+bool cg_jump(char* jump_type, char* flag_1_part, int flag_number, char* flag_2_part, char* op_1, char* op_2){
+    ADD_CODE(jump_type); ADD_CODE(" $"); ADD_CODE(flag_1_part); ADD_CODE("$"); ADD_CODE_INT(flag_number); ADD_CODE("$"); ADD_CODE(flag_2_part); ADD_CODE(" ");
+    ADD_CODE(op_1); ADD_CODE(" "); ADD_CODE(op_2); ADD_CODE("\n");
+    return true;
+}
