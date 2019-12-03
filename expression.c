@@ -9,6 +9,7 @@
 #include "dynamic-symstack.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include "code-gen.h"
 
 #define DEBUG 1 // TODO set to 0
 #define RULEHEIGHT 16
@@ -21,7 +22,9 @@
 FILE* in;
 dynamic_stack_t* iStack;
 //variables to deal with the getToken function
+
 token_t* microStack = NULL;
+static unsigned int uni_2_a = 0;
 
 
 
@@ -39,22 +42,22 @@ char LL[7][7] = {
 
 //Rules to pick from. 99 = E (Nonterminal)
 parserState_t rules[RULEHEIGHT][RULEWIDTH] = {
-    {Nonterminal, Plus, Nonterminal},                           // E -> E+E
-    {Nonterminal, Minus, Nonterminal},                          // E -> E-E
-    {Nonterminal, DivideWRest, Nonterminal},                    // E -> E/E
-    {Nonterminal, DivideWORest, Nonterminal},                   // E -> E//E
-    {Nonterminal, Multiply, Nonterminal},                       // E -> E*E
-    {Nonterminal, NotEqual, Nonterminal},                       // E -> E!=E
-    {Nonterminal, SmallerOrEqual, Nonterminal},                 // E -> E>=E
-    {Nonterminal, Smaller, Nonterminal},                        // E -> E>E
-    {Nonterminal, Bigger, Nonterminal},                         // E -> E<E
-    {Nonterminal, BiggerOrEqual, Nonterminal},                  // E -> E<=E
-    {Nonterminal, Equals, Nonterminal},                         // E -> E==E
-    {RightBracket, Nonterminal, LeftBracket},                   // E -> (E) (in reverse because of the stack)
-    {Identifier, (parserState_t) NULL, (parserState_t) NULL},   // E -> i ()
-    {String, (parserState_t) NULL, (parserState_t) NULL},       // E -> s
-    {Integer, (parserState_t) NULL, (parserState_t) NULL},      // E -> integer
-    {Double, (parserState_t) NULL, (parserState_t) NULL}        // E -> double
+    {Nonterminal, Plus, Nonterminal},                           // E -> E+E 1
+    {Nonterminal, Minus, Nonterminal},                          // E -> E-E 2
+    {Nonterminal, DivideWRest, Nonterminal},                    // E -> E/E 3
+    {Nonterminal, DivideWORest, Nonterminal},                   // E -> E//E 4
+    {Nonterminal, Multiply, Nonterminal},                       // E -> E*E 5
+    {Nonterminal, NotEqual, Nonterminal},                       // E -> E!=E 6
+    {Nonterminal, SmallerOrEqual, Nonterminal},                 // E -> E>=E 7
+    {Nonterminal, Smaller, Nonterminal},                        // E -> E>E 8
+    {Nonterminal, Bigger, Nonterminal},                         // E -> E<E 9
+    {Nonterminal, BiggerOrEqual, Nonterminal},                  // E -> E<=E 10
+    {Nonterminal, Equals, Nonterminal},                         // E -> E==E 11
+    {RightBracket, Nonterminal, LeftBracket},                   // E -> (E) (in reverse because of the stack) 12
+    {Identifier, (parserState_t) NULL, (parserState_t) NULL},   // E -> i () 13
+    {String, (parserState_t) NULL, (parserState_t) NULL},       // E -> s 14
+    {Integer, (parserState_t) NULL, (parserState_t) NULL},      // E -> integer 15
+    {Double, (parserState_t) NULL, (parserState_t) NULL}        // E -> double 16
 };
 
 
@@ -84,9 +87,45 @@ int LLPos(token_t* token) {
             return 2;
         case RightBracket:
             return 3;
-        case Identifier:
+        case Identifier:  switch(token->tokenType){
+              case NotEqual:
+              case SmallerOrEqual:
+              case Smaller:
+              case Bigger:
+              case BiggerOrEqual:
+              case Equals:
+
+                sym_stackPrint(operands);
+                sym_stackPrint(operations);
+                sym_stackFree(operands);
+                sym_stackFree(operations);
+                operands = sym_stackInit();
+                operations = sym_stackInit();
+                break;
+              default:
+                break;
+
+            }
         case Integer:
-        case Double:
+        case Double:  switch(token->tokenType){
+              case NotEqual:
+              case SmallerOrEqual:
+              case Smaller:
+              case Bigger:
+              case BiggerOrEqual:
+              case Equals:
+
+                sym_stackPrint(operands);
+                sym_stackPrint(operations);
+                sym_stackFree(operands);
+                sym_stackFree(operations);
+                operands = sym_stackInit();
+                operations = sym_stackInit();
+                break;
+              default:
+                break;
+
+            }
             return 4;
         case NotEqual:
         case Smaller:
@@ -266,17 +305,29 @@ int expSwitch( dynamic_symbol_stack_t* stack, token_t** t, const int* depth, cha
 
             if(found>-1) {
                 //All rules are assumed to have a left side E, because they do. (E = 99)
+                token_t * E = new_token(99);
+
+
+                if(found == 13 ||found == 14 ||found == 15 ||found == 12){
+                  E->tokenType = exp[0]->tokenType;
+                  //TODO: push |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+                  free(exp[0]); //the rest of exp is empty
+                }else if(found != 11){
+                  E->tokenType = cg_count(exp[1]->tokenType, exp[0]->tokenType, exp[2]->tokenType)
+                  free(exp[0]);
+                  free(exp[1]);
+                  free(exp[2]);
+                }else{
+                  //(E) Rule
+                  free(exp[0]);
+                  free(exp[1]);
+                  free(exp[2]);
+                }
                 sym_stackPush(stack, new_token(99));
                 //TODO: printing out the expressions in target language
             } else {
                 PRINT_DEBUG("SYNTAX ERROR RULE NOT FOUND\n");
                 return SYNTAX_ERR;
-            }
-
-            for(int i = 0; i<3; i++) {
-                if(exp[i]!=NULL) {
-                    free(exp[i]); //free the memory
-                }
             }
 
             break;
@@ -290,12 +341,158 @@ int expSwitch( dynamic_symbol_stack_t* stack, token_t** t, const int* depth, cha
     return PROG_OK;
 }
 
+int cg_count(parserState_t operatio, int type_op_1, int type_op_2){
+
+
+
+    // Rozdelime si pripady podla typov operandov
+    if (type_op_1 == Identifier){
+        if (type_op_2 == Identifier){
+            // dve premenne, musime zistit ich datove typy
+            cg_stack_pop_id("op_1", false);
+            cg_stack_pop_id("op_2", false);
+
+            cg_stack_push_id("op_2", false);
+            cg_stack_push_id("op_1", false);
+
+            cg_type_of_symb("typ_op_1", "op_1");
+            cg_type_of_symb("typ_op_2", "op_2");
+
+            cg_jump("JUMPIFEQ", "data_control", uni_2_a, "final", "LF@typ_op_1", "LF@typ_op_2");
+            cg_jump("JUMPIFNEQ", "data_control", uni_2_a, "not_string", "LF@typ_op_1", "string@string");
+            cg_jump("JUMPIFNEQ", "data_control", uni_2_a, "not_string", "LF@typ_op_2", "string@string");
+
+            cg_exit(4);
+
+            cg_flag_gen("data_control", uni_2_a, "not_string");
+            cg_jump("JUMPIFEQ", "data_control", uni_2_a, "convert_int", "LF@typ_op_1", "string@int");
+
+            cg_stack_pop_id("op_1", false);
+            cg_stack_int2float();
+            cg_stack_push_id("op_1", false);
+
+            cg_jump("JUMP", "data_control", uni_2_a, "final", "", "");
+
+            cg_flag_gen("data_control", uni_2_a, "convert_int");
+            cg_stack_int2float();
+
+            cg_flag_gen("data_control", uni_2_a, "final");
+        } else {
+            // minimalne type_op_2 nie je premenna, musime teda zistit, ci je mozne spustenie operacie
+            cg_stack_pop_id("op_1", false);
+            cg_type_of_symb("typ_op_1", "op_1");
+            cg_stack_push_id("op_1", false);
+
+            if (type_op_2 == Integer){
+                cg_jump("JUMPIFEQ", "data_control", uni_2_a, "final", "LF@typ_op_1", "string@int");
+                cg_jump("JUMPIFEQ", "data_control", uni_2_a, "convert", "LF@typ_op_1", "string@float");
+
+                cg_exit(4);
+
+                cg_flag_gen("data_control", uni_2_a, "convert");
+
+                cg_stack_pop_id("op_1", false);
+                cg_stack_int2float();
+                cg_stack_push_id("op_1", false);
+
+                cg_flag_gen("data_control", uni_2_a, "final");
+            }
+
+            if (type_op_2 == Double){
+                cg_jump("JUMPIFEQ", "data_control", uni_2_a, "convert", "LF@typ_op_1", "string@int");
+                cg_jump("JUMPIFEQ", "data_control", uni_2_a, "final", "LF@typ_op_1", "string@float");
+
+                cg_exit(4);
+
+                cg_flag_gen("data_control", uni_2_a, "convert");
+                cg_stack_int2float();
+
+                cg_flag_gen("data_control", uni_2_a, "final");
+            }
+
+            if (type_op_2 == String){
+                cg_jump("JUMPIFEQ", "data_control", uni_2_a, "final", "LF@typ_op_1", "string@string");
+
+                cg_exit(4);
+
+                cg_flag_gen("data_control", uni_2_a, "final");
+            }
+
+        }
+    } else {
+        // minimalne type_op_1 nie je premenna, musime teda zistit, ci je mozne spustenie operacie
+        cg_stack_pop_id("op_1", false);
+        cg_stack_pop_id("op_2", false);
+
+        cg_stack_push_id("op_2", false);
+        cg_stack_push_id("op_1", false);
+
+        cg_type_of_symb("typ_op_2", "op_2");
+
+        if (type_op_1 == Integer){
+            cg_jump("JUMPIFEQ", "data_control", uni_2_a, "final", "LF@typ_op_2", "string@int");
+            cg_jump("JUMPIFEQ", "data_control", uni_2_a, "convert", "LF@typ_op_2", "string@float");
+
+            cg_exit(4);
+
+            cg_flag_gen("data_control", uni_2_a, "convert");
+            cg_stack_int2float();
+
+            cg_flag_gen("data_control", uni_2_a, "final");
+        }
+
+        if (type_op_1 == Double){
+            cg_jump("JUMPIFEQ", "data_control", uni_2_a, "convert", "LF@typ_op_2", "string@int");
+            cg_jump("JUMPIFEQ", "data_control", uni_2_a, "final", "LF@typ_op_2", "string@float");
+
+            cg_exit(4);
+
+            cg_flag_gen("data_control", uni_2_a, "convert");
+
+            cg_stack_pop_id("op_1", false);
+            cg_stack_int2float();
+            cg_stack_push_id("op_1", false);
+
+            cg_flag_gen("data_control", uni_2_a, "final");
+        }
+
+        if (type_op_1 == String){
+            cg_jump("JUMPIFEQ", "data_control", uni_2_a, "final", "LF@typ_op_2", "string@string");
+
+            cg_exit(4);
+
+            cg_flag_gen("data_control", uni_2_a, "final");
+        }
+    }
+
+
+    // Vykoname operaciu
+    cg_math_operation_stack(operatio);
+
+
+    uni_2_a = uni_2_a + 1;
+
+    if (type_op_1 == type_op_2){
+        return type_op_1;
+    } else if ((type_op_1 == Identifier) || (type_op_2 == Identifier)){
+        return Identifier;
+    } else if ((type_op_1 == Double) || (type_op_2 == Double)){
+        return Double;
+    } else if ((type_op_1 == String) || (type_op_2 == String)) {
+        return String;
+    } else {
+        return Integer;
+    }
+
+}
+
 int expression(FILE* lIn, dynamic_stack_t* lIStack, token_t* t, token_t* controlToken, int amountOfPassedTokens){
     //promote the passed variables to the global scope
     in = lIn;
     iStack = lIStack;
 
     dynamic_symbol_stack_t * stack = sym_stackInit();
+
     token_t * end = calloc(1, sizeof(token_t));
     int d;
     int* depth = &d;
@@ -382,7 +579,6 @@ int expression(FILE* lIn, dynamic_stack_t* lIStack, token_t* t, token_t* control
      if(t!=NULL){
        *t = *token; //return the last token
      }
-
      free(token);
      return PROG_OK;
 }

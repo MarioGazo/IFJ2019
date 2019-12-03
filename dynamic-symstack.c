@@ -74,6 +74,37 @@ bool sym_stackPush(dynamic_symbol_stack_t *s, token_t *t) {
     // Ak bolo uloženie úspešné, je vrátené TRUE
     return true;
 }
+bool sym_stackQPush(dynamic_symbol_stack_t *s, token_t *t) {
+
+    if (s == NULL) {
+        return false;
+    }
+    if(s->top_item == NULL){
+      sym_stackPush(s,t);
+      return true;
+    }
+
+    // Alokácia pamäti pre nový token na zásobníku
+    symbol_token_t *new_token = calloc(1, sizeof(symbol_token_t));
+    symbol_token_t * last = s->top_item;
+
+    if (new_token == NULL){
+        return false;
+    }
+
+
+
+    while(last->next_item != NULL){
+       last = last->next_item;
+    }
+
+    last->next_item = new_token;
+    // Uloženie atribútov do nového prvku zásobníku
+    new_token->token = t;
+
+    // Ak bolo uloženie úspešné, je vrátené TRUE
+    return true;
+}
 
 void sym_stackFree(dynamic_symbol_stack_t *s) {
     symbol_token_t *token_to_be_free;
@@ -112,7 +143,8 @@ void sym_stackPrintTokenType(token_t * token){
       break;
     case Identifier:
     case Integer:
-      printf("I|");
+    printf("%d", token->tokenAttribute.intValue);
+    printf("%s", "|");
       break;
     case  EOL:
       printf("$|");
@@ -127,7 +159,8 @@ void sym_stackPrintTokenType(token_t * token){
       printf("<|");
       break;
     default:
-      printf("UNKNOWN|");
+      printf("%d", token->tokenType );
+      printf("%s", "|");
 
   };
 }

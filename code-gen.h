@@ -273,6 +273,8 @@ bool cg_frame_assign_retval(hTabItem_t variable, bool local);
 
 bool cg_math_operation(parserState_t operation, char* var, char* op1, char* op2);
 
+bool cg_math_operation_stack(parserState_t operation);
+
 bool cg_stack_push_id(char* symb, bool local);
 
 bool cg_stack_push_literal(varType_t type, char* val);
@@ -282,5 +284,17 @@ bool cg_clear_stack();
 bool cg_cat_literal(char* var, char* op1, char* op2);
 
 bool cg_cat_id(char* var, bool local1, char* op1, bool local2, char* op2, bool local3);
+
+bool cg_stack_pop_id(char* var, bool local);
+
+bool cg_type_of_symb(char* var, char* symb);
+
+bool cg_flag_gen(char* a_part, int number, char* b_part);
+
+bool cg_stack_int2float();
+
+bool cg_exit(int errorNum);
+
+bool cg_jump(char* jump_type, char* flag_1_part, int flag_number, char* flag_2_part, char* op_1, char* op_2);
 
 #endif //VUT_FIT_IFJ2019_CODE_GEN_H
