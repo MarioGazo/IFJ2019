@@ -336,7 +336,14 @@ int commandList() {
                 if (cg_while_end(uni_a, uni_b) == false) return INTERNAL_ERR;
 
                 uni_a++;        uni_b++;
-                break;
+
+                GET_TOKEN;
+                if (actualToken.tokenType == EndOfFile || actualToken.tokenType == Dedent) {
+                    return PROG_OK;
+                } else {
+                    return (errorCode = commandList());
+                }
+
 
             case keywordIf:
                 // Vzor:  if (výraz): INDENT
@@ -376,7 +383,13 @@ int commandList() {
                 // Koniec vetvenia
                 if (cg_if_end(uni_a, uni_b) == false) return INTERNAL_ERR;
                 uni_a++;        uni_b++;
-                break;
+
+                GET_TOKEN;
+                if (actualToken.tokenType == EndOfFile || actualToken.tokenType == Dedent) {
+                    return PROG_OK;
+                } else {
+                    return (errorCode = commandList());
+                }
 
             case keywordPrint:
                 PRINT_DEBUG("\tPRINT\n");
@@ -679,7 +692,7 @@ int assign(hTabItem_t* varRecord) {
 
             // Musime skontrolovat, ci bola funkcia definovana a ak ano, ci sedi pocet parametrov
             funcRecord.value.intValue = 0;
-            funcRecord.key = actualToken.tokenAttribute.word;
+            funcRecord.key = controlToken.tokenAttribute.word;
             funcRecord.type = TypeFunction;
             funcRecord.defined = FALSE;
             funcRecord.next = NULL;

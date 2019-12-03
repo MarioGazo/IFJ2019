@@ -109,6 +109,7 @@ hTabItem_t* TInsert(hashTable* hTab, hTabItem_t item) {
             new_table_item->value.word = item.value.word;
             break;
         case TypeFunction:
+            new_table_item->value.intValue = item.value.intValue;
             break;
         case TypeBool:
             break;

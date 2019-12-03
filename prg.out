@@ -103,12 +103,75 @@ LABEL $chr$return
 POPFRAME
 RETURN
 
-# Beginning of while
-LABEL $WHILE%0d%42d
-JUMPIFEQ $WHILE%42d%0d GF@%exp_result bool@false
-JUMP $WHILE%0d%42d
-# End of while
-LABEL $WHILE%42d%0d
+# Začiatok funkcie factorial
+LABEL $factorial
+PUSHFRAME
+DEFVAR LF@%navratova_hodnota
+MOVE LF@%navratova_hodnota nil@nil
+CREATEFRAME
+DEFVAR LF@n
+MOVE LF@n LF@%
+
+# Begin of If Then
+JUMPIFEQ $IF%0d%42d GF@%exp_result bool@false
+DEFVAR LF@result
+JUMP $IF%42d%0d
+# Else part
+LABEL $IF%0d%42d
+DEFVAR LF@decremented_n
+DEFVAR LF@temp_result
+DEFVAR LF@decremented_n
+MOVE LF@decremented_n LF@%
+CALL $factorial
+DEFVAR LF@result
+# End If
+LABEL $IF%42d%0d
+MOVE LF@%navratova_hodnota GF@%vysledok_vyrazu
+POPFRAME
+RETURN
+# Koniec funkcie factorial
+LABEL $factorial%return
+POPFRAME
+RETURN
+
+# Function PRINT LITERAL
+WRITE string@Zadajte\032cislo\032pre\032vypocet\032faktorialu
+
+# Function PRINT LITERAL
+WRITE string@\010
+DEFVAR GF@a
+# Reading variable
+READ GF@a int@
+
+# Begin of If Then
+JUMPIFEQ $IF%1d%43d GF@%exp_result bool@false
+
+# Function PRINT LITERAL
+WRITE string@Faktorial\032nelze\032spocitat
+
+# Function PRINT LITERAL
+WRITE string@\010
+JUMP $IF%43d%1d
+# Else part
+LABEL $IF%1d%43d
+DEFVAR GF@vysl
+DEFVAR LF@a
+MOVE LF@a LF@%
+CALL $factorial
+# End If
+LABEL $IF%43d%1d
+
+# Function PRINT LITERAL
+WRITE string@Vysledek\032je
+
+# Function PRINT LITERAL
+WRITE string@\032
+
+# Function PRINT ID
+WRITE GF@vysl
+
+# Function PRINT LITERAL
+WRITE string@\010
 
 # Koniec main
 POPFRAME
