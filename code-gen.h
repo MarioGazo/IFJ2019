@@ -32,6 +32,13 @@
         ADD_CODE(string);                       \
     } while (0)
 
+#define ADD_CODE_DOUBLE(_code) \
+    do {                                        \
+        char string[MAX_NUMBER_OF_DIGITS];      \
+        sprintf(string,"%f",_code);            \
+        ADD_CODE(string);                       \
+    } while (0)
+
 #define FUNCTION_LEN \
     "\n# Built-in function Len"                \
     "\nLABEL $function_len"                    \
@@ -276,6 +283,10 @@ bool cg_math_operation_stack(parserState_t operation);
 bool cg_stack_push_id(char* symb, bool local);
 
 bool cg_stack_push_literal(varType_t type, char* val);
+
+bool cg_stack_push_int(int val);
+
+bool cg_stack_push_double(float val);
 
 bool cg_clear_stack();
 

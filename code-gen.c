@@ -380,6 +380,22 @@ bool cg_stack_push_literal(varType_t type, char* val) {
     return true;
 }
 
+// Uloženie hodnoty val na vrchol dátoveho zasobniku
+bool cg_stack_push_int(int val) {
+    ADD_CODE("PUSHS ");
+    ADD_CODE_INT(val); ADD_CODE("\n");
+
+    return true;
+}
+
+// Uloženie hodnoty val na vrchol dátoveho zasobniku
+bool cg_stack_push_double(float val) {
+    ADD_CODE("PUSHS ");
+    ADD_CODE_DOUBLE(val); ADD_CODE("\n");
+
+    return true;
+}
+
 // Uloženie hodnoty symb na vrchol dátoveho zasobniku
 bool cg_stack_pop_id(char* var, bool local) {
     ADD_CODE("POPS ");
