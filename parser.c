@@ -74,13 +74,14 @@ int analyse(FILE* file) {
     // Nastavime viditelnost vysledneho kodu suboru code-gen.c
     set_code_output(&code);
 
-    if (cg_main_scope_start() == false)     return INTERNAL_ERR;    // Začiatok hlavného rámca
+    if (cg_code_header() == false)          return INTERNAL_ERR;    // Hlavicka vystupneho kodu
     if (cg_define_b_i_functions() == false) return INTERNAL_ERR;    // Definicia vstavaných funkcii
+    if (cg_main_scope() == false)           return INTERNAL_ERR;    // Yaciatok hlavneho ramca
 
     // Spustenie analýzi
     errorCode = program();
 
-    if (cg_main_scope_end() == false)       return INTERNAL_ERR;    // Koniec hlavného rámca
+    if (cg_code_footer() == false)          return INTERNAL_ERR;    // Koniec hlavného rámca
 
     // zistujeme ci boli vsetky volane funkcie definovane
     for (int i = 0; i < 236897; i++) {
@@ -125,12 +126,6 @@ int program() {
         inFunc = true;
         if ((errorCode = defFunction()) != PROG_OK) return errorCode;
 
-        return program();
-    // DocumentString - je preskočený
-    } else if (actualToken.tokenType == DocumentString) {
-        PRINT_DEBUG("DocumentString\n");
-
-        GET_AND_CHECK_TOKEN(EOL);
         return program();
     // Programová konštrukcia alebo vstavaná funkcia
     } else {
@@ -191,6 +186,7 @@ int defFunction() {
 
     // Koniec tela funkcie
     if (cg_fun_end(funcRecord.key.text) == false) return INTERNAL_ERR;
+
     inFunc = false;
     return PROG_OK;
 }
@@ -209,8 +205,9 @@ int param(hTabItem_t* funcRecord) {
         case Identifier:
             funcRecord->value.intValue++;
 
-            // Definovanie parametrov funkcie v lokálnom rámci jedinečním číselným identifikátorom
-            if (cg_fun_param_declare(actualToken.tokenAttribute.word.text) == false) return INTERNAL_ERR;
+            // Definovanie parametrov funkcie v lokálnom rámci
+            if (inFunc)
+                if (cg_fun_param_declare(actualToken.tokenAttribute.word.text) == false) return INTERNAL_ERR;
 
             GET_TOKEN;
 
@@ -246,19 +243,24 @@ int commandList() {
                 varRecord.key = name;
                 varRecord.next = NULL;
 
-                // Deklarácia novej premennej
-                if (cg_var_declare(varRecord.key.text, inFunc) == false) return INTERNAL_ERR;
-
                 // Aby bola deklarovaná, musí jej byť priradená hodnota
                 if ((errorCode = (assign(&varRecord))) != PROG_OK) return errorCode;
 
-                // TODO priradit vysledok do var vo vyslednom kode
-
-                // Uloženie premennej do HashTable
-                if (inFunc) {
-                    TInsert(LocalTable, varRecord);
+                // Priradenie hodnoty do existujucej premennej
+                if (TSearch(GlobalTable,varRecord.key) != NULL) {
+                    // Priradenie vysledku do premennej v globalnom ramci
+                    if (cg_assign_expr_result(varRecord.key.text,false) == false)   return INTERNAL_ERR;
+                } else if (TSearch(LocalTable,varRecord.key) != NULL) {
+                    // Priradenie vysledku do premennej v lokalnom ramci
+                    if (cg_assign_expr_result(varRecord.key.text,true) == false)    return INTERNAL_ERR;
                 } else {
-                    TInsert(GlobalTable, varRecord);
+                    if (cg_var_declare(varRecord.key.text, inFunc) == false)              return INTERNAL_ERR;
+                    // Uloženie novej premennej do HashTable
+                    if (inFunc) {
+                        TInsert(LocalTable, varRecord);
+                    } else {
+                        TInsert(GlobalTable, varRecord);
+                    }
                 }
 
                 return (errorCode = commandListContOrEnd());
@@ -266,7 +268,7 @@ int commandList() {
 
             case LeftBracket: {
                 // Ide o funkciu, ak je definovaná, presvedčíme sa že sedí počet parametrov, inak ju pridáme do hTab
-                hTabItem_t funcRecord; // zaznam premennej
+                hTabItem_t funcRecord; // zaznam funkcie
                 funcRecord.key = name;
                 funcRecord.next = NULL;
                 funcRecord.value.intValue = 0;
@@ -301,13 +303,17 @@ int commandList() {
                 return (errorCode = commandListContOrEnd());
             }
         }
-    } else if (actualToken.tokenType == Double || actualToken.tokenType == Integer || actualToken.tokenType == String) {
+    } else if (actualToken.tokenType == Double || actualToken.tokenType == Integer ||
+               actualToken.tokenType == DocumentString || actualToken.tokenType == String ||
+               actualToken.tokenType == RightBracket) {
         PRINT_DEBUG("\tEXPRESSION\n");
 
         expr = true;
 
         // Posielame aktuálny token
-        if ((errorCode = expression(in,&indentationStack, &actualToken, NULL, 1)) != 0) return  errorCode;
+        if ((errorCode = expression(in,&indentationStack,
+                &actualToken, NULL, 1)) != PROG_OK)
+            return  errorCode;
 
         return (errorCode = commandListContOrEnd());
     } else if (actualToken.tokenType == Keyword) {
@@ -323,7 +329,9 @@ int commandList() {
 
                 // Podmienka ďaľšej iterácie cyklu, posielame aktuálny token
                 GET_TOKEN;
-                if ((errorCode = expression(in, &indentationStack, &actualToken, NULL, 1)) != PROG_OK) return errorCode;
+                if ((errorCode = expression(in, &indentationStack,
+                        &actualToken, NULL, 1)) != PROG_OK)
+                    return errorCode;
 
                 if (actualToken.tokenType != Colon) return SYNTAX_ERR;
                 GET_AND_CHECK_TOKEN(Indent);
@@ -344,7 +352,6 @@ int commandList() {
                     return (errorCode = commandList());
                 }
 
-
             case keywordIf:
                 // Vzor:  if (výraz): INDENT
                 //          sekvencia príkazov <- EOL po kazdom prikaze
@@ -358,7 +365,9 @@ int commandList() {
 
                 // Podmienka vetvenia, posielame aktuálny token
                 GET_TOKEN; // nacti prvni token z vyrazu aby jsme mohli pouzit case 1
-                if ((errorCode = expression(in, &indentationStack, &actualToken, NULL, 1)) != PROG_OK) return errorCode; //tested
+                if ((errorCode = expression(in, &indentationStack,
+                        &actualToken, NULL, 1)) != PROG_OK)
+                            return errorCode;
 
                 if (actualToken.tokenType != Colon) return SYNTAX_ERR;
 
@@ -382,7 +391,7 @@ int commandList() {
 
                 // Koniec vetvenia
                 if (cg_if_end(uni_a, uni_b) == false) return INTERNAL_ERR;
-                uni_a++;        uni_b++;
+                uni_a++;            uni_b++;
 
                 GET_TOKEN;
                 if (actualToken.tokenType == EndOfFile || actualToken.tokenType == Dedent) {
@@ -396,6 +405,7 @@ int commandList() {
 
                 GET_AND_CHECK_TOKEN(LeftBracket);
                 PRINT_DEBUG("\t\tTERMS\n");
+
                 // Výpis termov
                 if ((errorCode = term()) != PROG_OK) return errorCode;
                 break;
