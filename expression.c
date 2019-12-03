@@ -23,9 +23,6 @@ FILE* in;
 dynamic_stack_t* iStack;
 //variables to deal with the getToken function
 
-
-dynamic_symbol_stack_t * operations;
-dynamic_symbol_stack_t * operands;
 token_t* microStack = NULL;
 static unsigned int uni_2_a = 0;
 
@@ -90,9 +87,45 @@ int LLPos(token_t* token) {
             return 2;
         case RightBracket:
             return 3;
-        case Identifier:
+        case Identifier:  switch(token->tokenType){
+              case NotEqual:
+              case SmallerOrEqual:
+              case Smaller:
+              case Bigger:
+              case BiggerOrEqual:
+              case Equals:
+
+                sym_stackPrint(operands);
+                sym_stackPrint(operations);
+                sym_stackFree(operands);
+                sym_stackFree(operations);
+                operands = sym_stackInit();
+                operations = sym_stackInit();
+                break;
+              default:
+                break;
+
+            }
         case Integer:
-        case Double:
+        case Double:  switch(token->tokenType){
+              case NotEqual:
+              case SmallerOrEqual:
+              case Smaller:
+              case Bigger:
+              case BiggerOrEqual:
+              case Equals:
+
+                sym_stackPrint(operands);
+                sym_stackPrint(operations);
+                sym_stackFree(operands);
+                sym_stackFree(operations);
+                operands = sym_stackInit();
+                operations = sym_stackInit();
+                break;
+              default:
+                break;
+
+            }
             return 4;
         case NotEqual:
         case Smaller:
@@ -208,25 +241,6 @@ int expSwitch( dynamic_symbol_stack_t* stack, token_t** t, const int* depth, cha
             //insert < behind the first terminal (100 = enum shift)
             sym_stackDeepInsert(stack, new_token(100), *depth);
             sym_stackPush(stack, token);
-            switch(token->tokenType){
-              case NotEqual:
-              case SmallerOrEqual:
-              case Smaller:
-              case Bigger:
-              case BiggerOrEqual:
-              case Equals:
-
-                sym_stackPrint(operands);
-                sym_stackPrint(operations);
-                sym_stackFree(operands);
-                sym_stackFree(operations);
-                operands = sym_stackInit();
-                operations = sym_stackInit();
-                break;
-              default:
-                break;
-
-            }
             sym_stackPrint(stack);//TODO: delete this line
 
             *t = getNewToken();
@@ -291,18 +305,25 @@ int expSwitch( dynamic_symbol_stack_t* stack, token_t** t, const int* depth, cha
 
             if(found>-1) {
                 //All rules are assumed to have a left side E, because they do. (E = 99)
-                sym_stackPush(stack, new_token(99));
+                token_t * E = new_token(99);
+
+
                 if(found == 13 ||found == 14 ||found == 15 ||found == 12){
-                  sym_stackQPush(operands, exp[0]);
+                  E->tokenType = exp[0]->tokenType;
+                  //TODO: push |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+                  free(exp[0]); //the rest of exp is empty
                 }else if(found != 11){
-                  sym_stackQPush(operations,exp[1]);
+                  E->tokenType = cg_count(exp[1]->tokenType, exp[0]->tokenType, exp[2]->tokenType)
                   free(exp[0]);
+                  free(exp[1]);
                   free(exp[2]);
                 }else{
+                  //(E) Rule
                   free(exp[0]);
                   free(exp[1]);
                   free(exp[2]);
                 }
+                sym_stackPush(stack, new_token(99));
                 //TODO: printing out the expressions in target language
             } else {
                 PRINT_DEBUG("SYNTAX ERROR RULE NOT FOUND\n");
@@ -320,9 +341,9 @@ int expSwitch( dynamic_symbol_stack_t* stack, token_t** t, const int* depth, cha
     return PROG_OK;
 }
 
-int cg_count(dynamic_symbol_stack_t *operations, int type_op_1, int type_op_2){
+int cg_count(parserState_t operatio, int type_op_1, int type_op_2){
 
-    token_t *operation  = calloc(1, sizeof(token_t));
+
 
     // Rozdelime si pripady podla typov operandov
     if (type_op_1 == Identifier){
@@ -444,13 +465,11 @@ int cg_count(dynamic_symbol_stack_t *operations, int type_op_1, int type_op_2){
         }
     }
 
-    // Nacitame operaciu
-    operation = sym_stackPop(operations);
 
     // Vykoname operaciu
-    cg_math_operation_stack(operation->tokenType);
+    cg_math_operation_stack(operatio);
 
-    free(operation);
+
     uni_2_a = uni_2_a + 1;
 
     if (type_op_1 == type_op_2){
@@ -473,8 +492,6 @@ int expression(FILE* lIn, dynamic_stack_t* lIStack, token_t* t, token_t* control
     iStack = lIStack;
 
     dynamic_symbol_stack_t * stack = sym_stackInit();
-    operands = sym_stackInit();
-    operations = sym_stackInit();
 
     token_t * end = calloc(1, sizeof(token_t));
     int d;
@@ -557,16 +574,11 @@ int expression(FILE* lIn, dynamic_stack_t* lIStack, token_t* t, token_t* control
                (token->tokenType == EOL || token->tokenType == EndOfFile || token->tokenType == Colon ||
                 token->tokenType == Dedent || token->tokenType == Indent)));
     //The work is over when there is E$ on the stack and the token is one of the forementioned types
-    sym_stackPrint(operands);
-    sym_stackPrint(operations);
 
      sym_stackFree(stack);
-     sym_stackFree(operands);
-     sym_stackFree(operations);
      if(t!=NULL){
        *t = *token; //return the last token
      }
-
      free(token);
      return PROG_OK;
 }
