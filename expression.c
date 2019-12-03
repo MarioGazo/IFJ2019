@@ -310,10 +310,12 @@ int expSwitch( dynamic_symbol_stack_t* stack, token_t** t, const int* depth, cha
 
                 if(found == 13 ||found == 14 ||found == 15 ||found == 12){
                   E->tokenType = exp[0]->tokenType;
+                  cg_stack_p(exp[0]);
                   //TODO: push |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+
                   free(exp[0]); //the rest of exp is empty
                 }else if(found != 11){
-                  E->tokenType = cg_count(exp[1]->tokenType, exp[0]->tokenType, exp[2]->tokenType)
+                  E->tokenType = cg_count(exp[1]->tokenType, exp[0]->tokenType, exp[2]->tokenType);
                   free(exp[0]);
                   free(exp[1]);
                   free(exp[2]);
@@ -339,6 +341,20 @@ int expSwitch( dynamic_symbol_stack_t* stack, token_t** t, const int* depth, cha
             return SYNTAX_ERR;
     }
     return PROG_OK;
+}
+
+bool cg_stack_p(token_t* token){
+    if (token->tokenType == Identifier){
+        cg_stack_push_literal(TypeString, token->tokenAttribute.word.text);
+    } else if (token->tokenType == String){
+        cg_stack_push_literal(TypeString, token->tokenAttribute.word.text);
+    } else if (token->tokenType == Integer){
+        cg_stack_push_int(token->tokenAttribute.intValue);
+    } else if (token->tokenType == Double){
+        cg_stack_push_double(token->tokenAttribute.doubleValue);
+    }
+
+    return true;
 }
 
 int cg_count(parserState_t operatio, int type_op_1, int type_op_2){
@@ -523,6 +539,10 @@ int expression(FILE* lIn, dynamic_stack_t* lIStack, token_t* t, token_t* control
         break;
 
     }
+    cg_var_declare("op_1", false);
+    cg_var_declare("op_2", false);
+    cg_var_declare("typ_op_1", false);
+    cg_var_declare("typ_op_2", false);
 
     do {
         if (LLPos(token) == -1 && LLSPos(token) == -1) {

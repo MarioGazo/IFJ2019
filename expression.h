@@ -41,4 +41,6 @@ int expSwitch( dynamic_symbol_stack_t * stack, token_t ** t, const int * depth, 
 
 int cg_count(parserState_t operatio, int type_op_1, int type_op_2);
 
+bool cg_stack_p(token_t* token);
+
 #endif //VUT_FIT_IFJ2019_EXPRESSION_H
