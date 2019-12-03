@@ -67,7 +67,7 @@ token_t * sym_stackTopItem(dynamic_symbol_stack_t *s);
  * @return Whether the push was successful
  */
 bool sym_stackPush(dynamic_symbol_stack_t *s, token_t *t);
-
+bool sym_stackQPush(dynamic_symbol_stack_t *s, token_t *t);
 /**
  * @brief Frees the dynamic symbol stack
  *

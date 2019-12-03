@@ -21,6 +21,10 @@
 FILE* in;
 dynamic_stack_t* iStack;
 //variables to deal with the getToken function
+
+
+dynamic_symbol_stack_t * operations;
+dynamic_symbol_stack_t * operands;
 token_t* microStack = NULL;
 
 
@@ -39,22 +43,22 @@ char LL[7][7] = {
 
 //Rules to pick from. 99 = E (Nonterminal)
 parserState_t rules[RULEHEIGHT][RULEWIDTH] = {
-    {Nonterminal, Plus, Nonterminal},                           // E -> E+E
-    {Nonterminal, Minus, Nonterminal},                          // E -> E-E
-    {Nonterminal, DivideWRest, Nonterminal},                    // E -> E/E
-    {Nonterminal, DivideWORest, Nonterminal},                   // E -> E//E
-    {Nonterminal, Multiply, Nonterminal},                       // E -> E*E
-    {Nonterminal, NotEqual, Nonterminal},                       // E -> E!=E
-    {Nonterminal, SmallerOrEqual, Nonterminal},                 // E -> E>=E
-    {Nonterminal, Smaller, Nonterminal},                        // E -> E>E
-    {Nonterminal, Bigger, Nonterminal},                         // E -> E<E
-    {Nonterminal, BiggerOrEqual, Nonterminal},                  // E -> E<=E
-    {Nonterminal, Equals, Nonterminal},                         // E -> E==E
-    {RightBracket, Nonterminal, LeftBracket},                   // E -> (E) (in reverse because of the stack)
-    {Identifier, (parserState_t) NULL, (parserState_t) NULL},   // E -> i ()
-    {String, (parserState_t) NULL, (parserState_t) NULL},       // E -> s
-    {Integer, (parserState_t) NULL, (parserState_t) NULL},      // E -> integer
-    {Double, (parserState_t) NULL, (parserState_t) NULL}        // E -> double
+    {Nonterminal, Plus, Nonterminal},                           // E -> E+E 1
+    {Nonterminal, Minus, Nonterminal},                          // E -> E-E 2
+    {Nonterminal, DivideWRest, Nonterminal},                    // E -> E/E 3
+    {Nonterminal, DivideWORest, Nonterminal},                   // E -> E//E 4
+    {Nonterminal, Multiply, Nonterminal},                       // E -> E*E 5
+    {Nonterminal, NotEqual, Nonterminal},                       // E -> E!=E 6
+    {Nonterminal, SmallerOrEqual, Nonterminal},                 // E -> E>=E 7
+    {Nonterminal, Smaller, Nonterminal},                        // E -> E>E 8
+    {Nonterminal, Bigger, Nonterminal},                         // E -> E<E 9
+    {Nonterminal, BiggerOrEqual, Nonterminal},                  // E -> E<=E 10
+    {Nonterminal, Equals, Nonterminal},                         // E -> E==E 11
+    {RightBracket, Nonterminal, LeftBracket},                   // E -> (E) (in reverse because of the stack) 12
+    {Identifier, (parserState_t) NULL, (parserState_t) NULL},   // E -> i () 13
+    {String, (parserState_t) NULL, (parserState_t) NULL},       // E -> s 14
+    {Integer, (parserState_t) NULL, (parserState_t) NULL},      // E -> integer 15
+    {Double, (parserState_t) NULL, (parserState_t) NULL}        // E -> double 16
 };
 
 
@@ -202,6 +206,25 @@ int expSwitch( dynamic_symbol_stack_t* stack, token_t** t, const int* depth, cha
             //insert < behind the first terminal (100 = enum shift)
             sym_stackDeepInsert(stack, new_token(100), *depth);
             sym_stackPush(stack, token);
+            switch(token->tokenType){
+              case NotEqual:
+              case SmallerOrEqual:
+              case Smaller:
+              case Bigger:
+              case BiggerOrEqual:
+              case Equals:
+
+                sym_stackPrint(operands);
+                sym_stackPrint(operations);
+                sym_stackFree(operands);
+                sym_stackFree(operations);
+                operands = sym_stackInit();
+                operations = sym_stackInit();
+                break;
+              default:
+                break;
+
+            }
             sym_stackPrint(stack);//TODO: delete this line
 
             *t = getNewToken();
@@ -267,16 +290,21 @@ int expSwitch( dynamic_symbol_stack_t* stack, token_t** t, const int* depth, cha
             if(found>-1) {
                 //All rules are assumed to have a left side E, because they do. (E = 99)
                 sym_stackPush(stack, new_token(99));
+                if(found == 13 ||found == 14 ||found == 15 ||found == 12){
+                  sym_stackQPush(operands, exp[0]);
+                }else if(found != 11){
+                  sym_stackQPush(operations,exp[1]);
+                  free(exp[0]);
+                  free(exp[2]);
+                }else{
+                  free(exp[0]);
+                  free(exp[1]);
+                  free(exp[2]);
+                }
                 //TODO: printing out the expressions in target language
             } else {
                 PRINT_DEBUG("SYNTAX ERROR RULE NOT FOUND\n");
                 return SYNTAX_ERR;
-            }
-
-            for(int i = 0; i<3; i++) {
-                if(exp[i]!=NULL) {
-                    free(exp[i]); //free the memory
-                }
             }
 
             break;
@@ -296,6 +324,9 @@ int expression(FILE* lIn, dynamic_stack_t* lIStack, token_t* t, token_t* control
     iStack = lIStack;
 
     dynamic_symbol_stack_t * stack = sym_stackInit();
+    operands = sym_stackInit();
+    operations = sym_stackInit();
+
     token_t * end = calloc(1, sizeof(token_t));
     int d;
     int* depth = &d;
@@ -377,8 +408,12 @@ int expression(FILE* lIn, dynamic_stack_t* lIStack, token_t* t, token_t* control
                (token->tokenType == EOL || token->tokenType == EndOfFile || token->tokenType == Colon ||
                 token->tokenType == Dedent || token->tokenType == Indent)));
     //The work is over when there is E$ on the stack and the token is one of the forementioned types
+    sym_stackPrint(operands);
+    sym_stackPrint(operations);
 
      sym_stackFree(stack);
+     sym_stackFree(operands);
+     sym_stackFree(operations);
      if(t!=NULL){
        *t = *token; //return the last token
      }
