@@ -87,45 +87,9 @@ int LLPos(token_t* token) {
             return 2;
         case RightBracket:
             return 3;
-        case Identifier:  switch(token->tokenType){
-              case NotEqual:
-              case SmallerOrEqual:
-              case Smaller:
-              case Bigger:
-              case BiggerOrEqual:
-              case Equals:
-
-                sym_stackPrint(operands);
-                sym_stackPrint(operations);
-                sym_stackFree(operands);
-                sym_stackFree(operations);
-                operands = sym_stackInit();
-                operations = sym_stackInit();
-                break;
-              default:
-                break;
-
-            }
+        case Identifier:
         case Integer:
-        case Double:  switch(token->tokenType){
-              case NotEqual:
-              case SmallerOrEqual:
-              case Smaller:
-              case Bigger:
-              case BiggerOrEqual:
-              case Equals:
-
-                sym_stackPrint(operands);
-                sym_stackPrint(operations);
-                sym_stackFree(operands);
-                sym_stackFree(operations);
-                operands = sym_stackInit();
-                operations = sym_stackInit();
-                break;
-              default:
-                break;
-
-            }
+        case Double: 
             return 4;
         case NotEqual:
         case Smaller:
