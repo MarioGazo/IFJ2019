@@ -180,14 +180,14 @@ int defFunction() {
         }
     }
 
+    // Uložíme funkciu do HashTable
+    TInsert(GlobalTable, funcRecord);
+
     GET_AND_CHECK_TOKEN(Colon);
     GET_AND_CHECK_TOKEN(Indent);
 
     GET_TOKEN;
     if ((errorCode = commandList()) != PROG_OK) return errorCode;
-
-    // Uložíme funkciu do HashTable
-    TInsert(GlobalTable, funcRecord);
 
     // Koniec tela funkcie
     if (cg_fun_end(funcRecord.key.text) == false) return INTERNAL_ERR;
@@ -294,7 +294,6 @@ int commandList() {
                 PRINT_DEBUG("\tEXPRESSION\n");
 
                 expr = true;
-
 
                 // Posielame aktualny a predchádzajúci token
                 if ((errorCode = expression(in, &indentationStack, &actualToken, &controlToken, 2)) != 0) return errorCode; //untested

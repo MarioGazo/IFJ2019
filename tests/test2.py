@@ -9,10 +9,10 @@ def factorial(n):
     return result
 
 # Telo programu
-print('Zadajte cislo pre vypocet faktorialu')
-a = inputi()
-if a < 0.0:
-    print('Faktorial nelze spocitat')
-else:
-    vysl = factorial(a)
-    print('Vysledek je', vysl)
+#print('Zadajte cislo pre vypocet faktorialu')
+#a = inputi()
+#if a < 0.0:
+#    print('Faktorial nelze spocitat')
+#else:
+#    vysl = factorial(a)
+#    print('Vysledek je', vysl)
