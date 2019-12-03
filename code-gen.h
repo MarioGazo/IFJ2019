@@ -286,9 +286,9 @@ bool cg_stack_push_id(char* symb, bool local);
 
 bool cg_stack_push_literal(varType_t type, char* val);
 
-bool cg_stack_push_int(int val);
+bool cg_stack_push_int(unsigned int val);
 
-bool cg_stack_push_double(float val);
+bool cg_stack_push_double(double val);
 
 bool cg_clear_stack();
 
@@ -300,12 +300,12 @@ bool cg_stack_pop_id(char* var, bool local);
 
 bool cg_type_of_symb(char* var, char* symb);
 
-bool cg_flag_gen(char* a_part, int number, char* b_part);
+bool cg_flag_gen(char* a_part, unsigned int number, char* b_part);
 
 bool cg_stack_int2float();
 
 bool cg_exit(int errorNum);
 
-bool cg_jump(char* jump_type, char* flag_1_part, int flag_number, char* flag_2_part, char* op_1, char* op_2);
+bool cg_jump(char* jump_type, char* flag_1_part, unsigned int flag_number, char* flag_2_part, char* op_1, char* op_2);
 
 #endif //VUT_FIT_IFJ2019_CODE_GEN_H

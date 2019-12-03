@@ -308,9 +308,7 @@ int expSwitch( dynamic_symbol_stack_t* stack, token_t** t, const int* depth, cha
 }
 
 bool cg_stack_p(token_t* token){
-    if (token->tokenType == Identifier){
-        cg_stack_push_literal(TypeString, token->tokenAttribute.word.text);
-    } else if (token->tokenType == String){
+    if (token->tokenType == Identifier || token->tokenType == DocumentString || token->tokenType == String) {
         cg_stack_push_literal(TypeString, token->tokenAttribute.word.text);
     } else if (token->tokenType == Integer){
         cg_stack_push_int(token->tokenAttribute.intValue);

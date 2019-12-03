@@ -326,7 +326,7 @@ bool cg_stack_push_literal(varType_t type, char* val) {
 }
 
 // Uloženie hodnoty val na vrchol dátoveho zasobniku
-bool cg_stack_push_int(int val) {
+bool cg_stack_push_int(unsigned int val) {
     ADD_CODE("PUSHS ");
     ADD_CODE_INT(val); ADD_CODE("\n");
 
@@ -334,7 +334,7 @@ bool cg_stack_push_int(int val) {
 }
 
 // Uloženie hodnoty val na vrchol dátoveho zasobniku
-bool cg_stack_push_double(float val) {
+bool cg_stack_push_double(double val) {
     ADD_CODE("PUSHS ");
     ADD_CODE_DOUBLE(val); ADD_CODE("\n");
 
@@ -400,7 +400,7 @@ bool cg_type_of_symb(char* var, char* symb){
 }
 
 // Vytvorenie navestia
-bool cg_flag_gen(char* a_part, int number, char* b_part){
+bool cg_flag_gen(char* a_part, unsigned int number, char* b_part){
     ADD_CODE("LABEL $"); ADD_CODE(a_part); ADD_CODE("$"); ADD_CODE_INT(number); ADD_CODE("$"); ADD_CODE(b_part); ADD_CODE("\n");
     return true;
 }
@@ -418,7 +418,7 @@ bool cg_exit(int errorNum){
 }
 
 // JUMP - vsetky varianty
-bool cg_jump(char* jump_type, char* flag_1_part, int flag_number, char* flag_2_part, char* op_1, char* op_2){
+bool cg_jump(char* jump_type, char* flag_1_part, unsigned int flag_number, char* flag_2_part, char* op_1, char* op_2){
     ADD_CODE(jump_type); ADD_CODE(" $"); ADD_CODE(flag_1_part); ADD_CODE("$"); ADD_CODE_INT(flag_number); ADD_CODE("$"); ADD_CODE(flag_2_part); ADD_CODE(" ");
     ADD_CODE(op_1); ADD_CODE(" "); ADD_CODE(op_2); ADD_CODE("\n");
     return true;
