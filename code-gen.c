@@ -110,7 +110,7 @@ bool cg_fun_param_assign(char* id_funkcie, unsigned int uni, token_t actualToken
 
     switch (actualToken.tokenType) {
         case Identifier:
-            if (local) { ADD_CODE("LF@"); } else { ADD_CODE("GF@"); }
+            if (cg_LForGF(local) == false) return false;
             ADD_CODE(actualToken.tokenAttribute.word.text); ADD_CODE("\n");
             return true;
         case Integer:
@@ -160,17 +160,17 @@ bool cg_fun_return()
 
 bool cg_assign_expr_result(char* variable, bool local) {
     ADD_CODE("MOVE ");
-    if (local) { ADD_CODE("LF@"); } else { ADD_CODE("GF@"); }
+    if (cg_LForGF(local) == false) return false;
     ADD_CODE(variable); ADD_CODE(" GF@$expr_result");
     ADD_CODE("\n");
 
     return true;
 }
 
-bool cg_var_declare(char* varName, bool inFunc)
+bool cg_var_declare(char* varName, bool local)
 {
     ADD_CODE("DEFVAR ");
-    if (inFunc) {ADD_CODE("LF@");} else {ADD_CODE("GF@");}
+    if (cg_LForGF(local) == false) return false;
     ADD_CODE(varName); ADD_CODE("\n");
     return true;
 }
@@ -270,7 +270,7 @@ bool cg_print_id(hTabItem_t* varRecord, bool local) {
     ADD_INST("\n# Function PRINT ID");
 
     ADD_CODE("WRITE ");
-    if (local) { ADD_CODE("GF@"); } else { ADD_CODE("LF%"); }
+    if (cg_LForGF(local) == false) return false;
     ADD_CODE(varRecord->key.text); ADD_CODE("\n");
     return true;
 }
@@ -295,19 +295,9 @@ bool cg_type(varType_t type) {
 bool cg_input(varType_t type) {
     ADD_INST("\n# Reading variable");
     ADD_CODE("READ GF@$expr_result ");
-    switch (type) {
-        case TypeString:
-            ADD_CODE("string\n");
-            return true;
-        case TypeInteger:
-            ADD_CODE("int\n");
-            return true;
-        case TypeDouble:
-            ADD_CODE("float\n");
-            return true;
-        default:
-            return false;
-    }
+    if (cg_type(type) == false) return false; ADD_CODE("\n");
+
+    return true;
 }
 
 // Operácia nad operandmi a premenná do ktorej je výsledok priradený
@@ -387,7 +377,7 @@ bool cg_stack_push_double(double val) {
 // Uloženie hodnoty symb na vrchol dátoveho zasobniku
 bool cg_stack_pop_id(char* var, bool local) {
     ADD_CODE("POPS ");
-    if (local) { ADD_CODE("LF@"); } else { ADD_CODE("GF@"); }
+    if (cg_LForGF(local) == false) return false;
     ADD_CODE(var); ADD_CODE("\n");
 
     return true;
@@ -449,9 +439,9 @@ bool cg_cat_literal(char* var, char* op1, char* op2) {
 // Konkatenácia operandov a priradenie premennej
 bool cg_cat_id(char* var, bool local1, char* op1, bool local2, char* op2, bool local3) {
     ADD_CODE("CONCAT");
-    if (local1) { ADD_CODE("LF@"); } else { ADD_CODE("GF@"); } ADD_CODE(var);
-    if (local2) { ADD_CODE("LF@"); } else { ADD_CODE("GF@"); } ADD_CODE(op1);
-    if (local3) { ADD_CODE("LF@"); } else { ADD_CODE("GF@"); } ADD_CODE(op2);
+    if (cg_LForGF(local1) == false) return false; ADD_CODE(var);
+    if (cg_LForGF(local2) == false) return false; ADD_CODE(op1);
+    if (cg_LForGF(local3) == false) return false; ADD_CODE(op2);
     ADD_CODE("\n");
 
     return true;
@@ -471,7 +461,7 @@ bool cg_flag_gen(char* a_part, unsigned int number, char* b_part){
 
 // Konverzia int na double
 bool cg_stack_int2float(){
-    ADD_CODE("INT2FLOATS"); ADD_CODE("\n");
+    ADD_INST("INT2FLOATS");
     return true;
 }
 
@@ -494,7 +484,7 @@ bool cg_move(char* id_to_return, char* type){
     return true;
 }
 
-bool cg_two_strings(int operation, int flag){
+bool cg_two_strings(unsigned int operation, int flag){
     cg_jump("JUMPIFNEQ", "data_control", flag, "final2", "LF@typ_op_1", "string@string");
     ADD_CODE("JUMPIFEQ $data_control$"); ADD_CODE_INT(flag); ADD_CODE("$final_concat int@1 int@"); ADD_CODE_INT(operation); ADD_CODE("\n");
 
@@ -512,6 +502,12 @@ bool cg_two_strings(int operation, int flag){
     cg_jump("JUMP", "data_control", flag, "op_done", "", "");
 
     cg_flag_gen("data_control", flag, "final2");
+
+    return true;
+}
+
+bool cg_LForGF(bool local) {
+    if (local) { ADD_CODE("LF@"); } else { ADD_CODE("GF@"); }
 
     return true;
 }

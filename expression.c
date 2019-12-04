@@ -414,7 +414,7 @@ int cg_count(parserState_t operatio, int type_op_1, int type_op_2){
 
                 cg_cat_literal("concat", "op_1", "op_2");
 
-                cg_stack_push_literal(String, "concat");
+                cg_stack_push_literal(TypeString, "concat");
 
                 return Identifier;
 
@@ -475,7 +475,7 @@ int cg_count(parserState_t operatio, int type_op_1, int type_op_2){
 
             cg_cat_literal("concat", "op_1", "op_2");
 
-            cg_stack_push_literal(String, "concat");
+            cg_stack_push_literal(TypeString, "concat");
 
             return Identifier;
         }

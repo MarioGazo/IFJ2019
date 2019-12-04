@@ -444,7 +444,6 @@ int commandList() {
                 GET_TOKEN;//precti prvni token z vyrazu pro aby jsme mohli pouzit case 1 a predat adresu actualToken
                 if ((errorCode = expression(in, &indentationStack, &actualToken, NULL, 1)) != 0) return errorCode; //tested
 
-                // TODO RETURN TMP -> tmp vysledok
                 // Návrat z tela funkcie
                 if (cg_fun_return() == false) return INTERNAL_ERR;
                 break;
@@ -683,7 +682,9 @@ int assign(hTabItem_t* varRecord) {
 
             return PROG_OK;
         }
-    } else if (actualToken.tokenType == Double || actualToken.tokenType == Integer) {
+    } else if (actualToken.tokenType == Double || actualToken.tokenType == Integer
+            || actualToken.tokenType == String || actualToken.tokenType == DocumentString
+            || actualToken.tokenType == LeftBracket) {
         PRINT_DEBUG("\tEXPRESSION\n");
 
         expr = true;
@@ -700,21 +701,21 @@ int assign(hTabItem_t* varRecord) {
                 GET_AND_CHECK_TOKEN(LeftBracket);
                 GET_AND_CHECK_TOKEN(RightBracket);
                 if (cg_input(TypeDouble) == false) return INTERNAL_ERR;
-                break;
+                return PROG_OK;
 
             case keywordInputs:
                 PRINT_DEBUG("\tINPUTS\n");
                 GET_AND_CHECK_TOKEN(LeftBracket);
                 GET_AND_CHECK_TOKEN(RightBracket);
                 if (cg_input(TypeString) == false) return INTERNAL_ERR;
-                break;
+                return PROG_OK;
 
             case keywordInputi:
                 PRINT_DEBUG("\tINPUTI\n");
                 GET_AND_CHECK_TOKEN(LeftBracket);
                 GET_AND_CHECK_TOKEN(RightBracket);
                 if (cg_input(TypeInteger) == false) return INTERNAL_ERR;
-                break;
+                return PROG_OK;
 
             case keywordLen:
                 PRINT_DEBUG("\tLEN\n");

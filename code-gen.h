@@ -217,7 +217,7 @@ bool cg_fun_return();
  * @param ID_premenna Variable name
  * @param inFunc Whether the variable is local or global
  */
-bool cg_var_declare(char* varName, bool inFunc);
+bool cg_var_declare(char* varName, bool local);
 
 /**
  * @brief Label for jumping
@@ -306,6 +306,8 @@ bool cg_rel_operation_stack(parserState_t operation);
 
 bool cg_move(char* id_to_return, char* type);
 
-bool cg_two_strings(int operation, int flag);
+bool cg_two_strings(unsigned int operation, int flag);
+
+bool cg_LForGF(bool local);
 
 #endif //VUT_FIT_IFJ2019_CODE_GEN_H
