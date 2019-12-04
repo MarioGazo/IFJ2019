@@ -44,7 +44,7 @@ bool cg_code_header()
     ADD_INST(".IFJcode19");
     ADD_INST("# Program start");
 
-    ADD_INST("DEFVAR GF@expr_result");
+    ADD_INST("DEFVAR GF@$expr_result");
 
     ADD_INST("JUMP $$main");
 
@@ -161,7 +161,7 @@ bool cg_fun_return()
 bool cg_assign_expr_result(char* variable, bool local) {
     ADD_CODE("MOVE ");
     if (local) { ADD_CODE("LF@"); } else { ADD_CODE("GF@"); }
-    ADD_CODE(variable); ADD_CODE(" TF@%navratova_hodnota");
+    ADD_CODE(variable); ADD_CODE(" GF@$expr_result");
     ADD_CODE("\n");
 
     return true;
@@ -292,19 +292,22 @@ bool cg_type(varType_t type) {
 }
 
 // READ <var> <type>
-bool cg_input(hTabItem_t variable,bool local) {
-    // Je premenná uložená v lokálnom alebo globálnom rámci?
+bool cg_input(varType_t type) {
     ADD_INST("\n# Reading variable");
-    if (local) { ADD_CODE("READ LF@"); } else { ADD_CODE("READ GF@"); }
-
-    // Meno premennej
-    ADD_CODE(variable.key.text); ADD_CODE(" ");
-
-    // Typ premennej
-    if (cg_type(variable.type) == false) return false;
-    ADD_CODE("\n");
-
-    return true;
+    ADD_CODE("READ GF@$expr_result ");
+    switch (type) {
+        case TypeString:
+            ADD_CODE("string\n");
+            return true;
+        case TypeInteger:
+            ADD_CODE("int\n");
+            return true;
+        case TypeDouble:
+            ADD_CODE("float\n");
+            return true;
+        default:
+            return false;
+    }
 }
 
 // Operácia nad operandmi a premenná do ktorej je výsledok priradený

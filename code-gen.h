@@ -260,7 +260,7 @@ bool cg_print_id(hTabItem_t* varRecord, bool global);
 /**
  * @brief Reads value
  */
-bool cg_input(hTabItem_t variable, bool local);
+bool cg_input(varType_t type);
 
 /**
  * @brief Type enum to text

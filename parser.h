@@ -74,5 +74,5 @@ int term();
   *
   * @return Pointer to item, or NULL if not found
   */
- hTabItem_t* isInLocalOrGlobalhTab();
+ hTabItem_t* isInLocalOrGlobalhTab(dynamicString_t name);
 #endif //VUT_FIT_IFJ2019_PARSER_H

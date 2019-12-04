@@ -261,8 +261,9 @@ int commandList() {
                 varRecord.key = name;
                 varRecord.next = NULL;
 
+                hTabItem_t* controlRecord = isInLocalOrGlobalhTab(varRecord.key);
                 // Priradenie hodnoty do nexistujucej premennej
-                if (TSearch(LocalTable,varRecord.key) == NULL && TSearch(GlobalTable,varRecord.key) == NULL) {
+                if (!controlRecord) {
                     if (cg_var_declare(varRecord.key.text, inFunc) == false)              return INTERNAL_ERR;
 
                     if ((errorCode = (assign(&varRecord))) != PROG_OK) return errorCode; // Vyraz na priradenie
@@ -280,6 +281,9 @@ int commandList() {
                     if ((errorCode = (assign(&varRecord))) != PROG_OK) return errorCode; // Vyraz na priradenie
 
                     if (cg_assign_expr_result(varRecord.key.text,true) == false)    return INTERNAL_ERR;
+
+                    controlRecord->type = varRecord.type;
+                    controlRecord->value = varRecord.value;
                 }
 
                 return (errorCode = commandListContOrEnd());
@@ -296,7 +300,6 @@ int commandList() {
 
                 hTabItem_t *controlRecord = NULL;
                 if ((controlRecord = TSearch(GlobalTable, funcRecord.key)) != NULL) {
-                    printf("control: %d func: %d\n",controlRecord->value.intValue,funcRecord.value.intValue);
                     if (controlRecord->value.intValue != funcRecord.value.intValue)
                         return SEMPARAM_ERR;
                 } else {
@@ -459,21 +462,21 @@ int commandList() {
                 PRINT_DEBUG("\tINPUTF\n");
                 GET_AND_CHECK_TOKEN(LeftBracket);
                 GET_AND_CHECK_TOKEN(RightBracket);
-                //cg_input();
+                if (cg_input(TypeDouble) == false) return INTERNAL_ERR;
                 break;
 
             case keywordInputs: // input bez priradenia
                 PRINT_DEBUG("\tINPUTS\n");
                 GET_AND_CHECK_TOKEN(LeftBracket);
                 GET_AND_CHECK_TOKEN(RightBracket);
-                //cg_input();
+                if (cg_input(TypeString) == false) return INTERNAL_ERR;
                 break;
 
             case keywordInputi: // input bez priradenia
                 PRINT_DEBUG("\tINPUTI\n");
                 GET_AND_CHECK_TOKEN(LeftBracket);
                 GET_AND_CHECK_TOKEN(RightBracket);
-                //cg_input();
+                if (cg_input(TypeInteger) == false) return INTERNAL_ERR;
                 break;
 
             case keywordChr:
@@ -485,7 +488,7 @@ int commandList() {
                 if (actualToken.tokenType == Integer) {
                     // TODO gen param
                 } else if (actualToken.tokenType == Identifier) {
-                    hTabItem_t* paramRecord = isInLocalOrGlobalhTab();
+                    hTabItem_t* paramRecord = isInLocalOrGlobalhTab(actualToken.tokenAttribute.word);
                     if (paramRecord->type != TypeInteger) {
                         return SEMRUN_ERR;
                     } else {
@@ -510,7 +513,7 @@ int commandList() {
                 if (actualToken.tokenType == String) {
                     // TODO gen param
                 } else if (actualToken.tokenType == Identifier) {
-                    hTabItem_t* paramRecord = isInLocalOrGlobalhTab();
+                    hTabItem_t* paramRecord = isInLocalOrGlobalhTab(actualToken.tokenAttribute.word);
                     if (paramRecord->type != TypeString) {
                         return SEMRUN_ERR;
                     } else {
@@ -535,7 +538,7 @@ int commandList() {
                 if (actualToken.tokenType == String) {
                     // TODO gen param
                 } else if (actualToken.tokenType == Identifier) {
-                    hTabItem_t* paramRecord = isInLocalOrGlobalhTab();
+                    hTabItem_t* paramRecord = isInLocalOrGlobalhTab(actualToken.tokenAttribute.word);
                     if (paramRecord->type != TypeString) {
                         return SEMRUN_ERR;
                     } else {
@@ -551,7 +554,7 @@ int commandList() {
                 if (actualToken.tokenType == Integer) {
                     // TODO gen param
                 } else if (actualToken.tokenType == Identifier) {
-                    hTabItem_t* paramRecord = isInLocalOrGlobalhTab();
+                    hTabItem_t* paramRecord = isInLocalOrGlobalhTab(actualToken.tokenAttribute.word);
                     if (paramRecord->type != TypeInteger) {
                         return SEMRUN_ERR;
                     } else {
@@ -567,7 +570,7 @@ int commandList() {
                 if (actualToken.tokenType == Integer) {
                     // TODO gen param
                 } else if (actualToken.tokenType == Identifier) {
-                    hTabItem_t* paramRecord = isInLocalOrGlobalhTab();
+                    hTabItem_t* paramRecord = isInLocalOrGlobalhTab(actualToken.tokenAttribute.word);
                     if (paramRecord->type != TypeInteger) {
                         return SEMRUN_ERR;
                     } else {
@@ -592,7 +595,7 @@ int commandList() {
                 if (actualToken.tokenType == String) {
                     // TODO gen param
                 } else if (actualToken.tokenType == Identifier) {
-                    hTabItem_t* paramRecord = isInLocalOrGlobalhTab();
+                    hTabItem_t* paramRecord = isInLocalOrGlobalhTab(actualToken.tokenAttribute.word);
                     if (paramRecord->type != TypeString) {
                         return SEMRUN_ERR;
                     } else {
@@ -608,7 +611,7 @@ int commandList() {
                 if (actualToken.tokenType == Integer) {
                     // TODO gen param
                 } else if (actualToken.tokenType == Identifier) {
-                    hTabItem_t* paramRecord = isInLocalOrGlobalhTab();
+                    hTabItem_t* paramRecord = isInLocalOrGlobalhTab(actualToken.tokenAttribute.word);
                     if (paramRecord->type != TypeInteger) {
                         return SEMRUN_ERR;
                     } else {
@@ -674,9 +677,9 @@ int assign(hTabItem_t* varRecord) {
             PRINT_DEBUG("\tEXPRESSION\n");
             expr = true;
 
-            // Volanie precedentnej analyzi
             // Posielame aktuálny a predchádzajúci token
-            if ((errorCode = expression(in, &indentationStack, &actualToken, &controlToken, 2)) != 0) return errorCode; //tested
+            if ((errorCode = expression(in, &indentationStack,
+                    &actualToken, &controlToken, 2)) != 0) return errorCode;
 
             return PROG_OK;
         }
@@ -686,44 +689,32 @@ int assign(hTabItem_t* varRecord) {
         expr = true;
 
         // Posielame aktuálny token
-        if ((errorCode = expression(in, &indentationStack, &actualToken, NULL, 1)) != 0) return errorCode; //tested
+        if ((errorCode = expression(in, &indentationStack,
+                &actualToken, NULL, 1)) != 0) return errorCode;
 
         return PROG_OK;
     } else if (actualToken.tokenType == Keyword) {
         switch (actualToken.tokenAttribute.intValue) {
             case keywordInputf:
                 PRINT_DEBUG("\tINPUTF\n");
-
                 GET_AND_CHECK_TOKEN(LeftBracket);
                 GET_AND_CHECK_TOKEN(RightBracket);
-
-                varRecord->type = TypeDouble;
-                if (cg_input(*varRecord, inFunc) == false) return INTERNAL_ERR;
-
-                return PROG_OK;
+                if (cg_input(TypeDouble) == false) return INTERNAL_ERR;
+                break;
 
             case keywordInputs:
                 PRINT_DEBUG("\tINPUTS\n");
-
                 GET_AND_CHECK_TOKEN(LeftBracket);
                 GET_AND_CHECK_TOKEN(RightBracket);
-
-                varRecord->type = TypeString;
-                if (cg_input(*varRecord, inFunc) == false) return INTERNAL_ERR;
-
-                return PROG_OK;
-
+                if (cg_input(TypeString) == false) return INTERNAL_ERR;
+                break;
 
             case keywordInputi:
                 PRINT_DEBUG("\tINPUTI\n");
-
                 GET_AND_CHECK_TOKEN(LeftBracket);
                 GET_AND_CHECK_TOKEN(RightBracket);
-
-                varRecord->type = TypeInteger;
-                if (cg_input(*varRecord, inFunc) == false) return INTERNAL_ERR;
-
-                return PROG_OK;
+                if (cg_input(TypeInteger) == false) return INTERNAL_ERR;
+                break;
 
             case keywordLen:
                 PRINT_DEBUG("\tLEN\n");
@@ -731,10 +722,10 @@ int assign(hTabItem_t* varRecord) {
                 GET_AND_CHECK_TOKEN(LeftBracket);
 
                 GET_TOKEN;
-                if (actualToken.tokenType == String) {
+                if (actualToken.tokenType == String || actualToken.tokenType == DocumentString) {
                     // TODO gen param
                 } else if (actualToken.tokenType == Identifier) {
-                    hTabItem_t* paramRecord = isInLocalOrGlobalhTab();
+                    hTabItem_t* paramRecord = isInLocalOrGlobalhTab(actualToken.tokenAttribute.word);
                     if (paramRecord->type != TypeString) {
                         return SEMRUN_ERR;
                     } else {
@@ -761,7 +752,7 @@ int assign(hTabItem_t* varRecord) {
                 if (actualToken.tokenType == String) {
                     // TODO gen param
                 } else if (actualToken.tokenType == Identifier) {
-                    hTabItem_t* paramRecord = isInLocalOrGlobalhTab();
+                    hTabItem_t* paramRecord = isInLocalOrGlobalhTab(actualToken.tokenAttribute.word);
                     if (paramRecord->type != TypeString) {
                         return SEMRUN_ERR;
                     } else {
@@ -777,7 +768,7 @@ int assign(hTabItem_t* varRecord) {
                 if (actualToken.tokenType == Integer) {
                     // TODO gen param
                 } else if (actualToken.tokenType == Identifier) {
-                    hTabItem_t* paramRecord = isInLocalOrGlobalhTab();
+                    hTabItem_t* paramRecord = isInLocalOrGlobalhTab(actualToken.tokenAttribute.word);
                     if (paramRecord->type != TypeInteger) {
                         return SEMRUN_ERR;
                     } else {
@@ -793,7 +784,7 @@ int assign(hTabItem_t* varRecord) {
                 if (actualToken.tokenType == Integer) {
                     // TODO gen param
                 } else if (actualToken.tokenType == Identifier) {
-                    hTabItem_t* paramRecord = isInLocalOrGlobalhTab();
+                    hTabItem_t* paramRecord = isInLocalOrGlobalhTab(actualToken.tokenAttribute.word);
                     if (paramRecord->type != TypeInteger) {
                         return SEMRUN_ERR;
                     } else {
@@ -820,7 +811,7 @@ int assign(hTabItem_t* varRecord) {
                 if (actualToken.tokenType == String) {
                     // TODO gen param
                 } else if (actualToken.tokenType == Identifier) {
-                    hTabItem_t* paramRecord = isInLocalOrGlobalhTab();
+                    hTabItem_t* paramRecord = isInLocalOrGlobalhTab(actualToken.tokenAttribute.word);
                     if (paramRecord->type != TypeString) {
                         return SEMRUN_ERR;
                     } else {
@@ -836,7 +827,7 @@ int assign(hTabItem_t* varRecord) {
                 if (actualToken.tokenType == Integer) {
                     // TODO gen param
                 } else if (actualToken.tokenType == Identifier) {
-                    hTabItem_t* paramRecord = isInLocalOrGlobalhTab();
+                    hTabItem_t* paramRecord = isInLocalOrGlobalhTab(actualToken.tokenAttribute.word);
                     if (paramRecord->type != TypeInteger) {
                         return SEMRUN_ERR;
                     } else {
@@ -863,7 +854,7 @@ int assign(hTabItem_t* varRecord) {
                 if (actualToken.tokenType == Integer) {
                     // TODO gen param
                 } else if (actualToken.tokenType == Identifier) {
-                    hTabItem_t* paramRecord = isInLocalOrGlobalhTab();
+                    hTabItem_t* paramRecord = isInLocalOrGlobalhTab(actualToken.tokenAttribute.word);
                     if (paramRecord->type != TypeInteger) {
                         return SEMRUN_ERR;
                     } else {
@@ -986,11 +977,11 @@ int commandListContOrEnd() {
     }
 }
 
-hTabItem_t* isInLocalOrGlobalhTab() {
+hTabItem_t* isInLocalOrGlobalhTab(dynamicString_t name) {
     hTabItem_t* varRecord;
-    if ((varRecord = (TSearch(LocalTable,actualToken.tokenAttribute.word))) != NULL) {
+    if ((varRecord = (TSearch(LocalTable,name))) != NULL) {
         return varRecord;
-    } else if ((varRecord = (TSearch(GlobalTable,actualToken.tokenAttribute.word))) != NULL) {
+    } else if ((varRecord = (TSearch(GlobalTable,name))) != NULL) {
         return varRecord;
     } else {
         return NULL;
