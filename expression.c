@@ -12,7 +12,7 @@
 #include "code-gen.h"
 
 #define DEBUG 1 // TODO set to 0
-#define RULEHEIGHT 16
+#define RULEHEIGHT 17
 #define RULEWIDTH 3
 
 #define PRINT_DEBUG(text) \
@@ -56,6 +56,7 @@ parserState_t rules[RULEHEIGHT][RULEWIDTH] = {
     {RightBracket, Nonterminal, LeftBracket},                   // E -> (E) (in reverse because of the stack) 12
     {Identifier, (parserState_t) NULL, (parserState_t) NULL},   // E -> i () 13
     {String, (parserState_t) NULL, (parserState_t) NULL},       // E -> s 14
+    {DocumentString, (parserState_t) NULL, (parserState_t) NULL},       // E -> s 14
     {Integer, (parserState_t) NULL, (parserState_t) NULL},      // E -> integer 15
     {Double, (parserState_t) NULL, (parserState_t) NULL}        // E -> double 16
 };
@@ -89,7 +90,7 @@ int LLPos(token_t* token) {
             return 3;
         case Identifier:
         case Integer:
-        case Double: 
+        case Double:
             return 4;
         case NotEqual:
         case Smaller:
@@ -118,6 +119,7 @@ int LLSPos(token_t* token) {
         case RightBracket:
             return 3;
         case String:
+        case DocumentString:
             return 4;
         case  EOL:
         case  Colon:
@@ -272,7 +274,7 @@ int expSwitch( dynamic_symbol_stack_t* stack, token_t** t, const int* depth, cha
                 token_t * E = new_token(99);
 
 
-                if(found == 13 ||found == 14 ||found == 15 ||found == 12){
+                if(found == 12 ||found == 13 ||found == 14 ||found == 15 ||found == 16){
                   E->tokenType = exp[0]->tokenType;
                   cg_stack_p(exp[0]);
                   //TODO: push |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -388,7 +390,7 @@ int cg_count(parserState_t operatio, int type_op_1, int type_op_2){
                 cg_flag_gen("data_control", uni_2_a, "final");
             }
 
-            if (type_op_2 == String){
+            if (type_op_2 == String || type_op_2 ==  DocumentString){
                 cg_jump("JUMPIFEQ", "data_control", uni_2_a, "final", "LF@typ_op_1", "string@string");
 
                 cg_exit(4);

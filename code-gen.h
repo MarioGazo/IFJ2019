@@ -28,14 +28,14 @@
 #define ADD_CODE_INT(_code) \
     do {                                        \
         char string[MAX_NUMBER_OF_DIGITS];      \
-        sprintf(string,"%ud",_code);            \
+        sprintf(string,"int@%u",_code);            \
         ADD_CODE(string);                       \
     } while (0)
 
 #define ADD_CODE_DOUBLE(_code) \
     do {                                        \
         char string[MAX_NUMBER_OF_DIGITS];      \
-        sprintf(string,"%f",_code);            \
+        sprintf(string,"double%f",_code);            \
         ADD_CODE(string);                       \
     } while (0)
 
