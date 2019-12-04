@@ -19,7 +19,7 @@
 #include "dynamic-stack.h"
 #include "scanner.h"
 
-int expression(FILE* lIn, dynamic_stack_t* lIStack, token_t* t, token_t* controlToken, int amountOfPassedTokens);
+int expression(FILE* lIn, dynamic_stack_t* lIStack, token_t* t, token_t* controlToken, int amountOfPassedTokens, int *ret_value_type);
 
 //given a token, retruns an LL table position
 int LLPos(token_t * token);
@@ -37,9 +37,9 @@ token_t * terminalTop(dynamic_symbol_stack_t * stack, int * depth);
 token_t * new_token(parserState_t type);
 
 //switch to decide what to do with a given char from the LL table
-int expSwitch( dynamic_symbol_stack_t * stack, token_t ** t, const int * depth,  char symbol);
+int expSwitch( dynamic_symbol_stack_t * stack, token_t ** t, const int * depth,  char symbol, int *ret_value_type);
 
-int cg_count(parserState_t operatio, int type_op_1, int type_op_2);
+int cg_count(parserState_t operatio, int type_op_1, int type_op_2, int *ret_value_type);
 
 bool cg_stack_p(token_t* token);
 

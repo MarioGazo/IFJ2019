@@ -40,6 +40,7 @@
 token_t actualToken;
 FILE* in;
 dynamic_stack_t indentationStack;
+int ret_type = 0;
 // Jedinečné hodnoty pre každé náveštie
 unsigned int uni_a = 0;
 unsigned int uni_b = 42;
@@ -320,7 +321,7 @@ int commandList() {
                 expr = true;
 
                 // Posielame aktualny a predchádzajúci token
-                if ((errorCode = expression(in, &indentationStack, &actualToken, &controlToken, 2)) != 0) return errorCode; //untested
+                if ((errorCode = expression(in, &indentationStack, &actualToken, &controlToken, 2, &ret_type)) != 0) return errorCode; //untested
 
                 return (errorCode = commandListContOrEnd());
             }
@@ -333,9 +334,7 @@ int commandList() {
         expr = true;
 
         // Posielame aktuálny token
-        if ((errorCode = expression(in,&indentationStack,
-                &actualToken, NULL, 1)) != PROG_OK)
-            return  errorCode;
+        if ((errorCode = expression(in,&indentationStack, &actualToken, NULL, 1, &ret_type)) != PROG_OK) return  errorCode;
 
         return (errorCode = commandListContOrEnd());
     } else if (actualToken.tokenType == Keyword) {
@@ -352,7 +351,7 @@ int commandList() {
                 // Podmienka ďaľšej iterácie cyklu, posielame aktuálny token
                 GET_TOKEN;
                 if ((errorCode = expression(in, &indentationStack,
-                        &actualToken, NULL, 1)) != PROG_OK)
+                        &actualToken, NULL, 1, &ret_type)) != PROG_OK)
                     return errorCode;
 
                 if (actualToken.tokenType != Colon) return SYNTAX_ERR;
@@ -388,7 +387,7 @@ int commandList() {
                 // Podmienka vetvenia, posielame aktuálny token
                 GET_TOKEN; // nacti prvni token z vyrazu aby jsme mohli pouzit case 1
                 if ((errorCode = expression(in, &indentationStack,
-                        &actualToken, NULL, 1)) != PROG_OK)
+                        &actualToken, NULL, 1, &ret_type)) != PROG_OK)
                             return errorCode;
 
                 if (actualToken.tokenType != Colon) return SYNTAX_ERR;
@@ -442,7 +441,7 @@ int commandList() {
 
                 // Posielame aktuálny token
                 GET_TOKEN;//precti prvni token z vyrazu pro aby jsme mohli pouzit case 1 a predat adresu actualToken
-                if ((errorCode = expression(in, &indentationStack, &actualToken, NULL, 1)) != 0) return errorCode; //tested
+                if ((errorCode = expression(in, &indentationStack, &actualToken, NULL, 1, &ret_type)) != 0) return errorCode; //tested
 
                 // Návrat z tela funkcie
                 if (cg_fun_return() == false) return INTERNAL_ERR;
@@ -678,7 +677,10 @@ int assign(hTabItem_t* varRecord) {
 
             // Posielame aktuálny a predchádzajúci token
             if ((errorCode = expression(in, &indentationStack,
-                    &actualToken, &controlToken, 2)) != 0) return errorCode;
+                    &actualToken, &controlToken, 2, &ret_type)) != 0) return errorCode;
+
+            varRecord->type = ret_type;
+            printf("ddd\n");
 
             return PROG_OK;
         }
@@ -688,10 +690,11 @@ int assign(hTabItem_t* varRecord) {
         PRINT_DEBUG("\tEXPRESSION\n");
 
         expr = true;
-
         // Posielame aktuálny token
         if ((errorCode = expression(in, &indentationStack,
-                &actualToken, NULL, 1)) != 0) return errorCode;
+                &actualToken, NULL, 1, &ret_type)) != 0) return errorCode;
+
+        varRecord->type = ret_type;
 
         return PROG_OK;
     } else if (actualToken.tokenType == Keyword) {

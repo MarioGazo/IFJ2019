@@ -26,7 +26,7 @@ dynamic_stack_t* iStack;
 token_t* microStack = NULL;
 static unsigned int uni_2_a = 0;
 int concatenation = 0;
-
+int ret_value_type= 0;
 
 
 int errN = 0;
@@ -195,7 +195,7 @@ token_t* getNewToken() {
   */
 }
 
-int expSwitch( dynamic_symbol_stack_t* stack, token_t** t, const int* depth, char symbol){
+int expSwitch( dynamic_symbol_stack_t* stack, token_t** t, const int* depth, char symbol, int *ret_value_type){
     token_t* bufferT = NULL;
     token_t* token  = *t;
     token_t* exp[RULEWIDTH];
@@ -274,7 +274,6 @@ int expSwitch( dynamic_symbol_stack_t* stack, token_t** t, const int* depth, cha
                 //All rules are assumed to have a left side E, because they do. (E = 99)
                 token_t * E = new_token(99);
 
-
                 if(found == 12 ||found == 13 ||found == 14 ||found == 15 ||found == 16){
                   E->tokenType = exp[0]->tokenType;
                   cg_stack_p(exp[0]);
@@ -282,7 +281,7 @@ int expSwitch( dynamic_symbol_stack_t* stack, token_t** t, const int* depth, cha
 
                   free(exp[0]); //the rest of exp is empty
                 }else if(found != 11){
-                  E->tokenType = cg_count(exp[1]->tokenType, exp[0]->tokenType, exp[2]->tokenType);
+                  E->tokenType = cg_count(exp[1]->tokenType, exp[0]->tokenType, exp[2]->tokenType, ret_value_type);
                   free(exp[0]);
                   free(exp[1]);
                   free(exp[2]);
@@ -322,9 +321,7 @@ bool cg_stack_p(token_t* token){
     return true;
 }
 
-int cg_count(parserState_t operatio, int type_op_1, int type_op_2){
-
-
+int cg_count(parserState_t operatio, int type_op_1, int type_op_2, int *ret_value_type){
 
     // Rozdelime si pripady podla typov operandov
     if (type_op_1 == Identifier){
@@ -416,7 +413,8 @@ int cg_count(parserState_t operatio, int type_op_1, int type_op_2){
 
                 cg_stack_push_literal(TypeString, "concat");
 
-                return Identifier;
+                *ret_value_type = String;
+                return String;
 
             }
 
@@ -477,7 +475,8 @@ int cg_count(parserState_t operatio, int type_op_1, int type_op_2){
 
             cg_stack_push_literal(TypeString, "concat");
 
-            return Identifier;
+            *ret_value_type = String;
+            return String;
         }
     }
 
@@ -495,6 +494,7 @@ int cg_count(parserState_t operatio, int type_op_1, int type_op_2){
         cg_stack_pop_id("op_1", false);
         cg_move("op_1", "typ_op_1");
         cg_clear_stack();
+
     } else if ((operatio == NotEqual) || (operatio == Smaller) || (operatio == SmallerOrEqual)
     || (operatio == Bigger) || (operatio == BiggerOrEqual) || (operatio == Equals)){
         // Relacna operacia nad zasobnikom
@@ -511,20 +511,19 @@ int cg_count(parserState_t operatio, int type_op_1, int type_op_2){
     uni_2_a = uni_2_a + 1;
 
     if (type_op_1 == type_op_2){
+        *ret_value_type = type_op_1;
         return type_op_1;
-    } else if ((type_op_1 == Identifier) || (type_op_2 == Identifier)){
-        return Identifier;
     } else if ((type_op_1 == Double) || (type_op_2 == Double)){
+        *ret_value_type = Double;
         return Double;
-    } else if ((type_op_1 == String) || (type_op_2 == String)) {
-        return String;
     } else {
+        *ret_value_type = Integer;
         return Integer;
     }
 
 }
 
-int expression(FILE* lIn, dynamic_stack_t* lIStack, token_t* t, token_t* controlToken, int amountOfPassedTokens){
+int expression(FILE* lIn, dynamic_stack_t* lIStack, token_t* t, token_t* controlToken, int amountOfPassedTokens, int* ret_value_type){
     //promote the passed variables to the global scope
     in = lIn;
     iStack = lIStack;
@@ -545,15 +544,18 @@ int expression(FILE* lIn, dynamic_stack_t* lIStack, token_t* t, token_t* control
     switch(amountOfPassedTokens){
       case 0: // No tokens were passed so just get a new one
         token = getNewToken();
+        *ret_value_type = token->tokenType;
         break;
       case 1:
         token = calloc(1, sizeof(token_t));  // Only one token was passed so use that one instead of a new one
         *token = *t;
+        *ret_value_type = token->tokenType;
         break;
       case 2: // Two were passed - im assuming that controlToken comes before t, (TODO: maybe switch them)
         token = calloc(1, sizeof(token_t)); //both of these should end up on the stack at some point
         microStack = calloc(1, sizeof(token_t));
         *token = *controlToken;
+        *ret_value_type = token->tokenType;
 
 
         //simulate 'returning' a token to the scanner using the microStack and an if statement in the getNewToken() function
@@ -602,9 +604,9 @@ int expression(FILE* lIn, dynamic_stack_t* lIStack, token_t* t, token_t* control
         }
 
         if (mode == 0 || mode == -1) {
-            retCode = expSwitch(stack, &token, depth, LL[LLPos(terminalTop(stack, depth))][LLPos(token)]);
+            retCode = expSwitch(stack, &token, depth, LL[LLPos(terminalTop(stack, depth))][LLPos(token)], ret_value_type);
         } else {
-            retCode = expSwitch(stack, &token, depth, LL[LLSPos(terminalTop(stack, depth))][LLSPos(token)]);
+            retCode = expSwitch(stack, &token, depth, LL[LLSPos(terminalTop(stack, depth))][LLSPos(token)], ret_value_type);
         }
 
         if (retCode!=0) {
