@@ -1,6 +1,7 @@
 /**
  * Implementation of imperative language IFJ2019 compiler
  * @file dynamic-symstack.h
+ * @author Juraj Lazur (xlazur00)
  * @brief Dynamic symbol stack interface
  */
 

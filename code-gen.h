@@ -1,7 +1,7 @@
 /**
  * Implementation of imperative language IFJ2019 compiler
  * @file code-gen.h
- * @author Pavol Dubovec (xdubov02)
+ * @author Pavol Dubovec (xdubov02), Juraj Lazur (xlazur00)
  * @brief Code generator header
  */
 
@@ -35,7 +35,7 @@
 #define ADD_CODE_DOUBLE(_code) \
     do {                                        \
         char string[MAX_NUMBER_OF_DIGITS];      \
-        sprintf(string,"%f",_code);            \
+        sprintf(string,"%a",_code);             \
         ADD_CODE(string);                       \
     } while (0)
 

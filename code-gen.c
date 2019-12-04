@@ -1,7 +1,7 @@
 /**
  * Implementation of imperative language IFJ2019 compiler
  * @file code-gen.c
- * @author Pavol Dubovec (xdubov02)
+ * @author Pavol Dubovec (xdubov02), Juraj Lazur (xlazur00)
  * @brief Code generator implementation
  */
 
@@ -184,7 +184,7 @@ bool cg_if_else_part(unsigned int uni_a, unsigned int uni_b)
 
 bool cg_if_end(unsigned int uni_a, unsigned int uni_b)
 {
-    ADD_INST("# End If");
+    ADD_INST("\n# End If");
     if (!cg_label("IF", uni_b, uni_a)) return false;
     return true;
 }
@@ -239,13 +239,13 @@ bool cg_print_id(hTabItem_t* varRecord, bool local) {
 bool cg_type(varType_t type) {
     switch (type) {
         case TypeInteger:
-            ADD_CODE("int@");        return true;
+            ADD_CODE("int");        return true;
         case TypeString:
-            ADD_CODE("string@");     return true;
+            ADD_CODE("string");     return true;
         case TypeDouble:
-            ADD_CODE("float@");      return true;
+            ADD_CODE("float");      return true;
         case TypeBool:
-            ADD_CODE("bool@");       return true;
+            ADD_CODE("bool");       return true;
         default:
             return false;
     }
@@ -254,7 +254,7 @@ bool cg_type(varType_t type) {
 // READ <var> <type>
 bool cg_input(hTabItem_t variable,bool local) {
     // Je premenná uložená v lokálnom alebo globálnom rámci?
-    ADD_INST("# Reading variable");
+    ADD_INST("\n# Reading variable");
     if (local) { ADD_CODE("READ LF@"); } else { ADD_CODE("READ GF@"); }
 
     // Meno premennej
@@ -320,7 +320,7 @@ bool cg_stack_push_literal(varType_t type, char* val) {
 
     if (cg_type(type) == false)     return false;
 
-    ADD_CODE(val); ADD_CODE("\n");
+    ADD_CODE("@"); ADD_CODE(val); ADD_CODE("\n");
 
     return true;
 }
