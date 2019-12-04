@@ -680,7 +680,6 @@ int assign(hTabItem_t* varRecord) {
                     &actualToken, &controlToken, 2, &ret_type)) != 0) return errorCode;
 
             varRecord->type = ret_type;
-            printf("ddd\n");
 
             return PROG_OK;
         }
@@ -981,9 +980,10 @@ int commandListContOrEnd() {
     }
 }
 
+// Vrati item z hashovacej tabulky, Item z local table ma prednost
 hTabItem_t* isInLocalOrGlobalhTab(dynamicString_t name) {
     hTabItem_t* varRecord;
-    if ((varRecord = (TSearch(LocalTable,name))) != NULL) {
+    if ((varRecord = (TSearch(LocalTable,name))) != NULL && inFunc) {
         return varRecord;
     } else if ((varRecord = (TSearch(GlobalTable,name))) != NULL) {
         return varRecord;

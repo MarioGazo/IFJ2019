@@ -561,6 +561,8 @@ int expression(FILE* lIn, dynamic_stack_t* lIStack, token_t* t, token_t* control
         //simulate 'returning' a token to the scanner using the microStack and an if statement in the getNewToken() function
         *microStack = *t;
         break;
+      default:
+        return INTERNAL_ERR;
 
     }
     cg_var_declare("op_1", false);

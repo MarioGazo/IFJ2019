@@ -106,6 +106,57 @@ LABEL $$main
 CREATEFRAME
 PUSHFRAME
 
+# Beginning of while
+LABEL $WHILE%int@0%int@42
+JUMPIFEQ $WHILE%int@42%int@0 GF@%exp_result bool@false
+DEFVAR GF@op_1
+DEFVAR GF@op_2
+DEFVAR GF@concat
+DEFVAR GF@@%navratova_hodnota
+DEFVAR GF@typ_op_1
+DEFVAR GF@typ_op_2
+PUSHS string@a
+PUSHS string@b
+POPS GF@op_1
+POPS GF@op_2
+PUSHS GF@op_2PUSHS GF@op_1TYPE LF@typ_op_2 LF@op_2
+ADDS
+PUSHS string@c
+PUSHS string@d
+POPS GF@op_1
+POPS GF@op_2
+PUSHS GF@op_2PUSHS GF@op_1TYPE LF@typ_op_2 LF@op_2
+SUBS
+POPS GF@op_1
+POPS GF@op_2
+PUSHS GF@op_2PUSHS GF@op_1TYPE LF@typ_op_2 LF@op_2
+LTS
+DEFVAR GF@op_1
+DEFVAR GF@op_2
+DEFVAR GF@concat
+DEFVAR GF@@%navratova_hodnota
+DEFVAR GF@typ_op_1
+DEFVAR GF@typ_op_2
+PUSHS string@a
+PUSHS string@b
+POPS GF@op_1
+POPS GF@op_2
+PUSHS GF@op_2PUSHS GF@op_1TYPE LF@typ_op_2 LF@op_2
+ADDS
+PUSHS string@c
+POPS GF@op_1
+POPS GF@op_2
+PUSHS GF@op_2PUSHS GF@op_1TYPE LF@typ_op_2 LF@op_2
+ADDS
+PUSHS string@d
+POPS GF@op_1
+POPS GF@op_2
+PUSHS GF@op_2PUSHS GF@op_1TYPE LF@typ_op_2 LF@op_2
+ADDS
+JUMP $WHILE%int@0%int@42
+# End of while
+LABEL $WHILE%int@42%int@0
+
 # Koniec main
 POPFRAME
 CLEARS
