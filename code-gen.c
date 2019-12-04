@@ -128,7 +128,8 @@ bool cg_fun_return()
 bool cg_assign_expr_result(char* variable, bool local) {
     ADD_CODE("MOVE ");
     if (local) { ADD_CODE("LF@"); } else { ADD_CODE("GF@"); }
-    ADD_CODE(variable);     ADD_CODE("\n");
+    ADD_CODE(variable); ADD_CODE(" TF@%navratova_hodnota");
+    ADD_CODE("\n");
 
     return true;
 }
@@ -381,6 +382,27 @@ bool cg_math_operation_stack(parserState_t operation) {
     }
 }
 
+// Relacne perácie na vrchole dátového zásobníka
+bool cg_rel_operation_stack(parserState_t operation) {
+
+    switch (operation) {
+        case NotEqual:
+            ADD_INST("NOTS EQS");       return true;
+        case Smaller:
+            ADD_INST("LTS");            return true;
+        case SmallerOrEqual:
+            ADD_INST("LTS ANDS EQS");   return true;
+        case Bigger:
+            ADD_INST("GTS");            return true;
+        case BiggerOrEqual:
+            ADD_INST("GTS ANDS EQS");   return true;
+        case Equals:
+            ADD_INST("EQS");            return true;
+        default:
+            return false;
+    }
+}
+
 // Konkatenácia operandov a priradenie premennej
 bool cg_cat_literal(char* var, char* op1, char* op2) {
     ADD_CODE("CONCAT"); ADD_CODE(var); ADD_CODE(op1); ADD_CODE(op2); ADD_CODE("\n");
@@ -427,5 +449,33 @@ bool cg_exit(int errorNum){
 bool cg_jump(char* jump_type, char* flag_1_part, unsigned int flag_number, char* flag_2_part, char* op_1, char* op_2){
     ADD_CODE(jump_type); ADD_CODE(" $"); ADD_CODE(flag_1_part); ADD_CODE("$"); ADD_CODE_INT(flag_number); ADD_CODE("$"); ADD_CODE(flag_2_part); ADD_CODE(" ");
     ADD_CODE(op_1); ADD_CODE(" "); ADD_CODE(op_2); ADD_CODE("\n");
+    return true;
+}
+
+// Vratenie vyslednej hodnoty
+bool cg_move(char* id_to_return, char* type){
+    ADD_CODE("MOVE LF@%navratova_hodnota "); ADD_CODE(type); ADD_CODE("@"); ADD_CODE(id_to_return); ADD_CODE("\n");
+    return true;
+}
+
+bool cg_two_strings(int operation, int flag){
+    cg_jump("JUMPIFNEQ", "data_control", flag, "final2", "LF@typ_op_1", "string@string");
+    ADD_CODE("JUMPIFEQ $data_control$"); ADD_CODE_INT(flag); ADD_CODE("$final_concat int@1 int@"); ADD_CODE_INT(operation); ADD_CODE("\n");
+
+    cg_exit(4);
+
+    cg_flag_gen("data_control", flag, "final_concat");
+
+    cg_stack_pop_id("op_1", false);
+    cg_stack_pop_id("op_2", false);
+
+    cg_cat_literal("concat", "op_1", "op_2");
+
+    cg_stack_push_literal(String, "concat");
+
+    cg_jump("JUMP", "data_control", flag, "op_done", "", "");
+
+    cg_flag_gen("data_control", flag, "final2");
+
     return true;
 }

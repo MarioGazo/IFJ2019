@@ -302,4 +302,10 @@ bool cg_exit(int errorNum);
 
 bool cg_jump(char* jump_type, char* flag_1_part, unsigned int flag_number, char* flag_2_part, char* op_1, char* op_2);
 
+bool cg_rel_operation_stack(parserState_t operation);
+
+bool cg_move(char* id_to_return, char* type);
+
+bool cg_two_strings(int operation, int flag);
+
 #endif //VUT_FIT_IFJ2019_CODE_GEN_H

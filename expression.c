@@ -25,6 +25,7 @@ dynamic_stack_t* iStack;
 
 token_t* microStack = NULL;
 static unsigned int uni_2_a = 0;
+int concatenation = 0;
 
 
 
@@ -357,6 +358,12 @@ int cg_count(parserState_t operatio, int type_op_1, int type_op_2){
             cg_stack_int2float();
 
             cg_flag_gen("data_control", uni_2_a, "final");
+
+            // Musime overit, ci ideme konkatenovat 2 stringy a ak ano, ci je to korektna operacia
+            concatenation = 1; // Budeme generovat navestie na konci, pretoze konkatenaciu vykoname teraz
+
+            cg_two_strings(operatio, uni_2_a);
+
         } else {
             // minimalne type_op_2 nie je premenna, musime teda zistit, ci je mozne spustenie operacie
             cg_stack_pop_id("op_1", false);
@@ -395,7 +402,22 @@ int cg_count(parserState_t operatio, int type_op_1, int type_op_2){
 
                 cg_exit(4);
 
+                // Ide teda urcite o 2 stringy, musime ich konkatenovat, ak operacia nie je +, je to chyba
+                if (operatio != Plus){
+                    return (-1);
+                }
+
                 cg_flag_gen("data_control", uni_2_a, "final");
+
+                cg_stack_pop_id("op_1", false);
+                cg_stack_pop_id("op_2", false);
+
+                cg_cat_literal("concat", "op_1", "op_2");
+
+                cg_stack_push_literal(String, "concat");
+
+                return Identifier;
+
             }
 
         }
@@ -441,14 +463,50 @@ int cg_count(parserState_t operatio, int type_op_1, int type_op_2){
 
             cg_exit(4);
 
+            // Ide teda urcite o 2 stringy, musime ich konkatenovat, ak operacia nie je +, je to chyba
+            if (operatio != Plus){
+                return (-1);
+            }
+
             cg_flag_gen("data_control", uni_2_a, "final");
+
+            cg_stack_pop_id("op_1", false);
+            cg_stack_pop_id("op_2", false);
+
+            cg_cat_literal("concat", "op_1", "op_2");
+
+            cg_stack_push_literal(String, "concat");
+
+            return Identifier;
         }
     }
 
 
     // Vykoname operaciu
-    cg_math_operation_stack(operatio);
+    // Operácia môže byť matematická, alebo relačná
+    // V prípade relačnej, výsledok odvzdávame späť, buď ako bool v prípade podmienky,
+    // alebo ako výsledok výrazu v prípade priradenia
+    if ((operatio == Plus) || (operatio == Minus) || (operatio == Multiply) ||
+        (operatio == DivideWRest) || (operatio == DivideWORest)){
+        // Len operacia nad zasobnikom
+        cg_math_operation_stack(operatio);
+    } else if (operatio == Assign) {
+        // Priradenie a odovzdanie vysledku cez navratova_hodnota
+        cg_stack_pop_id("op_1", false);
+        cg_move("op_1", "typ_op_1");
+        cg_clear_stack();
+    } else if ((operatio == NotEqual) || (operatio == Smaller) || (operatio == SmallerOrEqual)
+    || (operatio == Bigger) || (operatio == BiggerOrEqual) || (operatio == Equals)){
+        // Relacna operacia nad zasobnikom
+        cg_rel_operation_stack(operatio);
+    }
 
+    // Ak boli oba operandy premenne, a boli stringy, tak preskocime operaciu az sem
+    // ak nie, tak sa nic nestane
+    if (concatenation == 1){
+        cg_flag_gen("data_control", uni_2_a, "op_done");
+        concatenation = 0;
+    }
 
     uni_2_a = uni_2_a + 1;
 
@@ -505,6 +563,8 @@ int expression(FILE* lIn, dynamic_stack_t* lIStack, token_t* t, token_t* control
     }
     cg_var_declare("op_1", false);
     cg_var_declare("op_2", false);
+    cg_var_declare("concat", false);
+    cg_var_declare("@%navratova_hodnota", false);
     cg_var_declare("typ_op_1", false);
     cg_var_declare("typ_op_2", false);
 
