@@ -202,8 +202,12 @@ int param(hTabItem_t* funcRecord) {
             funcRecord->value.intValue++;
 
             // Definovanie parametrov funkcie v lokálnom rámci
-            if (inFunc)
-                if (cg_fun_param_declare(actualToken.tokenAttribute.word.text) == false) return INTERNAL_ERR;
+            if (inFunc) {
+                if (cg_fun_param_declare(funcRecord->key.text,funcRecord->value.intValue) == false) return INTERNAL_ERR;
+            // Priradenie hodnot parametrom pri volani funkcie
+            } else {
+                if (cg_fun_param_assign(funcRecord->key.text,funcRecord->value.intValue) == false) return INTERNAL_ERR;
+            }
 
             GET_TOKEN;
 

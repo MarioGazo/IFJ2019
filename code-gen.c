@@ -98,9 +98,15 @@ bool cg_fun_end(char *id_funkcie)
     return true;
 }
 
-bool cg_fun_param_declare(char *id_parametra)
+bool cg_fun_param_declare(char* id_funkcie, unsigned int uni)
 {
-    ADD_CODE("DEFVAR LF@"); ADD_CODE(id_parametra); ADD_CODE("\n");
+    ADD_CODE("DEFVAR LF@"); ADD_CODE(id_funkcie); ADD_CODE_INT(uni); ADD_CODE("\n");
+
+    return true;
+}
+
+bool cg_fun_param_assign(char* id_funkcie, unsigned int uni) {
+    ADD_CODE("MOVE LF@"); ADD_CODE(id_funkcie); ADD_CODE_INT(uni); ADD_CODE("\n");
 
     return true;
 }
