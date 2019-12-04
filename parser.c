@@ -192,37 +192,55 @@ int param(hTabItem_t* funcRecord) {
     PRINT_DEBUG("Parameters\n");
 
     GET_TOKEN;
-
-    // Funkcia bez parametrov
-    switch (actualToken.tokenType) {
-        case RightBracket:
-            return PROG_OK;
-
-        case Identifier:
-            funcRecord->value.intValue++;
-
-            // Definovanie parametrov funkcie v lokálnom rámci
-            if (inFunc) {
-                if (cg_fun_param_declare(funcRecord->key.text,funcRecord->value.intValue) == false) return INTERNAL_ERR;
-            // Priradenie hodnot parametrom pri volani funkcie
-            } else {
-                if (cg_fun_param_assign(funcRecord->key.text,funcRecord->value.intValue) == false) return INTERNAL_ERR;
-            }
-
-            GET_TOKEN;
-
-            // Koniec parametrov
-            if (actualToken.tokenType == RightBracket) {
+    if (inFunc) {
+        // Definicia parametrov
+        switch (actualToken.tokenType) {
+            case RightBracket:
                 return PROG_OK;
-                // Nasleduje daľší parameter
-            } else if (actualToken.tokenType == Comma) {
-                return param(funcRecord);
-            } else {
-                return SYNTAX_ERR;
-            }
 
-        default:
-            return SYNTAX_ERR;
+            case Identifier:
+                funcRecord->value.intValue++;
+                if (cg_fun_param_declare(funcRecord->key.text, funcRecord->value.intValue) == false)return INTERNAL_ERR;
+                break;
+
+            default:
+                return SYNTAX_ERR;
+        }
+    } else {
+        // Priradenie hodnot parametrom
+        switch (actualToken.tokenType) {
+            case RightBracket:
+                return PROG_OK;
+
+            case Identifier:
+                funcRecord->value.intValue++;
+                if (cg_fun_param_assign(funcRecord->key.text, funcRecord->value.intValue,actualToken,inFunc) == false)
+                    return INTERNAL_ERR;
+                break;
+
+            case Keyword:
+                if (actualToken.tokenAttribute.intValue != keywordNone) return SYNTAX_ERR;
+            case String:
+            case Integer:
+            case Double:
+            case DocumentString:
+                funcRecord->value.intValue++;
+                if ((cg_fun_param_assign(funcRecord->key.text, funcRecord->value.intValue,actualToken, inFunc)) == false)
+                    return INTERNAL_ERR;
+            default:
+                return SYNTAX_ERR;
+        }
+    }
+
+    // Koniec parametrov?
+    GET_TOKEN;
+    if (actualToken.tokenType == RightBracket) {
+        return PROG_OK;
+        // Nasleduje daľší parameter
+    } else if (actualToken.tokenType == Comma) {
+        return param(funcRecord);
+    } else {
+        return SYNTAX_ERR;
     }
 }
 

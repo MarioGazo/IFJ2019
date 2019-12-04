@@ -200,7 +200,7 @@ bool cg_fun_param_declare(char* id_funkcie, unsigned int uni);
 /**
  * @brief Assign value to parameter of function
  */
-bool cg_fun_param_assign(char* id_funkcie, unsigned int uni);
+bool cg_fun_param_assign(char* id_funkcie, unsigned int uni, token_t actualToken, bool local);
 //todo komentár
 //bool cg_fun_convert_passed_param(varType_t z, varType_t do_, int index);
 //todo komentár

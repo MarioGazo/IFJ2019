@@ -105,10 +105,43 @@ bool cg_fun_param_declare(char* id_funkcie, unsigned int uni)
     return true;
 }
 
-bool cg_fun_param_assign(char* id_funkcie, unsigned int uni) {
-    ADD_CODE("MOVE LF@"); ADD_CODE(id_funkcie); ADD_CODE_INT(uni); ADD_CODE("\n");
+bool cg_fun_param_assign(char* id_funkcie, unsigned int uni, token_t actualToken, bool local) {
+    ADD_CODE("MOVE LF@"); ADD_CODE(id_funkcie); ADD_CODE_INT(uni); ADD_CODE(" ");
 
-    return true;
+    switch (actualToken.tokenType) {
+        case Identifier:
+            if (local) { ADD_CODE("LF@"); } else { ADD_CODE("GF@"); }
+            ADD_CODE(actualToken.tokenAttribute.word.text); ADD_CODE("\n");
+            return true;
+        case Integer:
+            ADD_CODE("int@"); ADD_CODE_INT(actualToken.tokenAttribute.intValue); ADD_CODE("\n");
+            return true;
+        case Double:
+            ADD_CODE("float@"); ADD_CODE_DOUBLE(actualToken.tokenAttribute.doubleValue); ADD_CODE("\n");
+            return true;
+        case String:
+        case DocumentString:
+        case Keyword: // None
+            ADD_CODE("string@");
+
+            char* string = actualToken.tokenAttribute.word.text;
+            for (unsigned long i = 0; i < strlen(string); i++) {
+                if (string[i] <= 32 || string[i] == 35 || string[i] == 92) {
+                    char buffer[4];
+                    sprintf(buffer,"%d",string[i]);
+                    ADD_CODE("\\0"); ADD_CODE(buffer);
+                } else {
+                    char c[2];
+                    c[1] = '\0';
+                    c[0] = string[i];
+                    ADD_CODE(c);
+                }
+            }
+            ADD_CODE("\n");
+            return true;
+        default:
+            return false;
+    }
 }
 
 bool cg_fun_call(char *id_funkcie)
@@ -471,7 +504,7 @@ bool cg_two_strings(int operation, int flag){
 
     cg_cat_literal("concat", "op_1", "op_2");
 
-    cg_stack_push_literal(String, "concat");
+    cg_stack_push_literal(TypeString, "concat");
 
     cg_jump("JUMP", "data_control", flag, "op_done", "", "");
 

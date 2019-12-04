@@ -1,7 +1,7 @@
 # Vypocet faktorialu
 a = inputi()
 if a < 0:
-    printf("""
+    print("""
     Faktorial nelze spocitat
     """)
 else:
