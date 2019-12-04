@@ -1,7 +1,7 @@
 /**
  * Implementation of imperative language IFJ2019 compiler
  * @file expression.c
- * @author Vojtěch Golda (xgolda02)
+ * @author Vojtěch Golda (xgolda02), Juraj Lazur (xlazur00)
  * @brief Expression parser implementation
  */
 

@@ -1,9 +1,7 @@
 .IFJcode19
-
-# Zaciatok main
-LABEL $$main
-CREATEFRAME
-PUSHFRAME
+# Program start
+DEFVAR GF@expr_result
+JUMP $$main
 
 # Built-in function Len
 LABEL $function_len
@@ -102,7 +100,123 @@ INT2CHAR LF@%navratova_hodnota LF@%0
 LABEL $chr$return
 POPFRAME
 RETURN
+
+# Zaciatok main
+LABEL $$main
+CREATEFRAME
+PUSHFRAME
+
+# Začiatok funkcie factorial
+LABEL $factorial
+PUSHFRAME
+CREATEFRAME
+DEFVAR LF@n
+
+# Begin of If Then
+JUMPIFEQ $IF%0d%42d GF@%exp_result bool@false
+DEFVAR GF@op_1
+DEFVAR GF@op_2
+DEFVAR GF@typ_op_1
+DEFVAR GF@typ_op_2
+PUSHS string@n
+PUSHS 2d
+POPS GF@op_1
+POPS GF@op_2
+PUSHS GF@op_2PUSHS GF@op_1TYPE LF@typ_op_2 LF@op_2
+DEFVAR GF@op_1
+DEFVAR GF@op_2
+DEFVAR GF@typ_op_1
+DEFVAR GF@typ_op_2
+PUSHS 1d
+DEFVAR LF@result
+JUMP $IF%42d%0d
+# Else part
+LABEL $IF%0d%42d
+DEFVAR GF@op_1
+DEFVAR GF@op_2
+DEFVAR GF@typ_op_1
+DEFVAR GF@typ_op_2
+PUSHS string@n
+PUSHS 1d
+POPS GF@op_1
+POPS GF@op_2
+PUSHS GF@op_2PUSHS GF@op_1TYPE LF@typ_op_2 LF@op_2
+SUBS
+DEFVAR LF@decremented_n
+DEFVAR LF@decremented_n
+CALL $factorial
+DEFVAR LF@temp_result
+DEFVAR GF@op_1
+DEFVAR GF@op_2
+DEFVAR GF@typ_op_1
+DEFVAR GF@typ_op_2
+PUSHS string@n
+PUSHS string@temp_result
+POPS GF@op_1
+POPS GF@op_2
+PUSHS GF@op_2PUSHS GF@op_1TYPE LF@typ_op_2 LF@op_2
+MULS
+MOVE LF@result
+# End If
+LABEL $IF%42d%0d
+DEFVAR GF@op_1
+DEFVAR GF@op_2
+DEFVAR GF@typ_op_1
+DEFVAR GF@typ_op_2
+PUSHS string@result
+POPFRAME
+RETURN
+
+# Koniec funkcie factorial
+LABEL $factorial%return
+POPFRAME
+RETURN
+
+# Function PRINT LITERAL
+WRITE string@Zadajte\032cislo\032pre\032vypocet\032faktorialu
+
+# Function PRINT LITERAL
+WRITE string@\010
+# Reading variable
+READ GF@a int@
 DEFVAR GF@a
+
+# Begin of If Then
+JUMPIFEQ $IF%1d%43d GF@%exp_result bool@false
+DEFVAR GF@op_1
+DEFVAR GF@op_2
+DEFVAR GF@typ_op_1
+DEFVAR GF@typ_op_2
+PUSHS string@a
+PUSHS 0.000000
+POPS GF@op_1
+POPS GF@op_2
+PUSHS GF@op_2PUSHS GF@op_1TYPE LF@typ_op_2 LF@op_2
+
+# Function PRINT LITERAL
+WRITE string@Faktorial\032nelze\032spocitat
+
+# Function PRINT LITERAL
+WRITE string@\010
+JUMP $IF%43d%1d
+# Else part
+LABEL $IF%1d%43d
+CALL $factorial
+DEFVAR GF@vysl
+# End If
+LABEL $IF%43d%1d
+
+# Function PRINT LITERAL
+WRITE string@Vysledek\032je
+
+# Function PRINT LITERAL
+WRITE string@\032
+
+# Function PRINT ID
+WRITE GF@vysl
+
+# Function PRINT LITERAL
+WRITE string@\010
 
 # Koniec main
 POPFRAME

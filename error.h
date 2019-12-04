@@ -1,6 +1,9 @@
-//
-// Created by Mário Gažo on 6.11.19.
-//
+/**
+ * Implementation of imperative language IFJ2019 compiler
+ * @file error.h
+ * @author Mario Gazo (xgazom00)
+ * @brief Error code interface
+ */
 
 #ifndef VUT_FIT_IFJ2019_ERROR_H
 #define VUT_FIT_IFJ2019_ERROR_H

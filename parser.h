@@ -1,7 +1,7 @@
 /**
  * Implementation of imperative language IFJ2019 compiler
  * @file parser.h
- * @author Mario Gazo (xgazom00)
+ * @author Mario Gazo (xgazom00), Juraj Lazur (xlazur00)
  * @brief Parser interface
  */
 
@@ -48,19 +48,19 @@ int param(hTabItem_t* funcRecord);
 int commandList();
 
 /**
- * @brief Terminal symbols
- *
- * @return Error code
- */
-int term();
-
-/**
  * @brief Assigment
  * @param varRecord Variable to assign to
  *
  * @return Error code
  */
 int assign(hTabItem_t* varRecord);
+
+/**
+ * @brief Terminal symbols
+ *
+ * @return Error code
+ */
+int term();
 
 /**
  * @brief Makes code more readable

@@ -1,7 +1,7 @@
 /**
  * Implementation of imperative language IFJ2019 compiler
  * @file symtable.h
- * @author ...
+ * @author Juraj Lazur (xlazur00)
  * @brief Symtable interface
  */
 

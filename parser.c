@@ -1,7 +1,7 @@
 /**
  * Implementation of imperative language IFJ2019 compiler
  * @file parser.c
- * @author Mario Gazo (xgazom00)
+ * @author Mario Gazo (xgazom00), Juraj Lazur (xlazur00)
  * @brief Parser implementation
  */
 #include "parser.h"
@@ -202,8 +202,12 @@ int param(hTabItem_t* funcRecord) {
             funcRecord->value.intValue++;
 
             // Definovanie parametrov funkcie v lokálnom rámci
-            if (inFunc)
-                if (cg_fun_param_declare(actualToken.tokenAttribute.word.text) == false) return INTERNAL_ERR;
+            if (inFunc) {
+                if (cg_fun_param_declare(funcRecord->key.text,funcRecord->value.intValue) == false) return INTERNAL_ERR;
+            // Priradenie hodnot parametrom pri volani funkcie
+            } else {
+                if (cg_fun_param_assign(funcRecord->key.text,funcRecord->value.intValue) == false) return INTERNAL_ERR;
+            }
 
             GET_TOKEN;
 
@@ -239,24 +243,25 @@ int commandList() {
                 varRecord.key = name;
                 varRecord.next = NULL;
 
-                // Aby bola deklarovaná, musí jej byť priradená hodnota
-                if ((errorCode = (assign(&varRecord))) != PROG_OK) return errorCode;
-
-                // Priradenie hodnoty do existujucej premennej
-                if (TSearch(GlobalTable,varRecord.key) != NULL) {
-                    // Priradenie vysledku do premennej v globalnom ramci
-                    if (cg_assign_expr_result(varRecord.key.text,false) == false)   return INTERNAL_ERR;
-                } else if (TSearch(LocalTable,varRecord.key) != NULL) {
-                    // Priradenie vysledku do premennej v lokalnom ramci
-                    if (cg_assign_expr_result(varRecord.key.text,true) == false)    return INTERNAL_ERR;
-                } else {
+                // Priradenie hodnoty do nexistujucej premennej
+                if (TSearch(LocalTable,varRecord.key) == NULL && TSearch(GlobalTable,varRecord.key) == NULL) {
                     if (cg_var_declare(varRecord.key.text, inFunc) == false)              return INTERNAL_ERR;
+
+                    if ((errorCode = (assign(&varRecord))) != PROG_OK) return errorCode; // Vyraz na priradenie
+
+                    if (cg_assign_expr_result(varRecord.key.text,true) == false)    return INTERNAL_ERR;
+
                     // Uloženie novej premennej do HashTable
                     if (inFunc) {
                         TInsert(LocalTable, varRecord);
                     } else {
                         TInsert(GlobalTable, varRecord);
                     }
+                // Priradenie hodnoty do existujucej premennej
+                } else {
+                    if ((errorCode = (assign(&varRecord))) != PROG_OK) return errorCode; // Vyraz na priradenie
+
+                    if (cg_assign_expr_result(varRecord.key.text,true) == false)    return INTERNAL_ERR;
                 }
 
                 return (errorCode = commandListContOrEnd());
@@ -610,78 +615,7 @@ int commandList() {
     }
 }
 
-int term() {
-    GET_TOKEN;
-
-    switch (actualToken.tokenType) {
-        // Výpis dokumentačného reťazca
-        case DocumentString:
-            cg_print_literal(actualToken.tokenAttribute.word.text, TypeString);
-            break;
-        // Výpis hodnoty identifikátora
-        case Identifier: {
-                hTabItem_t *var;
-                // Nachádza sa v globálnej hashT
-                if ((var = TSearch(GlobalTable, actualToken.tokenAttribute.word)) != NULL) {
-                    if (cg_print_id(var, true) == false) return INTERNAL_ERR;
-                    // Nachádza sa v lokálnej hashT
-                } else if ((var = TSearch(LocalTable, actualToken.tokenAttribute.word)) != NULL) {
-                    if (cg_print_id(var, false) == false) return INTERNAL_ERR;
-                    // ID nebol definovaný -> ERROR
-                } else {
-                    return SEMPROG_ERR; // nedefinovana premenna
-                }
-            }
-            break;
-        // Výpis reťazca
-        case String:
-            if (cg_print_literal(actualToken.tokenAttribute.word.text, TypeString) == false)
-                return INTERNAL_ERR;
-            break;
-        // Výpis celého čísla prevedeného na text
-        case Integer: {
-            char buffer[100];
-            sprintf(buffer, "%d", actualToken.tokenAttribute.intValue);
-            if (cg_print_literal(buffer, TypeInteger) == false) return INTERNAL_ERR;
-            break;
-        }
-        // Výpis desatinného čísla prevedeného na text
-        case Double: {
-            char buffer[100];
-            sprintf(buffer, "%a", actualToken.tokenAttribute.doubleValue);
-            if (cg_print_literal(buffer, TypeDouble) == false) return INTERNAL_ERR;
-            break;
-        }
-        // Výpis neznámej hodnoty
-        case Keyword:
-            if (actualToken.tokenAttribute.intValue == keywordNone) {
-                if (cg_print_literal("None", TypeNone) == false) return INTERNAL_ERR;
-            } else {
-                return SYNTAX_ERR;
-            }
-            break;
-        // ERROR
-        default:
-            return SYNTAX_ERR;
-    }
-
-    GET_TOKEN;
-
-    // Končí výpis alebo nasledujú dalšie termy?
-    switch (actualToken.tokenType) {
-        case RightBracket:
-            // Koniec výpisu -> EOL
-            if (cg_print_literal("\n", TypeString) == false) return INTERNAL_ERR;
-            return PROG_OK;
-        case Comma:
-            // Ďaľší term -> medzera
-            if (cg_print_literal(" ", TypeString) == false)  return INTERNAL_ERR;
-            return (errorCode = term());
-        default:
-            return SYNTAX_ERR;
-    }
-}
-
+// TODO vramci kazdej vetvy urcit typ premennej
 int assign(hTabItem_t* varRecord) {
     PRINT_DEBUG("ASSIGNMENT\n");
 
@@ -934,6 +868,78 @@ int assign(hTabItem_t* varRecord) {
         }
     } else {
         return SYNTAX_ERR;
+    }
+}
+
+int term() {
+    GET_TOKEN;
+
+    switch (actualToken.tokenType) {
+        // Výpis dokumentačného reťazca
+        case DocumentString:
+            cg_print_literal(actualToken.tokenAttribute.word.text, TypeString);
+            break;
+            // Výpis hodnoty identifikátora
+        case Identifier: {
+            hTabItem_t *var;
+            // Nachádza sa v globálnej hashT
+            if ((var = TSearch(GlobalTable, actualToken.tokenAttribute.word)) != NULL) {
+                if (cg_print_id(var, true) == false) return INTERNAL_ERR;
+                // Nachádza sa v lokálnej hashT
+            } else if ((var = TSearch(LocalTable, actualToken.tokenAttribute.word)) != NULL) {
+                if (cg_print_id(var, false) == false) return INTERNAL_ERR;
+                // ID nebol definovaný -> ERROR
+            } else {
+                return SEMPROG_ERR; // nedefinovana premenna
+            }
+        }
+            break;
+            // Výpis reťazca
+        case String:
+            if (cg_print_literal(actualToken.tokenAttribute.word.text, TypeString) == false)
+                return INTERNAL_ERR;
+            break;
+            // Výpis celého čísla prevedeného na text
+        case Integer: {
+            char buffer[100];
+            sprintf(buffer, "%d", actualToken.tokenAttribute.intValue);
+            if (cg_print_literal(buffer, TypeInteger) == false) return INTERNAL_ERR;
+            break;
+        }
+            // Výpis desatinného čísla prevedeného na text
+        case Double: {
+            char buffer[100];
+            sprintf(buffer, "%a", actualToken.tokenAttribute.doubleValue);
+            if (cg_print_literal(buffer, TypeDouble) == false) return INTERNAL_ERR;
+            break;
+        }
+            // Výpis neznámej hodnoty
+        case Keyword:
+            if (actualToken.tokenAttribute.intValue == keywordNone) {
+                if (cg_print_literal("None", TypeNone) == false) return INTERNAL_ERR;
+            } else {
+                return SYNTAX_ERR;
+            }
+            break;
+            // ERROR
+        default:
+            return SYNTAX_ERR;
+    }
+
+    GET_TOKEN;
+
+    // Končí výpis alebo nasledujú dalšie termy?
+    switch (actualToken.tokenType) {
+        case RightBracket:
+            // Koniec výpisu -> EOL
+            if (cg_print_literal("\n", TypeString) == false) return INTERNAL_ERR;
+            return PROG_OK;
+        case Comma:
+            // Ďaľší term -> medzera
+            if (cg_print_literal(" ", TypeString) == false)  return INTERNAL_ERR;
+            return (errorCode = term());
+        default:
+            return SYNTAX_ERR;
     }
 }
 
