@@ -448,13 +448,14 @@ token_t getToken(FILE* in, dynamic_stack_t* indentationStack) {
                 } else if (c == 'x' || c == 'X') {
                     state = HexadecimalNum;        continue; // 0x 0X
                 } else {
-                    if (dynamicStringAddChar(&actualToken.tokenAttribute.word,c) == false) {
-                        state = ErrorMalloc;       continue; // malloc error
-                    } else {
-                        ungetc(c,in);
-                        state = Integer;           continue; // 0123
+                    if (isdigit(c)) {
+                        state = Error;      continue;
                     }
-                }
+                    ungetc(c,in);   actualToken.tokenType = Integer;
+                    dynamicString_t* StringNumPtr = &actualToken.tokenAttribute.word;
+                    actualToken.tokenAttribute.intValue = strToInt(StringNumPtr,10);
+                    dynamicStringFree(StringNumPtr);    return actualToken;
+                    }
 
             case BinaryNum:
                 if (c == '0' || c == '1') { // 0b111

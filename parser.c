@@ -281,6 +281,10 @@ int commandList() {
                     }
                 // Priradenie hodnoty do existujucej premennej
                 } else {
+                    // Nemozme priradit funkcii
+                    if (controlRecord->type == TypeFunction)
+                        return SYNTAX_ERR;
+
                     if ((errorCode = (assign(&varRecord))) != PROG_OK) return errorCode; // Vyraz na priradenie
 
                     if (cg_assign_expr_result(varRecord.key.text,true) == false)    return INTERNAL_ERR;

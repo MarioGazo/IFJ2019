@@ -306,7 +306,7 @@ bool cg_rel_operation_stack(parserState_t operation);
 
 bool cg_move(char* id_to_return, char* type);
 
-bool cg_two_strings(unsigned int operation, int flag);
+bool cg_two_strings(unsigned int operation, unsigned int flag);
 
 bool cg_LForGF(bool local);
 

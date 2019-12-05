@@ -21,15 +21,14 @@
 
 FILE* in;
 dynamic_stack_t* iStack;
-//variables to deal with the getToken function
 
+//variables to deal with the getToken function
 token_t* microStack = NULL;
 static unsigned int uni_2_a = 0;
 int concatenation = 0;
-int ret_value_type= 0;
 
 
-int errN = 0;
+int errN = PROG_OK;
 char LL[7][7] = {
   // +|- *|/|// (    )    i    EV   $
     {'>', '<', '<', '>', '<', '>', '>'}, // +
@@ -145,6 +144,9 @@ int LLSPos(token_t* token) {
 
 token_t* new_token(parserState_t type){
     token_t * token = calloc(1, sizeof(token_t));
+    if (token == NULL)
+        return NULL;
+
     token->tokenType = type;
     return token;
 }
@@ -157,6 +159,8 @@ token_t* getNewToken() {
         return token;
     }
     token_t* token = calloc(1, sizeof(token_t));
+    if (token == NULL)
+        return NULL;
 
     *token = getToken(in,iStack);
 
@@ -166,8 +170,8 @@ token_t* getNewToken() {
 
     if (token->tokenType == Error)       errN = LEX_ERR;
     if (token->tokenType == ErrorMalloc) errN = INTERNAL_ERR;
-    if (token->tokenType == ErrorIndent) errN = SYNTAX_ERR;
-    if(errN != 0) return NULL;
+    if (token->tokenType == ErrorIndent) errN = LEX_ERR;
+    if(errN != PROG_OK) return NULL;
     return token;
   /*
   char  s;
@@ -213,6 +217,8 @@ int expSwitch( dynamic_symbol_stack_t* stack, token_t** t, const int* depth, cha
         case '=':
             sym_stackPush(stack, token);
             *t = getNewToken();
+            if (errN != PROG_OK)
+                return errN;
             break;
         case '<':
             //insert < behind the first terminal (100 = enum shift)
@@ -221,6 +227,8 @@ int expSwitch( dynamic_symbol_stack_t* stack, token_t** t, const int* depth, cha
             sym_stackPrint(stack);//TODO: delete this line
 
             *t = getNewToken();
+            if (errN != PROG_OK)
+                return errN;
             break;
         case '>':
             //clear the comparison array
@@ -283,6 +291,8 @@ int expSwitch( dynamic_symbol_stack_t* stack, token_t** t, const int* depth, cha
             if(found>-1) {
                 //All rules are assumed to have a left side E, because they do. (E = 99)
                 token_t * E = new_token(99);
+                if (E == NULL)
+                    return INTERNAL_ERR;
 
                 if(found == 12 ||found == 13 ||found == 14 ||found == 15 ||found == 16 ||found == 17){
                   E->tokenAttribute.intValue = exp[0]->tokenType;
@@ -316,7 +326,7 @@ int expSwitch( dynamic_symbol_stack_t* stack, token_t** t, const int* depth, cha
             }
 
             break;
-        case ' ': //Empty LL cell, meaning a syntax error
+        default: //Empty LL cell, meaning a syntax error
             if (DEBUG)
                 printf("%d\n", token->tokenType);
 
@@ -338,7 +348,7 @@ bool cg_stack_p(token_t* token){
     return true;
 }
 
-int cg_count(parserState_t operatio, int type_op_1, int type_op_2, int *ret_value_type){
+int cg_count(parserState_t operatio, unsigned int type_op_1, unsigned int type_op_2, int *ret_value_type){
 
     printf("\t\t%i %i\n", type_op_1, type_op_2);
 
@@ -548,8 +558,13 @@ int expression(FILE* lIn, dynamic_stack_t* lIStack, token_t* t, token_t* control
     iStack = lIStack;
 
     dynamic_symbol_stack_t * stack = sym_stackInit();
+    if (stack == NULL)
+        return INTERNAL_ERR;
 
     token_t * end = calloc(1, sizeof(token_t));
+    if (end == NULL)
+        return INTERNAL_ERR;
+
     int d;
     int* depth = &d;
     int retCode = 0;
@@ -563,16 +578,24 @@ int expression(FILE* lIn, dynamic_stack_t* lIStack, token_t* t, token_t* control
     switch(amountOfPassedTokens){
       case 0: // No tokens were passed so just get a new one
         token = getNewToken();
+        if (errN != PROG_OK)
+            return errN;
         *ret_value_type = token->tokenType;
         break;
       case 1:
         token = calloc(1, sizeof(token_t));  // Only one token was passed so use that one instead of a new one
+        if (token == NULL)
+            return INTERNAL_ERR;
         *token = *t;
         *ret_value_type = token->tokenType;
         break;
       case 2: // Two were passed - im assuming that controlToken comes before t, (TODO: maybe switch them)
         token = calloc(1, sizeof(token_t)); //both of these should end up on the stack at some point
+        if (token == NULL)
+            return  INTERNAL_ERR;
         microStack = calloc(1, sizeof(token_t));
+        if (microStack == NULL)
+            return INTERNAL_ERR;
         *token = *controlToken;
         *ret_value_type = token->tokenType;
 
@@ -625,7 +648,7 @@ int expression(FILE* lIn, dynamic_stack_t* lIStack, token_t* t, token_t* control
             retCode = expSwitch(stack, &token, depth, LL[LLSPos(terminalTop(stack, depth))][LLSPos(token)], ret_value_type);
         }
 
-        if (retCode!=0) {
+        if (retCode!=PROG_OK) {
             sym_stackFree(stack);
             free(token);
             return retCode;

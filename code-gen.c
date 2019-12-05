@@ -490,7 +490,7 @@ bool cg_move(char* id_to_return, char* type){
     return true;
 }
 
-bool cg_two_strings(unsigned int operation, int flag){
+bool cg_two_strings(unsigned int operation, unsigned int flag){
     cg_jump("JUMPIFNEQ", "data_control", flag, "final2", "LF@typ_op_1", "string@string");
     ADD_CODE("JUMPIFEQ $data_control$"); ADD_CODE_INT(flag); ADD_CODE("$final_concat int@1 int@"); ADD_CODE_INT(operation); ADD_CODE("\n");
 

@@ -39,7 +39,7 @@ token_t * new_token(parserState_t type);
 //switch to decide what to do with a given char from the LL table
 int expSwitch( dynamic_symbol_stack_t * stack, token_t ** t, const int * depth,  char symbol, int *ret_value_type);
 
-int cg_count(parserState_t operatio, int type_op_1, int type_op_2, int *ret_value_type);
+int cg_count(parserState_t operatio, unsigned int type_op_1, unsigned int type_op_2, int *ret_value_type);
 
 bool cg_stack_p(token_t* token);
 
