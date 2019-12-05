@@ -450,10 +450,17 @@ token_t getToken(FILE* in, dynamic_stack_t* indentationStack) {
                 } else {
                     if (isdigit(c)) {
                         state = Error;      continue;
+                    } else if (c == '.') {
+                        if (dynamicStringAddChar(&actualToken.tokenAttribute.word,c) == false) {
+                            state = ErrorMalloc;        continue;
+                        } else {
+                            state = Double;             continue;
+                        }
                     }
-                    ungetc(c,in);   actualToken.tokenType = Integer;
+                    ungetc(c,in);
+                    actualToken.tokenType = Integer;
                     dynamicString_t* StringNumPtr = &actualToken.tokenAttribute.word;
-                    actualToken.tokenAttribute.intValue = strToInt(StringNumPtr,10);
+                    actualToken.tokenAttribute.intValue = strToInt(StringNumPtr->text,10);
                     dynamicStringFree(StringNumPtr);    return actualToken;
                     }
 
