@@ -12,7 +12,7 @@
 #include "code-gen.h"
 
 #define DEBUG 1 // TODO set to 0
-#define RULEHEIGHT 17
+#define RULEHEIGHT 18
 #define RULEWIDTH 3
 
 #define PRINT_DEBUG(text) \
@@ -59,7 +59,8 @@ parserState_t rules[RULEHEIGHT][RULEWIDTH] = {
     {String, (parserState_t) NULL, (parserState_t) NULL},       // E -> s 14
     {DocumentString, (parserState_t) NULL, (parserState_t) NULL},       // E -> s 14
     {Integer, (parserState_t) NULL, (parserState_t) NULL},      // E -> integer 15
-    {Double, (parserState_t) NULL, (parserState_t) NULL}        // E -> double 16
+    {Double, (parserState_t) NULL, (parserState_t) NULL},        // E -> double 16
+    {Keyword, (parserState_t) NULL, (parserState_t) NULL}       // E -> None 17
 };
 
 
@@ -77,6 +78,13 @@ token_t* terminalTop(dynamic_symbol_stack_t * stack, int * depth) {
 }
 
 int LLPos(token_t* token) {
+    if (token->tokenType == Keyword){
+        if (!strcmp(token->tokenAttribute.word.text, "None")){
+            return 4;
+        } else {
+            return -1;
+        }
+    }
     switch (token->tokenType) {
         case Plus:
         case Minus:
@@ -91,6 +99,7 @@ int LLPos(token_t* token) {
             return 3;
         case Identifier:
         case Integer:
+        case String:
         case Double:
             return 4;
         case NotEqual:
@@ -119,8 +128,9 @@ int LLSPos(token_t* token) {
             return 2;
         case RightBracket:
             return 3;
-        case String:
+        case Identifier:
         case DocumentString:
+        case String:
             return 4;
         case  EOL:
         case  Colon:
@@ -274,14 +284,21 @@ int expSwitch( dynamic_symbol_stack_t* stack, token_t** t, const int* depth, cha
                 //All rules are assumed to have a left side E, because they do. (E = 99)
                 token_t * E = new_token(99);
 
-                if(found == 12 ||found == 13 ||found == 14 ||found == 15 ||found == 16){
-                  E->tokenType = exp[0]->tokenType;
+                if(found == 12 ||found == 13 ||found == 14 ||found == 15 ||found == 16 ||found == 17){
+                  E->tokenAttribute.intValue = exp[0]->tokenType;
                   cg_stack_p(exp[0]);
                   //TODO: push |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-
                   free(exp[0]); //the rest of exp is empty
                 }else if(found != 11){
-                  E->tokenType = cg_count(exp[1]->tokenType, exp[0]->tokenType, exp[2]->tokenType, ret_value_type);
+                    if ((exp[0]->tokenType == 99) && (exp[2]->tokenType == 99)){
+                        E->tokenAttribute.intValue = cg_count(exp[1]->tokenType, exp[0]->tokenAttribute.intValue, exp[2]->tokenAttribute.intValue, ret_value_type);
+                    } else if (exp[0]->tokenType == 99){
+                        E->tokenAttribute.intValue = cg_count(exp[1]->tokenType, exp[0]->tokenAttribute.intValue, exp[2]->tokenType, ret_value_type);
+                    } else if (exp[2]->tokenType == 99){
+                        E->tokenAttribute.intValue = cg_count(exp[1]->tokenType, exp[0]->tokenType, exp[2]->tokenAttribute.intValue, ret_value_type);
+                    } else {
+                        E->tokenAttribute.intValue = cg_count(exp[1]->tokenType, exp[0]->tokenType, exp[2]->tokenType, ret_value_type);
+                    }
                   free(exp[0]);
                   free(exp[1]);
                   free(exp[2]);
@@ -291,7 +308,7 @@ int expSwitch( dynamic_symbol_stack_t* stack, token_t** t, const int* depth, cha
                   free(exp[1]);
                   free(exp[2]);
                 }
-                sym_stackPush(stack, new_token(99));
+                sym_stackPush(stack, E);
                 //TODO: printing out the expressions in target language
             } else {
                 PRINT_DEBUG("SYNTAX ERROR RULE NOT FOUND\n");
@@ -322,6 +339,8 @@ bool cg_stack_p(token_t* token){
 }
 
 int cg_count(parserState_t operatio, int type_op_1, int type_op_2, int *ret_value_type){
+
+    printf("\t\t%i %i\n", type_op_1, type_op_2);
 
     // Rozdelime si pripady podla typov operandov
     if (type_op_1 == Identifier){
@@ -414,7 +433,7 @@ int cg_count(parserState_t operatio, int type_op_1, int type_op_2, int *ret_valu
                 cg_stack_push_literal(TypeString, "concat");
 
                 *ret_value_type = String;
-                return String;
+                return Identifier;
 
             }
 
@@ -476,7 +495,7 @@ int cg_count(parserState_t operatio, int type_op_1, int type_op_2, int *ret_valu
             cg_stack_push_literal(TypeString, "concat");
 
             *ret_value_type = String;
-            return String;
+            return Identifier;
         }
     }
 
@@ -565,14 +584,9 @@ int expression(FILE* lIn, dynamic_stack_t* lIStack, token_t* t, token_t* control
         return INTERNAL_ERR;
 
     }
-    cg_var_declare("op_1", false);
-    cg_var_declare("op_2", false);
-    cg_var_declare("concat", false);
-    cg_var_declare("@%navratova_hodnota", false);
-    cg_var_declare("typ_op_1", false);
-    cg_var_declare("typ_op_2", false);
 
     do {
+        printf("\t\t%i\n", token->tokenType);
         if (LLPos(token) == -1 && LLSPos(token) == -1) {
             //The token wasnt recognized by neither function, meaning a syntax error
             if (DEBUG)

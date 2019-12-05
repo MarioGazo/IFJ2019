@@ -19,6 +19,7 @@ void set_code_output(dynamicString_t* output) {
 
 int code_write_out(int errorCode) {
     FILE * output;
+    printf("%i\n", errorCode);
     // Ak je program korektný, je výsledný kód vypísaný do súboru
     if (errorCode == PROG_OK) {
         output = fopen("prg.out","w+");
@@ -45,6 +46,11 @@ bool cg_code_header()
     ADD_INST("# Program start");
 
     ADD_INST("DEFVAR GF@$expr_result");
+    ADD_INST("DEFVAR GF@$op_1");
+    ADD_INST("DEFVAR GF@$op_2");
+    ADD_INST("DEFVAR GF@$typ_op_1");
+    ADD_INST("DEFVAR GF@$op_2");
+    ADD_INST("DEFVAR GF@$typ_op_2t");
 
     ADD_INST("JUMP $$main");
 

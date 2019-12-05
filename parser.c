@@ -221,6 +221,7 @@ int param(hTabItem_t* funcRecord) {
 
             case Keyword:
                 if (actualToken.tokenAttribute.intValue != keywordNone) return SYNTAX_ERR;
+                break;
             case String:
             case Integer:
             case Double:
@@ -228,6 +229,7 @@ int param(hTabItem_t* funcRecord) {
                 funcRecord->value.intValue++;
                 if ((cg_fun_param_assign(funcRecord->key.text, funcRecord->value.intValue,actualToken, inFunc)) == false)
                     return INTERNAL_ERR;
+                break;
             default:
                 return SYNTAX_ERR;
         }
@@ -679,8 +681,17 @@ int assign(hTabItem_t* varRecord) {
             if ((errorCode = expression(in, &indentationStack,
                     &actualToken, &controlToken, 2, &ret_type)) != 0) return errorCode;
 
-            varRecord->type = ret_type;
-
+            switch (ret_type) {
+                case String:
+                case Identifier: varRecord->type = TypeString;
+                    break;
+                case Integer:
+                    varRecord->type = TypeInteger;
+                    break;
+                case Double:
+                    varRecord->type = TypeDouble;
+                    break;
+            }
             return PROG_OK;
         }
     } else if (actualToken.tokenType == Double || actualToken.tokenType == Integer
@@ -693,7 +704,17 @@ int assign(hTabItem_t* varRecord) {
         if ((errorCode = expression(in, &indentationStack,
                 &actualToken, NULL, 1, &ret_type)) != 0) return errorCode;
 
-        varRecord->type = ret_type;
+        switch (ret_type) {
+            case String:
+            case Identifier: varRecord->type = TypeString;
+                break;
+            case Integer:
+                varRecord->type = TypeInteger;
+                break;
+            case Double:
+                varRecord->type = TypeDouble;
+                break;
+        }
 
         return PROG_OK;
     } else if (actualToken.tokenType == Keyword) {
@@ -737,7 +758,6 @@ int assign(hTabItem_t* varRecord) {
                 } else {
                     return SYNTAX_ERR;
                 }
-
                 GET_AND_CHECK_TOKEN(RightBracket);
 
                 // Volanie vstavanej funkcie len
@@ -752,6 +772,7 @@ int assign(hTabItem_t* varRecord) {
                 GET_AND_CHECK_TOKEN(LeftBracket);
 
                 GET_TOKEN;
+                printf("%i\n", actualToken.tokenType);
                 if (actualToken.tokenType == String) {
                     // TODO gen param
                 } else if (actualToken.tokenType == Identifier) {
@@ -982,7 +1003,7 @@ int commandListContOrEnd() {
 
 // Vrati item z hashovacej tabulky, Item z local table ma prednost
 hTabItem_t* isInLocalOrGlobalhTab(dynamicString_t name) {
-    hTabItem_t* varRecord;
+    hTabItem_t* varRecord = NULL;
     if ((varRecord = (TSearch(LocalTable,name))) != NULL && inFunc) {
         return varRecord;
     } else if ((varRecord = (TSearch(GlobalTable,name))) != NULL) {

@@ -32,7 +32,7 @@ token_t getToken(FILE* in, dynamic_stack_t* indentationStack) {
         switch (state) {
             case Start:
                 state = parserStart(in,c,&actualToken.tokenAttribute.word);
-                if (firstOnLine && actualToken.tokenType != CommentStart) {
+                if (firstOnLine && state != CommentStart) {
                     firstOnLine = false;
                 }
                 continue;
