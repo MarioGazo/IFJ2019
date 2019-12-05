@@ -22,6 +22,9 @@ token_t getToken(FILE* in, dynamic_stack_t* indentationStack) {
     // state of parser
     parserState_t state = Start;
 
+    // in case comment is the first token of the line we dont generate EOL, otherwise we do
+    static bool firstOnLine = true;
+
     // current character
     int c;
     while (1) {
@@ -29,6 +32,9 @@ token_t getToken(FILE* in, dynamic_stack_t* indentationStack) {
         switch (state) {
             case Start:
                 state = parserStart(in,c,&actualToken.tokenAttribute.word);
+                if (firstOnLine && actualToken.tokenType != CommentStart) {
+                    firstOnLine = false;
+                }
                 continue;
 
             case Plus:
@@ -116,7 +122,12 @@ token_t getToken(FILE* in, dynamic_stack_t* indentationStack) {
                 }
 
             case CommentEnd:
-                state = Start;
+                if (firstOnLine) {
+                    state = Start;
+                } else {
+                    firstOnLine = false;
+                    state = EOL;
+                }
                 continue;
 
             case EOL: {
@@ -138,6 +149,7 @@ token_t getToken(FILE* in, dynamic_stack_t* indentationStack) {
                 }
 
                 if (spaceCount == stackTop(*indentationStack)) { // EOL
+                    firstOnLine = true;
                     actualToken.tokenType = EOL;        return actualToken;
                 } else if (spaceCount > stackTop(*indentationStack)) { // indent
                     stackPush(indentationStack, spaceCount);
@@ -166,6 +178,7 @@ token_t getToken(FILE* in, dynamic_stack_t* indentationStack) {
                 }
             }
             case Indent:
+                firstOnLine = true;
                 return ungetAndSetToken(in,c,Indent);
                 //                        stack:
                 // def bla():                   0
@@ -173,6 +186,7 @@ token_t getToken(FILE* in, dynamic_stack_t* indentationStack) {
                 //         indented code        0 4 8  --> Indent
 
             case Dedent:
+                firstOnLine = true;
                 return ungetAndSetToken(in,c,Dedent);
                 //                       stack:
                 // while true:                  0
