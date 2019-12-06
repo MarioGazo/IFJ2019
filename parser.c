@@ -52,7 +52,6 @@ hashTable *GlobalTable, *LocalTable;
 // Príznaky značia kde sa nachádza čítanie programu
 bool inFunc = false;    // sme vo funkcii
 bool expr = false;      // bol spracovany vyraz
-bool skipToCommand = false;    // prebieha citanie instrukcii v tele hlavneho programu
 
 // Výsledný kód
 dynamicString_t code;
