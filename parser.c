@@ -52,7 +52,7 @@ hashTable *GlobalTable, *LocalTable;
 // Príznaky značia kde sa nachádza čítanie programu
 bool inFunc = false;    // sme vo funkcii
 bool expr = false;      // bol spracovany vyraz
-bool inBody = false;    // prebieha citanie instrukcii v tele hlavneho programu
+bool skipToCommand = false;    // prebieha citanie instrukcii v tele hlavneho programu
 
 // Výsledný kód
 dynamicString_t code;
@@ -110,9 +110,7 @@ int analyse(FILE* file) {
 int program() {
     PRINT_DEBUG("Program body\n");
 
-    // Zo scanneru získame ďalší token
     GET_TOKEN;
-
     // Na základe tokenu sa zvolí vetva pre spracovanie
     // Koniec spracovávaného programu
     if (actualToken.tokenType == EndOfFile) {
@@ -128,11 +126,28 @@ int program() {
         if ((errorCode = defFunction()) != PROG_OK) return errorCode;
 
         return program();
-    // Programová konštrukcia alebo vstavaná funkcia
+    // Programová konštrukcia alebo funkcia
     } else {
-        inBody = true;
-        if ((errorCode = commandList()) != PROG_OK) return errorCode;
-        return program();
+        if ((errorCode = command()) != PROG_OK) return errorCode;
+
+        // If alebo while, nemozem ocakavat EOL, nasledujuci token uz bude dalsi prikaz alebo EOF
+        if (actualToken.tokenType == Dedent && !expr) {
+            return program();
+        }
+
+        // Expression
+        if (expr) { expr = false; } else { GET_TOKEN; }
+
+        // Konci zadavanie prikazov
+        if (actualToken.tokenType == EndOfFile) {
+            return PROG_OK;
+        // Nasleduje dalsi prikaz
+        } else if (actualToken.tokenType == EOL || actualToken.tokenType == Dedent) {
+            return program();
+        // Nespravne ukonceny prikaz
+        } else {
+            return SYNTAX_ERR;
+        }
     }
 }
 
@@ -178,11 +193,45 @@ int defFunction() {
     GET_AND_CHECK_TOKEN(Colon);
     GET_AND_CHECK_TOKEN(Indent);
 
+    // Command list musi mat aspon 1 command
     GET_TOKEN;
-    if ((errorCode = commandList()) != PROG_OK) return errorCode;
+    do {
+        if ((errorCode = command()) != PROG_OK) return errorCode;
+
+        // Command skoncil dedentom, islo o if alebo while
+        if (actualToken.tokenType == Dedent && !expr) {
+            GET_TOKEN;
+            continue;
+        // V pripade ze slo o Dedent ukoncujucim Command list funkcie,
+        // islo o nacitanie terminalneho tokenu precedentnou analyzou
+        } else if (actualToken.tokenType == Dedent) {
+            break;
+        }
+
+        // V pripade nevolania precedentnej analyze je treba nacitat dalsi token, nebol nacitany ako terminalny
+        if (expr) { expr = false; } else { GET_TOKEN; }
+
+        // Nasleduje dalsi prikaz
+        if (actualToken.tokenType == EOL) {
+            GET_TOKEN;
+            continue;
+            // Koniec command listu
+        } else if (actualToken.tokenType == Dedent) {
+            break;
+            // Nespravne ukonceny prikaz
+        } else {
+            return SYNTAX_ERR;
+        }
+    } while (actualToken.tokenType != Dedent);
+    expr = false;
+    // Koniec Command listu, plati ze actualToken.tokenType == Dedent, expr == false
 
     // Koniec tela funkcie
     if (cg_fun_end(funcRecord.key.text) == false) return INTERNAL_ERR;
+
+    // Reinicializacia lokalnej tabulky
+    TFree(LocalTable);
+    LocalTable = TInit(1741);
 
     inFunc = false;
     return PROG_OK;
@@ -248,7 +297,7 @@ int param(hTabItem_t* funcRecord) {
 }
 
 // 2. Vetva - Spracovávanie programových konštrukcií a vstavaných príkazov
-int commandList() {
+int command() {
     PRINT_DEBUG("Command\n");
 
     if (actualToken.tokenType == Identifier) {
@@ -283,7 +332,7 @@ int commandList() {
                 } else {
                     // Nemozme priradit funkcii
                     if (controlRecord->type == TypeFunction)
-                        return SYNTAX_ERR;
+                        return SEMPROG_ERR;
 
                     if ((errorCode = (assign(&varRecord))) != PROG_OK) return errorCode; // Vyraz na priradenie
 
@@ -293,7 +342,7 @@ int commandList() {
                     controlRecord->value = varRecord.value;
                 }
 
-                return (errorCode = commandListContOrEnd());
+                return PROG_OK;
             }
 
             case LeftBracket: {
@@ -318,10 +367,10 @@ int commandList() {
                 // Skáčeme do tela funkcie
                 if (cg_fun_call(funcRecord.key.text) == false) return INTERNAL_ERR;
 
-                return (errorCode = commandListContOrEnd());
+                return PROG_OK;
             }
 
-            default: {
+            default: { // Vyhodnoti sa expression no nikam sa neprirade
                 PRINT_DEBUG("\tEXPRESSION\n");
 
                 expr = true;
@@ -329,7 +378,7 @@ int commandList() {
                 // Posielame aktualny a predchádzajúci token
                 if ((errorCode = expression(in, &indentationStack, &actualToken, &controlToken, 2, &ret_type)) != 0) return errorCode; //untested
 
-                return (errorCode = commandListContOrEnd());
+                return PROG_OK;
             }
         }
     } else if (actualToken.tokenType == Double || actualToken.tokenType == Integer ||
@@ -338,11 +387,10 @@ int commandList() {
         PRINT_DEBUG("\tEXPRESSION\n");
 
         expr = true;
-
         // Posielame aktuálny token
         if ((errorCode = expression(in,&indentationStack, &actualToken, NULL, 1, &ret_type)) != PROG_OK) return  errorCode;
 
-        return (errorCode = commandListContOrEnd());
+        return PROG_OK;
     } else if (actualToken.tokenType == Keyword) {
         switch (actualToken.tokenAttribute.intValue) {
             case keywordWhile:
@@ -363,21 +411,45 @@ int commandList() {
                 if (actualToken.tokenType != Colon) return SYNTAX_ERR;
                 GET_AND_CHECK_TOKEN(Indent);
 
-                // Zoznam príkazov v tele cyklu
+                // Command list musi mat aspon 1 command
                 GET_TOKEN;
-                if ((errorCode = commandList()) != PROG_OK) return errorCode;
+                do {
+                    if ((errorCode = command()) != PROG_OK) return errorCode;
+
+                    // Command skoncil dedentom, islo o if alebo while
+                    if (actualToken.tokenType == Dedent && !expr) {
+                        GET_TOKEN;
+                        continue;
+                        // V pripade ze slo o Dedent ukoncujucim Command list funkcie,
+                        // islo o nacitanie terminalneho tokenu precedentnou analyzou
+                    } else if (actualToken.tokenType == Dedent) {
+                        break;
+                    }
+
+                    // V pripade nevolania precedentnej analyze je treba nacitat dalsi token, nebol nacitany ako terminalny
+                    if (expr) { expr = false; } else { GET_TOKEN; }
+
+                    // Nasleduje dalsi prikaz
+                    if (actualToken.tokenType == EOL) {
+                        GET_TOKEN;
+                        continue;
+                        // Koniec command listu
+                    } else if (actualToken.tokenType == Dedent) {
+                        break;
+                        // Nespravne ukonceny prikaz
+                    } else {
+                        return SYNTAX_ERR;
+                    }
+                } while (actualToken.tokenType != Dedent);
+                expr = false;
+                // Koniec Command listu, plati ze actualToken.tokenType == Dedent, expr == false
 
                 // Koniec while cyklu
                 if (cg_while_end(uni_a, uni_b) == false) return INTERNAL_ERR;
 
                 uni_a++;        uni_b++;
 
-                GET_TOKEN;
-                if (actualToken.tokenType == EndOfFile || actualToken.tokenType == Dedent) {
-                    return PROG_OK;
-                } else {
-                    return (errorCode = commandList());
-                }
+                return PROG_OK;
 
             case keywordIf:
                 // Vzor:  if (výraz): INDENT
@@ -400,9 +472,38 @@ int commandList() {
 
                 GET_AND_CHECK_TOKEN(Indent);
 
-                // Vetva pri splnení podmienky
+                // Command list musi mat aspon 1 command
                 GET_TOKEN;
-                if ((errorCode = commandList()) != PROG_OK) return errorCode;
+                do {
+                    if ((errorCode = command()) != PROG_OK) return errorCode;
+
+                    // Command skoncil dedentom, islo o if alebo while
+                    if (actualToken.tokenType == Dedent && !expr) {
+                        GET_TOKEN;
+                        continue;
+                        // V pripade ze slo o Dedent ukoncujucim Command list funkcie,
+                        // islo o nacitanie terminalneho tokenu precedentnou analyzou
+                    } else if (actualToken.tokenType == Dedent) {
+                        break;
+                    }
+
+                    // V pripade nevolania precedentnej analyze je treba nacitat dalsi token, nebol nacitany ako terminalny
+                    if (expr) { expr = false; } else { GET_TOKEN; }
+
+                    // Nasleduje dalsi prikaz
+                    if (actualToken.tokenType == EOL) {
+                        GET_TOKEN;
+                        continue;
+                    // Koniec command listu
+                    } else if (actualToken.tokenType == Dedent) {
+                        break;
+                    // Nespravne ukonceny prikaz
+                    } else {
+                        return SYNTAX_ERR;
+                    }
+                } while (actualToken.tokenType != Dedent);
+                expr = false;
+                // Koniec Command listu, plati ze actualToken.tokenType == Dedent, expr == false
 
                 // Náveštie pri nesplnení podmeinky
                 if (cg_if_else_part(uni_a, uni_b) == false) return INTERNAL_ERR;
@@ -412,20 +513,44 @@ int commandList() {
                 GET_AND_CHECK_TOKEN(Colon);
                 GET_AND_CHECK_TOKEN(Indent);
 
-                // Vetva pri nesplnení podmienky
+                // Command list musi mat aspon 1 command
                 GET_TOKEN;
-                if ((errorCode = commandList()) != PROG_OK) return errorCode;
+                do {
+                    if ((errorCode = command()) != PROG_OK) return errorCode;
+
+                    // Command skoncil dedentom, islo o if alebo while
+                    if (actualToken.tokenType == Dedent && !expr) {
+                        GET_TOKEN;
+                        continue;
+                        // V pripade ze slo o Dedent ukoncujucim Command list funkcie,
+                        // islo o nacitanie terminalneho tokenu precedentnou analyzou
+                    } else if (actualToken.tokenType == Dedent) {
+                        break;
+                    }
+
+                    // V pripade nevolania precedentnej analyze je treba nacitat dalsi token, nebol nacitany ako terminalny
+                    if (expr) { expr = false; } else { GET_TOKEN; }
+
+                    // Nasleduje dalsi prikaz
+                    if (actualToken.tokenType == EOL) {
+                        GET_TOKEN;
+                        continue;
+                        // Koniec command listu
+                    } else if (actualToken.tokenType == Dedent) {
+                        break;
+                        // Nespravne ukonceny prikaz
+                    } else {
+                        return SYNTAX_ERR;
+                    }
+                } while (actualToken.tokenType != Dedent);
+                expr = false;
+                // Koniec Command listu, plati ze actualToken.tokenType == Dedent, expr == false
 
                 // Koniec vetvenia
                 if (cg_if_end(uni_a, uni_b) == false) return INTERNAL_ERR;
                 uni_a++;            uni_b++;
 
-                GET_TOKEN;
-                if (actualToken.tokenType == EndOfFile || actualToken.tokenType == Dedent) {
-                    return PROG_OK;
-                } else {
-                    return (errorCode = commandList());
-                }
+                return PROG_OK;
 
             case keywordPrint:
                 PRINT_DEBUG("\tPRINT\n");
@@ -435,7 +560,7 @@ int commandList() {
 
                 // Výpis termov
                 if ((errorCode = term()) != PROG_OK) return errorCode;
-                break;
+                return PROG_OK;
 
             case keywordReturn:
                 PRINT_DEBUG("\tRETURN\n");
@@ -444,14 +569,13 @@ int commandList() {
                 if (!inFunc) return SYNTAX_ERR;
 
                 expr = true;
-
                 // Posielame aktuálny token
                 GET_TOKEN;//precti prvni token z vyrazu pro aby jsme mohli pouzit case 1 a predat adresu actualToken
                 if ((errorCode = expression(in, &indentationStack, &actualToken, NULL, 1, &ret_type)) != 0) return errorCode; //tested
 
                 // Návrat z tela funkcie
                 if (cg_fun_return() == false) return INTERNAL_ERR;
-                break;
+                return PROG_OK;
 
             case keywordPass:
                 PRINT_DEBUG("\tPASS\n");
@@ -460,28 +584,28 @@ int commandList() {
                 // A: Asi nič.
                 // Q: A sme si istý?
                 // A: Nie.
-                break;
+                return PROG_OK;
 
             case keywordInputf: // input bez priradenia
                 PRINT_DEBUG("\tINPUTF\n");
                 GET_AND_CHECK_TOKEN(LeftBracket);
                 GET_AND_CHECK_TOKEN(RightBracket);
                 if (cg_input(TypeDouble) == false) return INTERNAL_ERR;
-                break;
+                return PROG_OK;
 
             case keywordInputs: // input bez priradenia
                 PRINT_DEBUG("\tINPUTS\n");
                 GET_AND_CHECK_TOKEN(LeftBracket);
                 GET_AND_CHECK_TOKEN(RightBracket);
                 if (cg_input(TypeString) == false) return INTERNAL_ERR;
-                break;
+                return PROG_OK;
 
             case keywordInputi: // input bez priradenia
                 PRINT_DEBUG("\tINPUTI\n");
                 GET_AND_CHECK_TOKEN(LeftBracket);
                 GET_AND_CHECK_TOKEN(RightBracket);
                 if (cg_input(TypeInteger) == false) return INTERNAL_ERR;
-                break;
+                return PROG_OK;
 
             case keywordChr:
                 PRINT_DEBUG("\tCHR\n");
@@ -506,7 +630,7 @@ int commandList() {
 
                 // Volanie vstavanej funkcie chr
                 cg_fun_call("FUNCTION_CHR");
-                break;
+                return PROG_OK;
 
             case keywordLen:
                 PRINT_DEBUG("\tLEN\n");
@@ -531,7 +655,7 @@ int commandList() {
 
                 // Volanie vstavanej funkcie len
                 if (cg_fun_call("FUNCTION_LEN") == false) return INTERNAL_ERR;
-                break;
+                return PROG_OK;
 
             case keywordSubstr:
                 PRINT_DEBUG("\tSUBSTR\n");
@@ -588,7 +712,7 @@ int commandList() {
 
                 // Volanie vstavanej funkcie substr
                 if (cg_fun_call("FUNCTION_SUBSTR") == false) return INTERNAL_ERR;
-                break;
+                return PROG_OK;
 
             case keywordOrd:
                 PRINT_DEBUG("\tORD\n");
@@ -629,12 +753,11 @@ int commandList() {
 
                 // Volanie vstavanej funkcie ord
                 if (cg_fun_call("FUNCTION_ORD") == false) return INTERNAL_ERR;
-                break;
+                return PROG_OK;
 
             default:
                 return SYNTAX_ERR;
         }
-        return (errorCode = commandListContOrEnd());
     } else {
         return SYNTAX_ERR;
     }
@@ -679,8 +802,8 @@ int assign(hTabItem_t* varRecord) {
             return PROG_OK;
         } else {
             PRINT_DEBUG("\tEXPRESSION\n");
-            expr = true;
 
+            expr = true;
             // Posielame aktuálny a predchádzajúci token
             if ((errorCode = expression(in, &indentationStack,
                     &actualToken, &controlToken, 2, &ret_type)) != 0) return errorCode;
@@ -695,6 +818,8 @@ int assign(hTabItem_t* varRecord) {
                 case Double:
                     varRecord->type = TypeDouble;
                     break;
+                default:
+                    return SEMELSE_ERR;
             }
             return PROG_OK;
         }
@@ -718,6 +843,8 @@ int assign(hTabItem_t* varRecord) {
             case Double:
                 varRecord->type = TypeDouble;
                 break;
+            default:
+                return SEMELSE_ERR;
         }
 
         return PROG_OK;
@@ -880,6 +1007,8 @@ int assign(hTabItem_t* varRecord) {
 
                 GET_TOKEN;
                 if (actualToken.tokenType == Integer) {
+                    if (actualToken.tokenAttribute.intValue < 256)
+                        return SEMPROG_ERR;
                     // TODO gen param
                 } else if (actualToken.tokenType == Identifier) {
                     hTabItem_t* paramRecord = isInLocalOrGlobalhTab(actualToken.tokenAttribute.word);
@@ -977,31 +1106,6 @@ int term() {
             return (errorCode = term());
         default:
             return SYNTAX_ERR;
-    }
-}
-
-int commandListContOrEnd() {
-    // Tu sa nič negeneruje
-    PRINT_DEBUG("\tAnother command?\n");
-
-    // Pri spracovaní výrazov bol načítaný posledný (terminálny) token
-    if (expr) { expr = false; } else { GET_TOKEN; }
-
-    // V tele programu musí byť každý príkaz ukončený koncom riadku,
-    // výnimka nastáva len v prípade konca programu
-    if (inBody && (actualToken.tokenType == EOL || actualToken.tokenType == EndOfFile)) {
-        inBody = false;
-        return PROG_OK;
-    }
-
-    // Dedent v sekvencii príkazov zančí koniec, EOL, že nasleduje další prikaz
-    if (actualToken.tokenType == Dedent) {
-        return PROG_OK;
-    } else if (actualToken.tokenType == EOL) {
-        GET_TOKEN;
-        return (errorCode = commandList());
-    } else {
-        return SYNTAX_ERR;
     }
 }
 

@@ -45,7 +45,7 @@ int param(hTabItem_t* funcRecord);
  *
  * @return Error code
  */
-int commandList();
+int command();
 
 /**
  * @brief Assigment
