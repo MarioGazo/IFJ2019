@@ -62,13 +62,6 @@ int assign(hTabItem_t* varRecord);
  */
 int term();
 
-/**
- * @brief Makes code more readable
- *
- * @return Error code
- */
- int commandListContOrEnd();
-
  /**
   * @brief Finds and returns item in hash table
   *
