@@ -26,6 +26,7 @@ dynamic_stack_t* iStack;
 token_t* microStack = NULL;
 static unsigned int uni_2_a = 0;
 int concatenation = 0;
+int zero_division = 0;
 
 
 int errN = PROG_OK;
@@ -296,11 +297,66 @@ int expSwitch( dynamic_symbol_stack_t* stack, token_t** t, const int* depth, cha
 
                 if(found == 12 ||found == 13 ||found == 14 ||found == 15 ||found == 16 ||found == 17){
                   E->tokenAttribute.intValue = exp[0]->tokenType;
+
+                  if (((E->tokenAttribute.intValue == Integer) && (exp[0]->tokenAttribute.intValue == 0)) ||
+                      ((E->tokenAttribute.intValue == Double) && (exp[0]->tokenAttribute.doubleValue == 0.0))){
+                        E->tokenAttribute.intValue = 0;
+                  }
+
                   cg_stack_p(exp[0]);
-                  //TODO: push |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
                   free(exp[0]); //the rest of exp is empty
                 }else if(found != 11){
                     if ((exp[0]->tokenType == 99) && (exp[2]->tokenType == 99)){
+
+                        if ((exp[0]->tokenAttribute.intValue == DocumentString) || (exp[0]->tokenAttribute.intValue == String)
+                        || (exp[2]->tokenAttribute.intValue == String) || (exp[2]->tokenAttribute.intValue == DocumentString)){
+                            if (exp[1]->tokenType != Plus){
+                                return SEMRUN_ERR;
+                            }
+                        }
+
+                        if (((exp[0]->tokenAttribute.intValue == DocumentString) || (exp[0]->tokenAttribute.intValue == String))
+                            && ((exp[2]->tokenAttribute.intValue != String) || (exp[2]->tokenAttribute.intValue != DocumentString)
+                            || (exp[2]->tokenAttribute.intValue != Identifier) || (exp[2]->tokenAttribute.intValue != Keyword))){
+                                return SEMRUN_ERR;
+                        }
+
+                        if (((exp[2]->tokenAttribute.intValue == DocumentString) || (exp[2]->tokenAttribute.intValue == String))
+                            && ((exp[0]->tokenAttribute.intValue != String) || (exp[0]->tokenAttribute.intValue != DocumentString)
+                                || (exp[0]->tokenAttribute.intValue != Identifier) || (exp[0]->tokenAttribute.intValue != Keyword))){
+                                return SEMRUN_ERR;
+                        }
+
+                        if (exp[1]->tokenType == DivideWRest){
+                            if (exp[0]->tokenAttribute.intValue == Start){
+                                return DIVZERO_ERR;
+                            }
+
+                            if ((exp[0]->tokenAttribute.intValue == Integer) || (exp[0]->tokenAttribute.intValue == Double) || (exp[0]->tokenAttribute.intValue == Identifier)){
+                            } else {
+                                return  SEMRUN_ERR;
+                            }
+
+                            if ((exp[2]->tokenAttribute.intValue == Integer) || (exp[2]->tokenAttribute.intValue == Double) || (exp[2]->tokenAttribute.intValue == Identifier)){
+                            } else {
+                                return  SEMRUN_ERR;
+                            }
+                        } else if (exp[1]->tokenType == DivideWORest){
+                            if (exp[0]->tokenAttribute.intValue == Start){
+                                return DIVZERO_ERR;
+                            }
+
+                            if ((exp[0]->tokenAttribute.intValue == Integer) || (exp[0]->tokenAttribute.intValue == Identifier)){
+                            } else {
+                                return  SEMRUN_ERR;
+                            }
+
+                            if ((exp[2]->tokenAttribute.intValue == Integer) || (exp[2]->tokenAttribute.intValue == Identifier)){
+                            } else {
+                                return  SEMRUN_ERR;
+                            }
+                        }
+
                         E->tokenAttribute.intValue = cg_count(exp[1]->tokenType, exp[0]->tokenAttribute.intValue, exp[2]->tokenAttribute.intValue, ret_value_type);
                     } else if (exp[0]->tokenType == 99){
                         E->tokenAttribute.intValue = cg_count(exp[1]->tokenType, exp[0]->tokenAttribute.intValue, exp[2]->tokenType, ret_value_type);
@@ -349,8 +405,6 @@ bool cg_stack_p(token_t* token){
 }
 
 int cg_count(parserState_t operatio, unsigned int type_op_1, unsigned int type_op_2, int *ret_value_type){
-
-    printf("\t\t%i %i\n", type_op_1, type_op_2);
 
     // Rozdelime si pripady podla typov operandov
     if (type_op_1 == Identifier){
@@ -485,7 +539,7 @@ int cg_count(parserState_t operatio, unsigned int type_op_1, unsigned int type_o
             cg_flag_gen("data_control", uni_2_a, "final");
         }
 
-        if (type_op_1 == String){
+        if (type_op_1 == String || type_op_2 ==  DocumentString){
             cg_jump("JUMPIFEQ", "data_control", uni_2_a, "final", "LF@typ_op_2", "string@string");
 
             cg_exit(4);
