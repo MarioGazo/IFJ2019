@@ -613,6 +613,8 @@ int command() {
 
                 GET_TOKEN;
                 if (actualToken.tokenType == Integer) {
+                    if (actualToken.tokenAttribute.intValue < 256)
+                        return SEMPROG_ERR;
                     // TODO gen param
                 } else if (actualToken.tokenType == Identifier) {
                     hTabItem_t* paramRecord = isInLocalOrGlobalhTab(actualToken.tokenAttribute.word);
