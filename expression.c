@@ -11,7 +11,7 @@
 #include <stdio.h>
 #include "code-gen.h"
 
-#define DEBUG 1 // TODO set to 0
+#define DEBUG 0 // TODO set to 0
 #define RULEHEIGHT 18
 #define RULEWIDTH 3
 
@@ -25,8 +25,8 @@ dynamic_stack_t* iStack;
 //variables to deal with the getToken function
 token_t* microStack = NULL;
 static unsigned int uni_2_a = 0;
-int concatenation = 0;
 int zero_division = 0;
+int inFun = 0;
 
 
 int errN = PROG_OK;
@@ -225,7 +225,8 @@ int expSwitch( dynamic_symbol_stack_t* stack, token_t** t, const int* depth, cha
             //insert < behind the first terminal (100 = enum shift)
             sym_stackDeepInsert(stack, new_token(100), *depth);
             sym_stackPush(stack, token);
-            sym_stackPrint(stack);//TODO: delete this line
+            if (DEBUG)
+                sym_stackPrint(stack);
 
             *t = getNewToken();
             if (errN != PROG_OK)
@@ -310,26 +311,30 @@ int expSwitch( dynamic_symbol_stack_t* stack, token_t** t, const int* depth, cha
 
                         if ((exp[0]->tokenAttribute.intValue == DocumentString) || (exp[0]->tokenAttribute.intValue == String)
                         || (exp[2]->tokenAttribute.intValue == String) || (exp[2]->tokenAttribute.intValue == DocumentString)){
-                            if (exp[1]->tokenType != Plus){
+                            if ((exp[1]->tokenType != Plus) && (exp[1]->tokenType != Equals) && (exp[1]->tokenType != NotEqual) &&
+                               (exp[1]->tokenType != SmallerOrEqual) && (exp[1]->tokenType != Smaller) && (exp[1]->tokenType != Bigger) &&
+                               (exp[1]->tokenType != BiggerOrEqual)){
                                 return SEMRUN_ERR;
                             }
                         }
 
                         if (((exp[0]->tokenAttribute.intValue == DocumentString) || (exp[0]->tokenAttribute.intValue == String))
-                            && ((exp[2]->tokenAttribute.intValue != String) || (exp[2]->tokenAttribute.intValue != DocumentString)
-                            || (exp[2]->tokenAttribute.intValue != Identifier) || (exp[2]->tokenAttribute.intValue != Keyword))){
+                            && ((exp[2]->tokenAttribute.intValue != String) && (exp[2]->tokenAttribute.intValue != DocumentString)
+                            && (exp[2]->tokenAttribute.intValue != Identifier) && (exp[2]->tokenAttribute.intValue != Keyword))){
                                 return SEMRUN_ERR;
                         }
 
                         if (((exp[2]->tokenAttribute.intValue == DocumentString) || (exp[2]->tokenAttribute.intValue == String))
-                            && ((exp[0]->tokenAttribute.intValue != String) || (exp[0]->tokenAttribute.intValue != DocumentString)
-                                || (exp[0]->tokenAttribute.intValue != Identifier) || (exp[0]->tokenAttribute.intValue != Keyword))){
+                            && ((exp[0]->tokenAttribute.intValue != String) && (exp[0]->tokenAttribute.intValue != DocumentString)
+                            && (exp[0]->tokenAttribute.intValue != Identifier) && (exp[0]->tokenAttribute.intValue != Keyword))){
                                 return SEMRUN_ERR;
                         }
 
                         if (exp[1]->tokenType == DivideWRest){
                             if (exp[0]->tokenAttribute.intValue == Start){
                                 return DIVZERO_ERR;
+                            } else {
+                                exp[0]->tokenAttribute.intValue = Integer;
                             }
 
                             if ((exp[0]->tokenAttribute.intValue == Integer) || (exp[0]->tokenAttribute.intValue == Double) || (exp[0]->tokenAttribute.intValue == Identifier)){
@@ -344,6 +349,8 @@ int expSwitch( dynamic_symbol_stack_t* stack, token_t** t, const int* depth, cha
                         } else if (exp[1]->tokenType == DivideWORest){
                             if (exp[0]->tokenAttribute.intValue == Start){
                                 return DIVZERO_ERR;
+                            } else if (exp[0]->tokenAttribute.intValue == Integer) {
+                                exp[0]->tokenAttribute.intValue = Integer;
                             }
 
                             if ((exp[0]->tokenAttribute.intValue == Integer) || (exp[0]->tokenAttribute.intValue == Identifier)){
@@ -393,10 +400,12 @@ int expSwitch( dynamic_symbol_stack_t* stack, token_t** t, const int* depth, cha
 }
 
 bool cg_stack_p(token_t* token){
-    if (token->tokenType == Identifier || token->tokenType == DocumentString || token->tokenType == String) {
+    if (token->tokenType == DocumentString || token->tokenType == String) {
         cg_stack_push_literal(TypeString, token->tokenAttribute.word.text);
     } else if (token->tokenType == Integer){
         cg_stack_push_int(token->tokenAttribute.intValue);
+    } else if (token->tokenType == Identifier){
+        cg_stack_push_id(token->tokenAttribute.word.text);
     } else if (token->tokenType == Double){
         cg_stack_push_double(token->tokenAttribute.doubleValue);
     }
@@ -413,24 +422,24 @@ int cg_count(parserState_t operatio, unsigned int type_op_1, unsigned int type_o
             cg_stack_pop_id("op_1", false);
             cg_stack_pop_id("op_2", false);
 
-            cg_stack_push_id("op_2", false);
-            cg_stack_push_id("op_1", false);
+            cg_stack_push_gl("op_2");
+            cg_stack_push_gl("op_1");
 
             cg_type_of_symb("typ_op_1", "op_1");
             cg_type_of_symb("typ_op_2", "op_2");
 
-            cg_jump("JUMPIFEQ", "data_control", uni_2_a, "final", "LF@typ_op_1", "LF@typ_op_2");
-            cg_jump("JUMPIFNEQ", "data_control", uni_2_a, "not_string", "LF@typ_op_1", "string@string");
-            cg_jump("JUMPIFNEQ", "data_control", uni_2_a, "not_string", "LF@typ_op_2", "string@string");
+            cg_jump("JUMPIFEQ", "data_control", uni_2_a, "final", "GF@typ_op_1", "GF@typ_op_2");
+            cg_jump("JUMPIFNEQ", "data_control", uni_2_a, "not_string", "GF@typ_op_1", "string@string");
+            cg_jump("JUMPIFNEQ", "data_control", uni_2_a, "not_string", "GF@typ_op_2", "string@string");
 
             cg_exit(4);
 
             cg_flag_gen("data_control", uni_2_a, "not_string");
-            cg_jump("JUMPIFEQ", "data_control", uni_2_a, "convert_int", "LF@typ_op_1", "string@int");
+            cg_jump("JUMPIFEQ", "data_control", uni_2_a, "convert_int", "GF@typ_op_1", "string@int");
 
             cg_stack_pop_id("op_1", false);
             cg_stack_int2float();
-            cg_stack_push_id("op_1", false);
+            cg_stack_push_gl("op_1");
 
             cg_jump("JUMP", "data_control", uni_2_a, "final", "", "");
 
@@ -439,20 +448,15 @@ int cg_count(parserState_t operatio, unsigned int type_op_1, unsigned int type_o
 
             cg_flag_gen("data_control", uni_2_a, "final");
 
-            // Musime overit, ci ideme konkatenovat 2 stringy a ak ano, ci je to korektna operacia
-            concatenation = 1; // Budeme generovat navestie na konci, pretoze konkatenaciu vykoname teraz
-
-            cg_two_strings(operatio, uni_2_a);
-
         } else {
             // minimalne type_op_2 nie je premenna, musime teda zistit, ci je mozne spustenie operacie
             cg_stack_pop_id("op_1", false);
             cg_type_of_symb("typ_op_1", "op_1");
-            cg_stack_push_id("op_1", false);
+            cg_stack_push_gl("op_1");
 
             if (type_op_2 == Integer){
-                cg_jump("JUMPIFEQ", "data_control", uni_2_a, "final", "LF@typ_op_1", "string@int");
-                cg_jump("JUMPIFEQ", "data_control", uni_2_a, "convert", "LF@typ_op_1", "string@float");
+                cg_jump("JUMPIFEQ", "data_control", uni_2_a, "final", "GF@typ_op_1", "string@float");
+                cg_jump("JUMPIFEQ", "data_control", uni_2_a, "convert", "GF@typ_op_1", "string@int");
 
                 cg_exit(4);
 
@@ -460,14 +464,14 @@ int cg_count(parserState_t operatio, unsigned int type_op_1, unsigned int type_o
 
                 cg_stack_pop_id("op_1", false);
                 cg_stack_int2float();
-                cg_stack_push_id("op_1", false);
+                cg_stack_push_gl("op_1");
 
                 cg_flag_gen("data_control", uni_2_a, "final");
             }
 
             if (type_op_2 == Double){
-                cg_jump("JUMPIFEQ", "data_control", uni_2_a, "convert", "LF@typ_op_1", "string@int");
-                cg_jump("JUMPIFEQ", "data_control", uni_2_a, "final", "LF@typ_op_1", "string@float");
+                cg_jump("JUMPIFEQ", "data_control", uni_2_a, "convert", "GF@typ_op_1", "string@int");
+                cg_jump("JUMPIFEQ", "data_control", uni_2_a, "final", "GF@typ_op_1", "string@float");
 
                 cg_exit(4);
 
@@ -478,27 +482,11 @@ int cg_count(parserState_t operatio, unsigned int type_op_1, unsigned int type_o
             }
 
             if (type_op_2 == String || type_op_2 ==  DocumentString){
-                cg_jump("JUMPIFEQ", "data_control", uni_2_a, "final", "LF@typ_op_1", "string@string");
+                cg_jump("JUMPIFEQ", "data_control", uni_2_a, "final", "GF@typ_op_1", "string@string");
 
                 cg_exit(4);
 
-                // Ide teda urcite o 2 stringy, musime ich konkatenovat, ak operacia nie je +, je to chyba
-                if (operatio != Plus){
-                    return (-1);
-                }
-
                 cg_flag_gen("data_control", uni_2_a, "final");
-
-                cg_stack_pop_id("op_1", false);
-                cg_stack_pop_id("op_2", false);
-
-                cg_cat_literal("concat", "op_1", "op_2");
-
-                cg_stack_push_literal(TypeString, "concat");
-
-                *ret_value_type = String;
-                return Identifier;
-
             }
 
         }
@@ -507,14 +495,14 @@ int cg_count(parserState_t operatio, unsigned int type_op_1, unsigned int type_o
         cg_stack_pop_id("op_1", false);
         cg_stack_pop_id("op_2", false);
 
-        cg_stack_push_id("op_2", false);
-        cg_stack_push_id("op_1", false);
+        cg_stack_push_gl("op_2");
+        cg_stack_push_gl("op_1");
 
         cg_type_of_symb("typ_op_2", "op_2");
 
         if (type_op_1 == Integer){
-            cg_jump("JUMPIFEQ", "data_control", uni_2_a, "final", "LF@typ_op_2", "string@int");
-            cg_jump("JUMPIFEQ", "data_control", uni_2_a, "convert", "LF@typ_op_2", "string@float");
+            cg_jump("JUMPIFEQ", "data_control", uni_2_a, "final", "GF@typ_op_2", "string@float");
+            cg_jump("JUMPIFEQ", "data_control", uni_2_a, "convert", "GF@typ_op_2", "string@int");
 
             cg_exit(4);
 
@@ -525,8 +513,8 @@ int cg_count(parserState_t operatio, unsigned int type_op_1, unsigned int type_o
         }
 
         if (type_op_1 == Double){
-            cg_jump("JUMPIFEQ", "data_control", uni_2_a, "convert", "LF@typ_op_2", "string@int");
-            cg_jump("JUMPIFEQ", "data_control", uni_2_a, "final", "LF@typ_op_2", "string@float");
+            cg_jump("JUMPIFEQ", "data_control", uni_2_a, "convert", "GF@typ_op_2", "string@int");
+            cg_jump("JUMPIFEQ", "data_control", uni_2_a, "final", "GF@typ_op_2", "string@float");
 
             cg_exit(4);
 
@@ -534,32 +522,17 @@ int cg_count(parserState_t operatio, unsigned int type_op_1, unsigned int type_o
 
             cg_stack_pop_id("op_1", false);
             cg_stack_int2float();
-            cg_stack_push_id("op_1", false);
+            cg_stack_push_gl("op_1");
 
             cg_flag_gen("data_control", uni_2_a, "final");
         }
 
         if (type_op_1 == String || type_op_2 ==  DocumentString){
-            cg_jump("JUMPIFEQ", "data_control", uni_2_a, "final", "LF@typ_op_2", "string@string");
+            cg_jump("JUMPIFEQ", "data_control", uni_2_a, "final", "GF@typ_op_2", "string@string");
 
             cg_exit(4);
 
-            // Ide teda urcite o 2 stringy, musime ich konkatenovat, ak operacia nie je +, je to chyba
-            if (operatio != Plus){
-                return (-1);
-            }
-
             cg_flag_gen("data_control", uni_2_a, "final");
-
-            cg_stack_pop_id("op_1", false);
-            cg_stack_pop_id("op_2", false);
-
-            cg_cat_literal("concat", "op_1", "op_2");
-
-            cg_stack_push_literal(TypeString, "concat");
-
-            *ret_value_type = String;
-            return Identifier;
         }
     }
 
@@ -584,13 +557,6 @@ int cg_count(parserState_t operatio, unsigned int type_op_1, unsigned int type_o
         cg_rel_operation_stack(operatio);
     }
 
-    // Ak boli oba operandy premenne, a boli stringy, tak preskocime operaciu az sem
-    // ak nie, tak sa nic nestane
-    if (concatenation == 1){
-        cg_flag_gen("data_control", uni_2_a, "op_done");
-        concatenation = 0;
-    }
-
     uni_2_a = uni_2_a + 1;
 
     if (type_op_1 == type_op_2){
@@ -606,7 +572,7 @@ int cg_count(parserState_t operatio, unsigned int type_op_1, unsigned int type_o
 
 }
 
-int expression(FILE* lIn, dynamic_stack_t* lIStack, token_t* t, token_t* controlToken, int amountOfPassedTokens, int* ret_value_type){
+int expression(FILE* lIn, dynamic_stack_t* lIStack, token_t* t, token_t* controlToken, int amountOfPassedTokens, int* ret_value_type, int inF){
     //promote the passed variables to the global scope
     in = lIn;
     iStack = lIStack;
@@ -622,6 +588,7 @@ int expression(FILE* lIn, dynamic_stack_t* lIStack, token_t* t, token_t* control
     int d;
     int* depth = &d;
     int retCode = 0;
+    inFun = inF;
     // Which LLpos function to pick from. 0 means undecided. 1 is concatenation mode, -1 is expression mode.
     // Any further attempt to change it while it has a non-zero value should result in an error.
     int mode = 0;
@@ -663,7 +630,6 @@ int expression(FILE* lIn, dynamic_stack_t* lIStack, token_t* t, token_t* control
     }
 
     do {
-        printf("\t\t%i\n", token->tokenType);
         if (LLPos(token) == -1 && LLSPos(token) == -1) {
             //The token wasnt recognized by neither function, meaning a syntax error
             if (DEBUG)
@@ -708,11 +674,14 @@ int expression(FILE* lIn, dynamic_stack_t* lIStack, token_t* t, token_t* control
             return retCode;
         }
 
-        sym_stackPrint(stack);
+        if (DEBUG)
+            sym_stackPrint(stack);
     } while(!(sym_stackTraverse(stack, 1)->tokenType ==EOL && sym_stackTopItem(stack)->tokenType == 99 &&
                (token->tokenType == EOL || token->tokenType == EndOfFile || token->tokenType == Colon ||
                 token->tokenType == Dedent || token->tokenType == Indent)));
     //The work is over when there is E$ on the stack and the token is one of the forementioned types
+
+    cg_stack_pop_id("expr_result", false);
 
      sym_stackFree(stack);
      if(t!=NULL){

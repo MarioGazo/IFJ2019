@@ -166,6 +166,34 @@ hTabItem_t* TSearch(hashTable* hTab, dynamicString_t key) {
     return active_item;
 }
 
+bool TSearch_char(hashTable* hTab, char* key) {
+
+    // Zistíme, či existuje tabuľka, do ktorej chceme vkladať a key, ktorý chceme použiť
+    if (hTab == NULL) {
+        fprintf(stderr, "Search error, non-valid key or table\n");
+        return false;
+    }
+
+    // Použijeme hash funkciu a vytvoríme index
+    unsigned int hash_key_index = (THashFunction(key) % hTab->size);
+    hTabItem_t *active_item;
+
+    // Pripojíme pointer active_item na zodpovedajúci index
+    active_item = hTab->variables[hash_key_index];
+
+    // Prejdeme celý riadok v tabuľke s indexom hTabItem_t *active_item a porovnávame key s uloženými items
+    while (active_item != NULL)
+    {
+        if (!strcmp(active_item->key.text,key)){
+            return true;
+        }
+        active_item = active_item->next;
+    }
+
+    // Vrátime ukazovateľ na item obsahujúci key, alebo v prípade neúspechu NULL
+    return false;
+}
+
 void TDelete(hashTable* hTab, dynamicString_t key) {
 
     // Zistíme, či existuje tabuľka, z ktorej chceme vymazávať

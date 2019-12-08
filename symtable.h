@@ -76,6 +76,8 @@ hTabItem_t* TInsert(hashTable* hTab, hTabItem_t item);
  */
 hTabItem_t* TSearch(hashTable* hTab, dynamicString_t key);
 
+bool TSearch_char(hashTable* hTab, char* key);
+
 /**
  * @brief Deletes an item from hash table
  *

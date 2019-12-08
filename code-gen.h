@@ -17,7 +17,7 @@
 #include "expression.h"
 #include "parser.h"
 
-#define MAX_NUMBER_OF_DIGITS 40
+#define MAX_NUMBER_OF_DIGITS 45
 
 #define ADD_INST(_inst) \
     if(!dynamicStringAddString(&code,(_inst "\n"))) return false
@@ -28,14 +28,14 @@
 #define ADD_CODE_INT(_code) \
     do {                                        \
         char string[MAX_NUMBER_OF_DIGITS];      \
-        sprintf(string,"int@%u",_code);            \
+        sprintf(string,"%u",_code);            \
         ADD_CODE(string);                       \
     } while (0)
 
 #define ADD_CODE_DOUBLE(_code) \
     do {                                        \
         char string[MAX_NUMBER_OF_DIGITS];      \
-        sprintf(string,"double%a",_code);            \
+        sprintf(string,"float@%a",_code);            \
         ADD_CODE(string);                       \
     } while (0)
 
@@ -144,7 +144,7 @@
 /**
  * @brief Sets dynamic string for output
  */
-void set_code_output(dynamicString_t *output);
+void set_code_output(dynamicString_t* output, hashTable* global);
 
 /**
  * @brief Print out dynamic string to file
@@ -195,12 +195,12 @@ bool cg_assign_expr_result(char* variable, bool local);
 /**
  * @brief Define local parameter of function
  */
-bool cg_fun_param_declare(char* id_funkcie, unsigned int uni);
+bool cg_fun_param_declare(char* param, int num);
 
 /**
  * @brief Assign value to parameter of function
  */
-bool cg_fun_param_assign(char* id_funkcie, unsigned int uni, token_t actualToken, bool local);
+bool cg_fun_param_assign(unsigned int uni, token_t actualToken, bool local);
 //todo komentár
 //bool cg_fun_convert_passed_param(varType_t z, varType_t do_, int index);
 //todo komentár
@@ -217,39 +217,38 @@ bool cg_fun_return();
  * @param ID_premenna Variable name
  * @param inFunc Whether the variable is local or global
  */
-bool cg_var_declare(char* varName, bool local);
-
+bool cg_var_declare(char* varName, dynamicString_t *in_string, bool local);
 /**
  * @brief Label for jumping
  *
  * @param funcName Function name
  */
-bool cg_label(char* funcName, unsigned int uni_a, unsigned int uni_b);
+bool cg_label(char* funcName, char* reverse, unsigned int uni);
 
 /**
  * @brief While loop head and label
  */
-bool cg_while_start(unsigned int uni_a, unsigned int uni_b);
+bool cg_while_start(unsigned int uni);
 
 /**
  * @brief While loop tail and label
  */
-bool cg_while_end(unsigned int uni_a, unsigned int uni_b);
+bool cg_while_end(unsigned int uni);
 
 /**
  * @brief If statement
  */
-bool cg_if_start(unsigned int uni_a, unsigned int uni_b);
+bool cg_if_start(unsigned int uni);
 
 /**
  * @brief Else statement
  */
-bool cg_if_else_part(unsigned int uni_a, unsigned int uni_b);
+bool cg_if_else_part(unsigned int uni);
 
 /**
  * @brief End of if & else statement
  */
-bool cg_if_end(unsigned int uni_a, unsigned int uni_b);
+bool cg_if_end(unsigned int uni);
 
 /**
  * @brief Writes out value
@@ -276,7 +275,9 @@ bool cg_math_operation(parserState_t operation, char* var, char* op1, char* op2)
 
 bool cg_math_operation_stack(parserState_t operation);
 
-bool cg_stack_push_id(char* symb, bool local);
+bool cg_stack_push_id(char* symb);
+
+bool cg_stack_push_gl(char* symb);
 
 bool cg_stack_push_literal(varType_t type, char* val);
 
