@@ -53,6 +53,7 @@ bool cg_code_header()
     ADD_INST("DEFVAR GF@typ_op_1");
     ADD_INST("DEFVAR GF@concat");
     ADD_INST("DEFVAR GF@typ_op_2");
+    ADD_INST("DEFVAR GF@expr_result_type");
 
     ADD_INST("JUMP $$main");
 
@@ -198,7 +199,22 @@ bool cg_label(char* funcName, char* reverse, unsigned int uni)
 
 bool cg_while_start(unsigned int uni)
 {
-    ADD_CODE("JUMPIFNEQ $"); ADD_CODE("WHILE");ADD_CODE("A"); ADD_CODE_INT(uni); ADD_CODE(" GF@expr_result int@0"); ADD_CODE("\n");
+    cg_type_of_symb("expr_result_type", "expr_result");
+    cg_jump("JUMPIFEQ", "WHILE_bool", uni, "", "GF@expr_result_type", "string@bool");
+    cg_jump("JUMPIFEQ", "WHILE_int", uni, "", "GF@expr_result_type", "string@int");
+
+    cg_exit(4);
+
+    cg_label("WHILE_int", "", uni);
+    cg_jump("JUMPIFEQ", "WHILE_int0", uni, "", "GF@expr_result", "int@0");
+    ADD_CODE("MOVE GF@expr_result bool@true\n");
+    cg_jump("JUMP", "WHILE_bool", uni, "", "", "");
+    cg_label("WHILE_int0", "", uni);
+    ADD_CODE("MOVE GF@expr_result bool@false\n");
+
+    cg_label("WHILE_bool", "", uni);
+
+    ADD_CODE("JUMPIFNEQ $"); ADD_CODE("WHILE");ADD_CODE("A"); ADD_CODE_INT(uni); ADD_CODE(" GF@expr_result bool@true"); ADD_CODE("\n");
 
     return true;
 }
@@ -213,6 +229,20 @@ bool cg_while_end(unsigned int uni)
 
 bool cg_if_start(unsigned int uni)
 {
+    cg_type_of_symb("expr_result_type", "expr_result");
+    cg_jump("JUMPIFEQ", "IF_bool", uni, "", "GF@expr_result_type", "string@bool");
+    cg_jump("JUMPIFEQ", "IF_int", uni, "", "GF@expr_result_type", "string@int");
+
+    cg_exit(4);
+
+    cg_label("IF_int", "", uni);
+    cg_jump("JUMPIFEQ", "IF_int0", uni, "", "GF@expr_result", "int@0");
+    ADD_CODE("MOVE GF@expr_result bool@false\n");
+    cg_jump("JUMP", "IF_bool", uni, "", "", "");
+    cg_label("IF_int0", "", uni);
+    ADD_CODE("MOVE GF@expr_result bool@true\n");
+
+    cg_label("IF_bool", "", uni);
     ADD_CODE("JUMPIFEQ $"); ADD_CODE("IF"); ADD_CODE_INT(uni); ADD_CODE(" GF@expr_result bool@false\n");
     return true;
 }

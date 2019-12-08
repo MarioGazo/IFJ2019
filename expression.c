@@ -415,126 +415,34 @@ bool cg_stack_p(token_t* token){
 
 int cg_count(parserState_t operatio, unsigned int type_op_1, unsigned int type_op_2, int *ret_value_type){
 
-    // Rozdelime si pripady podla typov operandov
-    if (type_op_1 == Identifier){
-        if (type_op_2 == Identifier){
-            // dve premenne, musime zistit ich datove typy
-            cg_stack_pop_id("op_1", false);
-            cg_stack_pop_id("op_2", false);
+    cg_stack_pop_id("op_1", false);
+    cg_stack_pop_id("op_2", false);
 
-            cg_stack_push_gl("op_2");
-            cg_stack_push_gl("op_1");
+    cg_stack_push_gl("op_2");
+    cg_stack_push_gl("op_1");
 
-            cg_type_of_symb("typ_op_1", "op_1");
-            cg_type_of_symb("typ_op_2", "op_2");
+    cg_type_of_symb("typ_op_1", "op_1");
+    cg_type_of_symb("typ_op_2", "op_2");
 
-            cg_jump("JUMPIFEQ", "data_control", uni_2_a, "final", "GF@typ_op_1", "GF@typ_op_2");
-            cg_jump("JUMPIFNEQ", "data_control", uni_2_a, "not_string", "GF@typ_op_1", "string@string");
-            cg_jump("JUMPIFNEQ", "data_control", uni_2_a, "not_string", "GF@typ_op_2", "string@string");
+    cg_jump("JUMPIFEQ", "data_control", uni_2_a, "final", "GF@typ_op_1", "GF@typ_op_2");
+    cg_jump("JUMPIFNEQ", "data_control", uni_2_a, "not_string", "GF@typ_op_1", "string@string");
+    cg_jump("JUMPIFNEQ", "data_control", uni_2_a, "not_string", "GF@typ_op_2", "string@string");
 
-            cg_exit(4);
+    cg_exit(4);
 
-            cg_flag_gen("data_control", uni_2_a, "not_string");
-            cg_jump("JUMPIFEQ", "data_control", uni_2_a, "convert_int", "GF@typ_op_1", "string@int");
+    cg_flag_gen("data_control", uni_2_a, "not_string");
+    cg_jump("JUMPIFEQ", "data_control", uni_2_a, "int", "GF@typ_op_1", "string@int");
 
-            cg_stack_pop_id("op_1", false);
-            cg_stack_int2float();
-            cg_stack_push_gl("op_1");
+    cg_stack_pop_id("op_1", false);
+    cg_stack_int2float();
+    cg_stack_push_gl("op_1");
 
-            cg_jump("JUMP", "data_control", uni_2_a, "final", "", "");
+    cg_jump("JUMP", "data_control", uni_2_a, "final", "", "");
 
-            cg_flag_gen("data_control", uni_2_a, "convert_int");
-            cg_stack_int2float();
+    cg_flag_gen("data_control", uni_2_a, "int");
+    cg_stack_int2float();
 
-            cg_flag_gen("data_control", uni_2_a, "final");
-
-        } else {
-            // minimalne type_op_2 nie je premenna, musime teda zistit, ci je mozne spustenie operacie
-            cg_stack_pop_id("op_1", false);
-            cg_type_of_symb("typ_op_1", "op_1");
-            cg_stack_push_gl("op_1");
-
-            if (type_op_2 == Integer){
-                cg_jump("JUMPIFEQ", "data_control", uni_2_a, "final", "GF@typ_op_1", "string@float");
-                cg_jump("JUMPIFEQ", "data_control", uni_2_a, "convert", "GF@typ_op_1", "string@int");
-
-                cg_exit(4);
-
-                cg_flag_gen("data_control", uni_2_a, "convert");
-
-                cg_stack_pop_id("op_1", false);
-                cg_stack_int2float();
-                cg_stack_push_gl("op_1");
-
-                cg_flag_gen("data_control", uni_2_a, "final");
-            }
-
-            if (type_op_2 == Double){
-                cg_jump("JUMPIFEQ", "data_control", uni_2_a, "convert", "GF@typ_op_1", "string@int");
-                cg_jump("JUMPIFEQ", "data_control", uni_2_a, "final", "GF@typ_op_1", "string@float");
-
-                cg_exit(4);
-
-                cg_flag_gen("data_control", uni_2_a, "convert");
-                cg_stack_int2float();
-
-                cg_flag_gen("data_control", uni_2_a, "final");
-            }
-
-            if (type_op_2 == String || type_op_2 ==  DocumentString){
-                cg_jump("JUMPIFEQ", "data_control", uni_2_a, "final", "GF@typ_op_1", "string@string");
-
-                cg_exit(4);
-
-                cg_flag_gen("data_control", uni_2_a, "final");
-            }
-
-        }
-    } else {
-        // minimalne type_op_1 nie je premenna, musime teda zistit, ci je mozne spustenie operacie
-        cg_stack_pop_id("op_1", false);
-        cg_stack_pop_id("op_2", false);
-
-        cg_stack_push_gl("op_2");
-        cg_stack_push_gl("op_1");
-
-        cg_type_of_symb("typ_op_2", "op_2");
-
-        if (type_op_1 == Integer){
-            cg_jump("JUMPIFEQ", "data_control", uni_2_a, "final", "GF@typ_op_2", "string@float");
-            cg_jump("JUMPIFEQ", "data_control", uni_2_a, "convert", "GF@typ_op_2", "string@int");
-
-            cg_exit(4);
-
-            cg_flag_gen("data_control", uni_2_a, "convert");
-            cg_stack_int2float();
-
-            cg_flag_gen("data_control", uni_2_a, "final");
-        }
-
-        if (type_op_1 == Double){
-            cg_jump("JUMPIFEQ", "data_control", uni_2_a, "convert", "GF@typ_op_2", "string@int");
-            cg_jump("JUMPIFEQ", "data_control", uni_2_a, "final", "GF@typ_op_2", "string@float");
-
-            cg_exit(4);
-
-            cg_flag_gen("data_control", uni_2_a, "convert");
-
-            cg_stack_pop_id("op_1", false);
-            cg_stack_int2float();
-            cg_stack_push_gl("op_1");
-
-            cg_flag_gen("data_control", uni_2_a, "final");
-        }
-
-        if (type_op_1 == String || type_op_2 ==  DocumentString){
-            cg_jump("JUMPIFEQ", "data_control", uni_2_a, "final", "GF@typ_op_2", "string@string");
-
-            cg_exit(4);
-
-            cg_flag_gen("data_control", uni_2_a, "final");
-        }
-    }
+    cg_flag_gen("data_control", uni_2_a, "final");
 
 
     // Vykoname operaciu
