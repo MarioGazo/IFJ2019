@@ -382,7 +382,6 @@ int expSwitch( dynamic_symbol_stack_t* stack, token_t** t, const int* depth, cha
                   free(exp[2]);
                 }
                 sym_stackPush(stack, E);
-                //TODO: printing out the expressions in target language
             } else {
                 PRINT_DEBUG("SYNTAX ERROR RULE NOT FOUND\n");
                 return SYNTAX_ERR;
@@ -408,6 +407,10 @@ bool cg_stack_p(token_t* token){
         cg_stack_push_id(token->tokenAttribute.word.text);
     } else if (token->tokenType == Double){
         cg_stack_push_double(token->tokenAttribute.doubleValue);
+    } else if (token->tokenType == Keyword){
+        if (!strcmp(token->tokenAttribute.word.text, "None")){
+            cg_stack_push_literal(TypeString, "");
+        }
     }
 
     return true;
@@ -451,8 +454,7 @@ int cg_count(parserState_t operatio, unsigned int type_op_1, unsigned int type_o
     // alebo ako výsledok výrazu v prípade priradenia
     if ((operatio == Plus) || (operatio == Minus) || (operatio == Multiply) ||
         (operatio == DivideWRest) || (operatio == DivideWORest)){
-        // Len operacia nad zasobnikom
-        cg_math_operation_stack(operatio);
+        cg_two_strings(operatio, uni_2_a);
     } else if (operatio == Assign) {
         // Priradenie a odovzdanie vysledku cez navratova_hodnota
         cg_stack_pop_id("op_1", false);
@@ -473,6 +475,9 @@ int cg_count(parserState_t operatio, unsigned int type_op_1, unsigned int type_o
     } else if ((type_op_1 == Double) || (type_op_2 == Double)){
         *ret_value_type = Double;
         return Double;
+    } else if ((type_op_1 == String) || (type_op_1 == DocumentString) || (type_op_2 == String) || (type_op_2 == DocumentString)){
+        *ret_value_type = String;
+        return String;
     } else {
         *ret_value_type = Integer;
         return Integer;

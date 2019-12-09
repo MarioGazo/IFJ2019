@@ -87,7 +87,7 @@ int analyse(FILE* file) {
     set_code_output(&code, GlobalTable);
 
     if (cg_code_header() == false)          return INTERNAL_ERR;    // Hlavicka vystupneho kodu
-    //if (cg_define_b_i_functions() == false) return INTERNAL_ERR;    // Definicia vstavaných funkcii
+    if (cg_define_b_i_functions() == false) return INTERNAL_ERR;    // Definicia vstavaných funkcii
     if (cg_main_scope() == false)           return INTERNAL_ERR;    // Yaciatok hlavneho ramca
 
     // Spustenie analýzi
@@ -704,17 +704,19 @@ int command() {
 
                 GET_AND_CHECK_TOKEN(LeftBracket);
 
+                ADD_INST("CREATEFRAME");
+
                 GET_TOKEN;
                 if (actualToken.tokenType == Integer) {
                     if (actualToken.tokenAttribute.intValue > 255)
                         return SEMRUN_ERR;
-                    // TODO gen param
+                    cg_fun_param_assign(0, actualToken, inFunc);
                 } else if (actualToken.tokenType == Identifier) {
                     hTabItem_t* paramRecord = isInLocalOrGlobalhTab(actualToken.tokenAttribute.word);
                     if (paramRecord->type != TypeInteger) {
                         return SEMRUN_ERR;
                     } else {
-                        // TODO gen param
+                        cg_fun_param_assign(0, actualToken, inFunc);
                     }
                 } else {
                     return SEMRUN_ERR;
@@ -723,7 +725,7 @@ int command() {
                 GET_AND_CHECK_TOKEN(RightBracket);
 
                 // Volanie vstavanej funkcie chr
-                cg_fun_call("FUNCTION_CHR");
+                cg_fun_call("function_len");
                 return PROG_OK;
 
             case keywordLen:
@@ -731,15 +733,17 @@ int command() {
 
                 GET_AND_CHECK_TOKEN(LeftBracket);
 
+                ADD_INST("CREATEFRAME");
+
                 GET_TOKEN;
                 if (actualToken.tokenType == String) {
-                    // TODO gen param
+                    cg_fun_param_assign(0, actualToken, inFunc);
                 } else if (actualToken.tokenType == Identifier) {
                     hTabItem_t* paramRecord = isInLocalOrGlobalhTab(actualToken.tokenAttribute.word);
                     if (paramRecord->type != TypeString) {
                         return SEMRUN_ERR;
                     } else {
-                        // TODO gen param
+                        cg_fun_param_assign(0, actualToken, inFunc);
                     }
                 } else {
                     return SEMRUN_ERR;
@@ -748,7 +752,7 @@ int command() {
                 GET_AND_CHECK_TOKEN(RightBracket);
 
                 // Volanie vstavanej funkcie len
-                if (cg_fun_call("FUNCTION_LEN") == false) return INTERNAL_ERR;
+                if (cg_fun_call("function_len") == false) return INTERNAL_ERR;
                 return PROG_OK;
 
             case keywordSubstr:
@@ -756,15 +760,17 @@ int command() {
 
                 GET_AND_CHECK_TOKEN(LeftBracket);
 
+                ADD_INST("CREATEFRAME");
+
                 GET_TOKEN;
                 if (actualToken.tokenType == String) {
-                    // TODO gen param
+                    cg_fun_param_assign(0, actualToken, inFunc);
                 } else if (actualToken.tokenType == Identifier) {
                     hTabItem_t* paramRecord = isInLocalOrGlobalhTab(actualToken.tokenAttribute.word);
                     if (paramRecord->type != TypeString) {
                         return SEMRUN_ERR;
                     } else {
-                        // TODO gen param
+                        cg_fun_param_assign(0, actualToken, inFunc);
                     }
                 } else {
                     return SEMRUN_ERR;
@@ -774,13 +780,13 @@ int command() {
 
                 GET_TOKEN;
                 if (actualToken.tokenType == Integer) {
-                    // TODO gen param
+                    cg_fun_param_assign(1, actualToken, inFunc);
                 } else if (actualToken.tokenType == Identifier) {
                     hTabItem_t* paramRecord = isInLocalOrGlobalhTab(actualToken.tokenAttribute.word);
                     if (paramRecord->type != TypeInteger) {
                         return SEMRUN_ERR;
                     } else {
-                        // TODO gen param
+                        cg_fun_param_assign(1, actualToken, inFunc);
                     }
                 } else {
                     return SEMRUN_ERR;
@@ -790,13 +796,13 @@ int command() {
 
                 GET_TOKEN;
                 if (actualToken.tokenType == Integer) {
-                    // TODO gen param
+                    cg_fun_param_assign(2, actualToken, inFunc);
                 } else if (actualToken.tokenType == Identifier) {
                     hTabItem_t* paramRecord = isInLocalOrGlobalhTab(actualToken.tokenAttribute.word);
                     if (paramRecord->type != TypeInteger) {
                         return SEMRUN_ERR;
                     } else {
-                        // TODO gen param
+                        cg_fun_param_assign(2, actualToken, inFunc);
                     }
                 } else {
                     return SEMRUN_ERR;
@@ -805,7 +811,7 @@ int command() {
                 GET_AND_CHECK_TOKEN(RightBracket);
 
                 // Volanie vstavanej funkcie substr
-                if (cg_fun_call("FUNCTION_SUBSTR") == false) return INTERNAL_ERR;
+                if (cg_fun_call("function_substr") == false) return INTERNAL_ERR;
                 return PROG_OK;
 
             case keywordOrd:
@@ -813,15 +819,17 @@ int command() {
 
                 GET_AND_CHECK_TOKEN(LeftBracket);
 
+                ADD_INST("CREATEFRAME");
+
                 GET_TOKEN;
                 if (actualToken.tokenType == String) {
-                    // TODO gen param
+                    cg_fun_param_assign(0, actualToken, inFunc);
                 } else if (actualToken.tokenType == Identifier) {
                     hTabItem_t* paramRecord = isInLocalOrGlobalhTab(actualToken.tokenAttribute.word);
                     if (paramRecord->type != TypeString) {
                         return SEMRUN_ERR;
                     } else {
-                        // TODO gen param
+                        cg_fun_param_assign(0, actualToken, inFunc);
                     }
                 } else {
                     return SEMRUN_ERR;
@@ -831,13 +839,13 @@ int command() {
 
                 GET_TOKEN;
                 if (actualToken.tokenType == Integer) {
-                    // TODO gen param
+                    cg_fun_param_assign(1, actualToken, inFunc);
                 } else if (actualToken.tokenType == Identifier) {
                     hTabItem_t* paramRecord = isInLocalOrGlobalhTab(actualToken.tokenAttribute.word);
                     if (paramRecord->type != TypeInteger) {
                         return SEMRUN_ERR;
                     } else {
-                        // TODO gen param
+                        cg_fun_param_assign(1, actualToken, inFunc);
                     }
                 } else {
                     return SEMRUN_ERR;
@@ -846,7 +854,7 @@ int command() {
                 GET_AND_CHECK_TOKEN(RightBracket);
 
                 // Volanie vstavanej funkcie ord
-                if (cg_fun_call("FUNCTION_ORD") == false) return INTERNAL_ERR;
+                if (cg_fun_call("function_ord") == false) return INTERNAL_ERR;
                 return PROG_OK;
 
             default:
@@ -977,15 +985,17 @@ int assign(hTabItem_t* varRecord) {
 
                 GET_AND_CHECK_TOKEN(LeftBracket);
 
+                ADD_INST("CREATEFRAME");
+
                 GET_TOKEN;
                 if (actualToken.tokenType == String || actualToken.tokenType == DocumentString) {
-                    // TODO gen param
+                    cg_fun_param_assign(0, actualToken, inFunc);
                 } else if (actualToken.tokenType == Identifier) {
                     hTabItem_t* paramRecord = isInLocalOrGlobalhTab(actualToken.tokenAttribute.word);
                     if (paramRecord->type != TypeString) {
                         return SEMRUN_ERR;
                     } else {
-                        // TODO gen param
+                        cg_fun_param_assign(0, actualToken, inFunc);
                     }
                 } else {
                     return SEMRUN_ERR;
@@ -993,7 +1003,7 @@ int assign(hTabItem_t* varRecord) {
                 GET_AND_CHECK_TOKEN(RightBracket);
 
                 // Volanie vstavanej funkcie len
-                if (cg_fun_call("FUNCTION_LEN") == false) return INTERNAL_ERR;
+                if (cg_fun_call("function_len") == false) return INTERNAL_ERR;
 
                 varRecord->type = TypeInteger;
                 return PROG_OK;
@@ -1003,16 +1013,18 @@ int assign(hTabItem_t* varRecord) {
 
                 GET_AND_CHECK_TOKEN(LeftBracket);
 
+                ADD_INST("CREATEFRAME");
+
                 GET_TOKEN;
-                printf("%i\n", actualToken.tokenType);
                 if (actualToken.tokenType == String) {
-                    // TODO gen param
+                    cg_fun_param_assign(0, actualToken, inFunc);
                 } else if (actualToken.tokenType == Identifier) {
                     hTabItem_t* paramRecord = isInLocalOrGlobalhTab(actualToken.tokenAttribute.word);
                     if (paramRecord->type != TypeString) {
+                        printf("%i\n", paramRecord->type);
                         return SEMRUN_ERR;
                     } else {
-                        // TODO gen param
+                        cg_fun_param_assign(0, actualToken, inFunc);
                     }
                 } else {
                     return SEMRUN_ERR;
@@ -1022,13 +1034,13 @@ int assign(hTabItem_t* varRecord) {
 
                 GET_TOKEN;
                 if (actualToken.tokenType == Integer) {
-                    // TODO gen param
+                    cg_fun_param_assign(1, actualToken, inFunc);
                 } else if (actualToken.tokenType == Identifier) {
                     hTabItem_t* paramRecord = isInLocalOrGlobalhTab(actualToken.tokenAttribute.word);
                     if (paramRecord->type != TypeInteger) {
                         return SEMRUN_ERR;
                     } else {
-                        // TODO gen param
+                        cg_fun_param_assign(1, actualToken, inFunc);
                     }
                 } else {
                     return SEMRUN_ERR;
@@ -1038,13 +1050,13 @@ int assign(hTabItem_t* varRecord) {
 
                 GET_TOKEN;
                 if (actualToken.tokenType == Integer) {
-                    // TODO gen param
+                    cg_fun_param_assign(2, actualToken, inFunc);
                 } else if (actualToken.tokenType == Identifier) {
                     hTabItem_t* paramRecord = isInLocalOrGlobalhTab(actualToken.tokenAttribute.word);
                     if (paramRecord->type != TypeInteger) {
                         return SEMRUN_ERR;
                     } else {
-                        // TODO gen param
+                        cg_fun_param_assign(2, actualToken, inFunc);
                     }
                 } else {
                     return SEMRUN_ERR;
@@ -1053,7 +1065,7 @@ int assign(hTabItem_t* varRecord) {
                 GET_AND_CHECK_TOKEN(RightBracket);
 
                 // Volanie vstavanej funkcie substr
-                if (cg_fun_call("FUNCTION_SUBSTR") == false) return INTERNAL_ERR;
+                if (cg_fun_call("function_substr") == false) return INTERNAL_ERR;
 
                 varRecord->type = TypeString;
                 return PROG_OK;
@@ -1063,15 +1075,17 @@ int assign(hTabItem_t* varRecord) {
 
                 GET_AND_CHECK_TOKEN(LeftBracket);
 
+                ADD_INST("CREATEFRAME");
+
                 GET_TOKEN;
                 if (actualToken.tokenType == String) {
-                    // TODO gen param
+                    cg_fun_param_assign(0, actualToken, inFunc);
                 } else if (actualToken.tokenType == Identifier) {
                     hTabItem_t* paramRecord = isInLocalOrGlobalhTab(actualToken.tokenAttribute.word);
                     if (paramRecord->type != TypeString) {
                         return SEMRUN_ERR;
                     } else {
-                        // TODO gen param
+                        cg_fun_param_assign(0, actualToken, inFunc);
                     }
                 } else {
                     return SEMRUN_ERR;
@@ -1081,13 +1095,13 @@ int assign(hTabItem_t* varRecord) {
 
                 GET_TOKEN;
                 if (actualToken.tokenType == Integer) {
-                    // TODO gen param
+                    cg_fun_param_assign(1, actualToken, inFunc);
                 } else if (actualToken.tokenType == Identifier) {
                     hTabItem_t* paramRecord = isInLocalOrGlobalhTab(actualToken.tokenAttribute.word);
                     if (paramRecord->type != TypeInteger) {
                         return SEMRUN_ERR;
                     } else {
-                        // TODO gen param
+                        cg_fun_param_assign(1, actualToken, inFunc);
                     }
                 } else {
                     return SEMRUN_ERR;
@@ -1096,7 +1110,7 @@ int assign(hTabItem_t* varRecord) {
                 GET_AND_CHECK_TOKEN(RightBracket);
 
                 // Volanie vstavanej funkcie ord
-                if (cg_fun_call("FUNCTION_ORD") == false) return INTERNAL_ERR;
+                if (cg_fun_call("function_ord") == false) return INTERNAL_ERR;
 
                 varRecord->type = TypeInteger;
                 return PROG_OK;
@@ -1106,17 +1120,19 @@ int assign(hTabItem_t* varRecord) {
 
                 GET_AND_CHECK_TOKEN(LeftBracket);
 
+                ADD_INST("CREATEFRAME");
+
                 GET_TOKEN;
                 if (actualToken.tokenType == Integer) {
                     if (actualToken.tokenAttribute.intValue > 255)
                         return SEMRUN_ERR;
-                    // TODO gen param
+                    cg_fun_param_assign(0, actualToken, inFunc);
                 } else if (actualToken.tokenType == Identifier) {
                     hTabItem_t* paramRecord = isInLocalOrGlobalhTab(actualToken.tokenAttribute.word);
                     if (paramRecord->type != TypeInteger) {
                         return SEMRUN_ERR;
                     } else {
-                        // TODO gen param
+                        cg_fun_param_assign(0, actualToken, inFunc);
                     }
                 } else {
                     return SEMRUN_ERR;
@@ -1125,7 +1141,7 @@ int assign(hTabItem_t* varRecord) {
                 GET_AND_CHECK_TOKEN(RightBracket);
 
                 // Volanie vstavanej funkcie chr
-                cg_fun_call("FUNCTION_CHR");
+                cg_fun_call("function_len");
 
                 varRecord->type = TypeString;
                 return PROG_OK;

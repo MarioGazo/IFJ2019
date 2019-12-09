@@ -449,7 +449,7 @@ token_t getToken(FILE* in, dynamic_stack_t* indentationStack) {
                     return actualToken;
                 }
 
-            case Zero:
+            case BinOctHex:
                 if (c == 'b' || c == 'B') {
                     state = BinaryNum;             continue; // 0b 0B
                 } else if (c == 'o' || c == 'O') {
@@ -610,7 +610,7 @@ parserState_t parserStart(FILE* in, int c, dynamicString_t* actualTokenString) {
     } else if (c == '0') {
         if (dynamicStringInit(actualTokenString) == false) {
             return ErrorMalloc;
-        } else {                return Zero;}
+        } else {                return BinOctHex;}
     } else if (isalpha(c)) {
         if (dynamicStringInit(actualTokenString) == false) {
             return ErrorMalloc;

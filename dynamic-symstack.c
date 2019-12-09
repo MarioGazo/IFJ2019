@@ -163,7 +163,7 @@ void sym_stackPrintTokenType(token_t * token){
       printf("%d", token->tokenType );
       printf("%s", "|");
 
-  }
+  };
 }
 
 void sym_stackPrint(dynamic_symbol_stack_t * stack){

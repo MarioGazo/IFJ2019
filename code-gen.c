@@ -105,7 +105,7 @@ bool cg_fun_end(char *id_funkcie)
     return true;
 }
 
-bool cg_fun_param_declare(char* param, unsigned int num)
+bool cg_fun_param_declare(char* param, int num)
 {
     ADD_CODE("DEFVAR LF@"); ADD_CODE(param); ADD_CODE("\n");
     ADD_CODE("MOVE LF@"); ADD_CODE(param); ADD_CODE(" LF@%"); ADD_CODE_INT(num); ADD_CODE("\n");
@@ -487,27 +487,29 @@ bool cg_rel_operation_stack(parserState_t operation) {
 
     switch (operation) {
         case NotEqual:
-            ADD_INST("NOTS EQS");       return true;
+            ADD_INST("EQS");
+            ADD_INST("NOTS");            return true;
         case Smaller:
             ADD_INST("LTS");            return true;
         case SmallerOrEqual:
-            ADD_INST("LTS ANDS EQS");   return true;
+            ADD_INST("LTS");
+            cg_stack_push_gl("op_2");
+            cg_stack_push_gl("op_1");
+            ADD_INST("EQS");
+            ADD_INST("ORS");            return true;
         case Bigger:
             ADD_INST("GTS");            return true;
         case BiggerOrEqual:
-            ADD_INST("GTS ANDS EQS");   return true;
+            ADD_INST("GTS");
+            cg_stack_push_gl("op_2");
+            cg_stack_push_gl("op_1");
+            ADD_INST("EQS");
+            ADD_INST("ORS");            return true;
         case Equals:
             ADD_INST("EQS");            return true;
         default:
             return false;
     }
-}
-
-// Konkatenácia operandov a priradenie premennej
-bool cg_cat_literal(char* var, char* op1, char* op2) {
-    ADD_CODE("CONCAT"); ADD_CODE(var); ADD_CODE(op1); ADD_CODE(op2); ADD_CODE("\n");
-
-    return true;
 }
 
 // Konkatenácia operandov a priradenie premennej
@@ -559,23 +561,22 @@ bool cg_move(char* id_to_return, char* type){
 }
 
 bool cg_two_strings(unsigned int operation, unsigned int flag){
-    cg_jump("JUMPIFNEQ", "data_control", flag, "final2", "GF@typ_op_1", "string@string");
-    ADD_CODE("JUMPIFEQ $data_control"); ADD_CODE_INT(flag); ADD_CODE("final_concat int@1 int@"); ADD_CODE_INT(operation); ADD_CODE("\n");
+    cg_jump("JUMPIFNEQ", "operation_m", flag, "", "GF@typ_op_1", "string@string");
 
-    cg_exit(4);
-
-    cg_flag_gen("data_control", flag, "final_concat");
-
-    cg_stack_pop_id("op_1", false);
     cg_stack_pop_id("op_2", false);
+    cg_stack_pop_id("op_1", false);
 
-    cg_cat_literal("concat", "op_1", "op_2");
+    ADD_CODE("CONCAT GF@expr_result GF@op_1 GF@op_2\n");
 
-    cg_stack_push_literal(TypeString, "concat");
+    cg_stack_push_gl("expr_result");
 
-    cg_jump("JUMP", "data_control", flag, "op_done", "", "");
+    cg_jump("JUMP", "operation_f", flag, "", "", "");
 
-    cg_flag_gen("data_control", flag, "final2");
+    cg_flag_gen("operation_m", flag, "");
+
+    cg_math_operation_stack(operation);
+
+    cg_flag_gen("operation_f", flag, "");
 
     return true;
 }

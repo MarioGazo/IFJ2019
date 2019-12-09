@@ -39,106 +39,76 @@
         ADD_CODE(string);                       \
     } while (0)
 
-#define FUNCTION_LEN \
-    "\n# Built-in function Len"                \
-    "\nLABEL $function_len"                    \
-    "\nPUSHFRAME"                              \
-    "\nDEFVAR LF@%navratova_hodnota"           \
-    "\nSTRLEN LF@%navratova_hodnota LF@%0"     \
-    "\nPOPFRAME"                               \
+#define FUNCTION_LEN                 \
+    "\n# Built-in function - len"    \
+    "\nLABEL $function_len"          \
+    "\nPUSHFRAME"                    \
+    "\nSTRLEN GF@expr_result LF@%0"  \
+    "\nPOPFRAME"                     \
     "\nRETURN"
 
-#define FUNCTION_SUBSTR \
-    "\n# Built-in function SubStr"                                             \
-    "\nLABEL $substr"                                                          \
-    "\nPUSHFRAME"                                                              \
-    "\nDEFVAR LF@%navratova_hodnota"                                           \
-    "\nMOVE LF@%navratova_hodnota string@"                                     \
-    "\nDEFVAR LF@dlzka_str"                                                    \
-    "\nCREATEFRAME"                                                            \
-    "\nDEFVAR TF@%0"                                                           \
-    "\nMOVE TF@%0 LF@%0"                                                       \
-    "\nCALL $length"                                                           \
-    "\nMOVE LF@dlzka_str TF@%navratova_hodnota"                                \
-    "\nDEFVAR LF@navratova_podmienka"                                          \
-    "\nLT LF@navratova_podmienka LF@dlzka_str int@0"                           \
-    "\nJUMPIFEQ $substr$return LF@navratova_podmienka bool@true"               \
-    "\nEQ LF@navratova_podmienka LF@dlzka_str int@0"                           \
-    "\nJUMPIFEQ $substr$return LF@navratova_podmienka bool@true"               \
-    "\nLT LF@navratova_podmienka LF@%1 int@0"                                  \
-    "\nJUMPIFEQ $substr$return LF@navratova_podmienka bool@true"               \
-    "\nEQ LF@navratova_podmienka LF@%1 int@0"                                  \
-    "\nJUMPIFEQ $substr$return LF@navratova_podmienka bool@true"               \
-    "\nGT LF@navratova_podmienka LF@%1 LF@dlzka_str"                           \
-    "\nJUMPIFEQ $substr$return LF@navratova_podmienka bool@true"               \
-    "\nEQ LF@navratova_podmienka LF@%2 int@0"                                  \
-    "\nJUMPIFEQ $substr$return LF@navratova_podmienka bool@true"               \
-    "\nDEFVAR LF@maximum_n"                                                    \
-    "\nMOVE LF@maximum_n LF@dlzka_str"                                         \
-    "\nSUB LF@maximum_n LF@maximum_n LF@%1"                                    \
-    "\nADD LF@maximum_n LF@maximum_n int@1"                                    \
-    "\nDEFVAR LF@edit_n_podmienka"                                             \
-    "\nLT LF@edit_n_podmienka LF@%2 int@0"                                     \
-    "\nJUMPIFEQ $substr$edit_n LF@edit_n_podmienka bool@true"                  \
-    "\nGT LF@edit_n_podmienka LF@%2 LF@maximum_n"                              \
-    "\nJUMPIFEQ $substr$edit_n LF@edit_n_podmienka bool@true"                  \
-    "\nJUMP $substr$process"                                                   \
-    "\nLABEL $substr$edit_n"                                                   \
-    "\nMOVE LF@%2 LF@maximum_n"                                                \
-    "\nLABEL $substr$process"                                                  \
-    "\nDEFVAR LF@index"                                                        \
-    "\nMOVE LF@index LF@%1"                                                    \
-    "\nSUB LF@index LF@index int@1"                                            \
-    "\nDEFVAR LF@char"                                                         \
-    "\nDEFVAR LF@procesna_podmienka"                                           \
-    "\nLABEL $substr$process_loop"                                             \
-    "\nGETCHAR LF@char LF@%0 LF@index"                                         \
-    "\nCONCAT LF@%navratova_hodnota LF@%navratova_hodnota LF@char"             \
-    "\nADD LF@index LF@index int@1"                                            \
-    "\nSUB LF@%2 LF@%2 int@1"                                                  \
-    "\nGT LF@procesna_podmienka LF@%2 int@0"                                   \
-    "\nJUMPIFEQ $substr$process_loop LF@procesna_podmienka bool@true"          \
-    "\nLABEL $substr$return"                                                   \
-    "\nPOPFRAME"                                                               \
+#define FUNCTION_SUBSTR                                                        \
+    "\n# Built-in function - substr"       \
+    "\nLABEL $function_substr"             \
+	"\nPUSHFRAME"                                \
+	"\nDEFVAR LF@$bool"						 \
+	"\nLT LF@$bool int@0 LF@%1"                                \
+    "\nJUMPIFEQ $nones_return LF@$bool bool@false"         \
+	"\nDEFVAR LF@$str_len"						 \
+	"\nSTRLEN LF@$str_len LF@%0"                 \
+	"\nSUB LF@$str_len LF@$str_len int@1"                    \
+	"\nLT LF@$bool LF@%1 LF@$str_len"                                \
+    "\nJUMPIFEQ $nones_return LF@$bool bool@false"         \
+	"\nDEFVAR LF@$i"						 \
+	"\nDEFVAR LF@$a"						 \
+    "\nMOVE LF@$i LF@%1"    \
+    "\nMOVE LF@$a LF@%2"    \
+    "\nADD LF@$a LF@$i LF@$a"						 \
+    "\nDEFVAR LF@$char"						 \
+    "\nMOVE GF@expr_result string@"          \
+    "\nLABEL $substr_return"\
+    "\nLT LF@$bool LF@$i LF@$str_len"                                \
+    "\nJUMPIFEQ $final_return LF@$bool bool@false"\
+    "\nLT LF@$bool LF@$i LF@$a"                                \
+    "\nJUMPIFEQ $final_return LF@$bool bool@false"\
+    "\nGETCHAR LF@$char LF@%0 LF@$i"                                         \
+    "\nCONCAT GF@expr_result GF@expr_result LF@$char"             \
+    "\nADD LF@$i LF@$i int@1"                                            \
+    "\nJUMP $substr_return"               \
+    "\nLABEL $final_return"               \
+    "\nPOPFRAME"								 \
+	"\nRETURN"                                   \
+    "\nLABEL $nones_return"                       \
+    "\nMOVE GF@expr_result string@None"          \
+	"\nPOPFRAME"								 \
+	"\nRETURN"
+
+#define FUNCTION_CHR                    \
+    "\n# Built-in function - chr"       \
+    "\nLABEL $function_chr"             \
+    "\nPUSHFRAME"                       \
+    "\nINT2CHAR GF@expr_result LF@%0"   \
+    "\nPOPFRAME"                        \
     "\nRETURN"
 
-#define FUNCTION_CHR \
-    "\n# Built-in function Chr"                                            \
-    "\nLABEL $chr"                                                         \
-    "\nPUSHFRAME"                                                          \
-    "\nDEFVAR LF@%navratova_hodnota"                                       \
-    "\nMOVE LF@%navratova_hodnota string@"                                 \
-    "\nDEFVAR LF@rozsah_podm"                                              \
-    "\nLT LF@rozsah_podm LF@%0 int@0"                                      \
-    "\nJUMPIFEQ $chr$return LF@rozsah_podm bool@true"                      \
-    "\nGT LF@rozsah_podm LF@%0 int@255"                                    \
-    "\nJUMPIFEQ $chr$return LF@rozsah_podm bool@true"                      \
-    "\nINT2CHAR LF@%navratova_hodnota LF@%0"                               \
-    "\nLABEL $chr$return"                                                  \
-    "\nPOPFRAME"                                                           \
-    "\nRETURN"
-
-#define FUNCTION_ORD \
-	"\n# Built-in function ORD"						        \
-	"\nLABEL $ord"								            \
-	"\nPUSHFRAME"								            \
-	"\nDEFVAR LF@%navratova_hodnota"					    \
-	"\nMOVE LF@%navratova_hodnota int@0"					\
-	"\nDEFVAR LF@podmienena_dlzka"						    \
-	"\nLT LF@podmienena_dlzka LF@%1 int@1"					\
-	"\nJUMPIFEQ $ord$return LF@podmienena_dlzka bool@true"  \
-	"\nDEFVAR LF@dlzka_stringu"						        \
-	"\nCREATEFRAME"							                \
-	"\nDEFVAR TF@%0"							            \
-	"\nMOVE TF@%0 LF@%0"							        \
-	"\nCALL $length"							            \
-	"\nMOVE LF@dlzka_stringu TF@%navratova_hodnota"			\
-	"\nGT LF@podmienena_dlzka LF@%1 LF@dlzka_stringu"   	\
-	"\nJUMPIFEQ $ord$return LF@podmienena_dlzka bool@true"	\
-	"\nSUB LF@%1 LF@%1 int@1"						        \
-	"\nSTRI2INT LF@%navratova_hodnota LF@%0 LF@%1"		    \
-	"\nLABEL $ord$return"							        \
-	"\nPOPFRAME"								            \
+#define FUNCTION_ORD                             \
+	"\n# Built-in function - ord"				 \
+	"\nLABEL $function_ord"						 \
+	"\nPUSHFRAME"    \
+    "\nDEFVAR LF@$bool"						 \
+	"\nLT LF@$bool int@0 LF@%0"                                \
+    "\nJUMPIFEQ $none_return LF@$bool bool@true"         \
+	"\nDEFVAR LF@$str_len"						 \
+	"\nSTRLEN LF@$str_len LF@%1"                 \
+	"\nSUB LF@$str_len LF@$str_len int@1"                    \
+	"\nLT LF@$bool LF@$str_len LF@%0"                                \
+	"\nJUMPIFEQ $none_return LF@$bool bool@true"         \
+	"\nSTRI2INT GF@expr_result LF@%0 LF@%1"		 \
+    "\nPOPFRAME"								 \
+	"\nRETURN"                                   \
+    "\nLABEL $none_return"                       \
+    "\nMOVE GF@expr_result string@None"          \
+	"\nPOPFRAME"								 \
 	"\nRETURN"
 
 /**
@@ -195,7 +165,7 @@ bool cg_assign_expr_result(char* variable, bool local);
 /**
  * @brief Define local parameter of function
  */
-bool cg_fun_param_declare(char* param, unsigned int num);
+bool cg_fun_param_declare(char* param, int num);
 
 /**
  * @brief Assign value to parameter of function

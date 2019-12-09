@@ -111,6 +111,8 @@ hTabItem_t* TInsert(hashTable* hTab, hTabItem_t item) {
         case TypeFunction:
             new_table_item->value.intValue = item.value.intValue;
             break;
+        case TypeBool:
+            break;
         default: break;
     }
     new_table_item->next = NULL;
@@ -288,6 +290,8 @@ void TPrint(hashTable* hTab) {
                     printf("\t%s\n", dynamicStringGetText(actual_item->value.word));
                 } else if (actual_item->type == TypeFunction) {
                     printf("\t%s\n", dynamicStringGetText(actual_item->key));
+                } else if (actual_item->type == TypeBool) {
+                    printf("\t%i\n", actual_item->value.intValue);
                 } else {
                     printf("\tTypeUndefined");
                 }

@@ -40,7 +40,7 @@ int stackPop(dynamic_stack_t* s) {
     }
 }
 
-bool stackPush(dynamic_stack_t* s, unsigned int num) {
+bool stackPush(dynamic_stack_t* s, int num) {
     s->data = realloc(s->data, ++s->capacity * sizeof(int));
 
     if (s->data == NULL) {
