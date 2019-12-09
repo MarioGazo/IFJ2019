@@ -63,7 +63,7 @@ typedef enum parserState {
     Double,                // 35 123.456
     AlmostExponential,     // 36 123e / 123.456e
     Exponential,           // 37 123e+/-10 / 123.456e+/-12
-    BinOctHex,             // 38 0b / 0o / 0x / 0B / 0O / 0X
+    Zero,                  // 38 0b / 0o / 0x / 0B / 0O / 0X
     BinaryNum,             // 39 0b1010_1010
     OctalNum,              // 40 0o252
     HexadecimalNum,        // 41 0xAA

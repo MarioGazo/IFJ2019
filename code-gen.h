@@ -195,7 +195,7 @@ bool cg_assign_expr_result(char* variable, bool local);
 /**
  * @brief Define local parameter of function
  */
-bool cg_fun_param_declare(char* param, int num);
+bool cg_fun_param_declare(char* param, unsigned int num);
 
 /**
  * @brief Assign value to parameter of function

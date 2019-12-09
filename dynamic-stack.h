@@ -48,7 +48,7 @@ int stackPop(dynamic_stack_t *s);
  * @param num Value to be pushed
  * @return Whether the push was successful
  */
-bool stackPush(dynamic_stack_t *s,int num);
+bool stackPush(dynamic_stack_t *s,unsigned int num);
 
 /**
  * @brief Frees the dynamic stack

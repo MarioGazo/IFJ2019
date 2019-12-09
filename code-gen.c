@@ -105,7 +105,7 @@ bool cg_fun_end(char *id_funkcie)
     return true;
 }
 
-bool cg_fun_param_declare(char* param, int num)
+bool cg_fun_param_declare(char* param, unsigned int num)
 {
     ADD_CODE("DEFVAR LF@"); ADD_CODE(param); ADD_CODE("\n");
     ADD_CODE("MOVE LF@"); ADD_CODE(param); ADD_CODE(" LF@%"); ADD_CODE_INT(num); ADD_CODE("\n");
