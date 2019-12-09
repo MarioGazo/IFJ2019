@@ -148,6 +148,15 @@ token_t getToken(FILE* in, dynamic_stack_t* indentationStack) {
                     continue;
                 }
 
+                if (c == '#') {
+                    while (c != '\n')
+                        c = getc(in);
+
+                    ungetc(c,in);
+                    firstOnLine = true;
+                    state = Start;      continue;
+                }
+
                 if (spaceCount == stackTop(*indentationStack)) { // EOL
                     firstOnLine = true;
                     actualToken.tokenType = EOL;        return actualToken;
