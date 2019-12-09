@@ -56,12 +56,15 @@ hashTable *GlobalTable, *LocalTable;
 
 // Príznaky značia kde sa nachádza čítanie programu
 bool inFunc = false;    // sme vo funkcii
+bool inRecursion = false;    // sme vo funkcii
 bool expr = false;      // bol spracovany vyraz
 bool while_in = false;
+bool if_in = false;
 
 // Výsledný kód
 dynamicString_t code;
 dynamicString_t while_def;
+dynamicString_t if_def;
 
 // Hlavný program
 int analyse(FILE* file) {
@@ -261,7 +264,7 @@ int param(hTabItem_t* funcRecord) {
     PRINT_DEBUG("Parameters\n");
 
     GET_TOKEN;
-    if (inFunc) {
+    if (!inRecursion) {
         // Definicia parametrov
         switch (actualToken.tokenType) {
             case RightBracket:
@@ -337,6 +340,8 @@ int command() {
                 if (!controlRecord) {
                     if (while_in){
                         if (cg_var_declare(varRecord.key.text, &while_def, inFunc) == false)              return INTERNAL_ERR;
+                    } else if (if_in){
+                        if (cg_var_declare(varRecord.key.text, &if_def, inFunc) == false)              return INTERNAL_ERR;
                     } else {
                         if (cg_var_declare(varRecord.key.text, &code, inFunc) == false)              return INTERNAL_ERR;
                     }
@@ -375,11 +380,18 @@ int command() {
                 funcRecord.next = NULL;
                 funcRecord.value.intValue = 0;
 
+                hTabItem_t *controlRecord = NULL;
+
+                if ((controlRecord = TSearch(GlobalTable, funcRecord.key)) != NULL){
+                    inRecursion = true;
+                }
+
                 ADD_INST("CREATEFRAME");
                 param(&funcRecord);
 
-                hTabItem_t *controlRecord = NULL;
-                if ((controlRecord = TSearch(GlobalTable, funcRecord.key)) != NULL) {
+                inRecursion = false;
+
+                if (controlRecord != NULL) {
                     if (controlRecord->value.intValue != funcRecord.value.intValue)
                         return SEMPARAM_ERR;
                 } else {
@@ -517,6 +529,14 @@ int command() {
 
                 uni = uni_a + uni_b;
 
+                if (!if_in){
+                    dynamicStringInit(&if_def);
+                    if_in = true;
+
+                    ADD_CODE("JUMP $IF_PARAMS"); ADD_CODE_INT(uni); ADD_CODE("\n");
+                    if (!cg_label("IF_PARAMS_RET", "", uni)) return false;
+                }
+
                 // Podmienka vetvenia, posielame aktuálny token
                 GET_TOKEN; // nacti prvni token z vyrazu aby jsme mohli pouzit case 1
                 if ((errorCode = expression(in, &indentationStack,
@@ -608,7 +628,17 @@ int command() {
                 // Koniec Command listu, plati ze actualToken.tokenType == Dedent, expr == false
 
                 uni = stackTop(unistack_if);
+                ADD_CODE("JUMP $"); ADD_CODE("IF"); ADD_CODE("A"); ADD_CODE_INT(uni); ADD_CODE("\n");
                 // Koniec vetvenia
+
+                if (if_in) {
+                    if_in = false;
+                    if (!cg_label("IF_PARAMS", "", uni)) return false;
+                    dynamicStringAddString(&code, if_def.text);
+                    ADD_CODE("JUMP $IF_PARAMS_RET"); ADD_CODE_INT(uni); ADD_CODE("\n");
+                    dynamicStringFree(&if_def);
+                }
+
                 if (cg_if_end(uni) == false) return INTERNAL_ERR;
 
                 stackPop(&unistack_if);
@@ -849,10 +879,16 @@ int assign(hTabItem_t* varRecord) {
             funcRecord.defined = FALSE;
             funcRecord.next = NULL;
 
+            if ((controlRecord = TSearch(GlobalTable, funcRecord.key)) != NULL){
+                inRecursion = true;
+            }
+
             ADD_INST("CREATEFRAME");
             if ((errorCode = param(&funcRecord)) != PROG_OK) return errorCode;  // //abc = a(...)
 
-            if ((controlRecord = TSearch(GlobalTable, funcRecord.key)) != NULL) {
+            inRecursion = false;
+
+            if (controlRecord != NULL) {
                 // Funkcia uz bola definovana, skontrolujeme, ci ma rovnaky pocet parametrov
                 if (controlRecord->value.intValue != funcRecord.value.intValue)
                     return SEMPARAM_ERR;
