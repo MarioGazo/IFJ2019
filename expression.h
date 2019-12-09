@@ -19,7 +19,7 @@
 #include "dynamic-stack.h"
 #include "scanner.h"
 
-int expression(FILE* lIn, dynamic_stack_t* lIStack, token_t* t, token_t* controlToken, int amountOfPassedTokens, int *ret_value_type);
+int expression(FILE* lIn, dynamic_stack_t* lIStack, token_t* t, token_t* controlToken, int amountOfPassedTokens, int *ret_value_type, int inF);
 
 //given a token, retruns an LL table position
 int LLPos(token_t * token);
