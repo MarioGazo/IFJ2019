@@ -394,35 +394,35 @@ bool cg_stack_p(token_t* token){
 
 int cg_count(parserState_t operation, unsigned int type_op_1, unsigned int type_op_2, int *ret_value_type){
 
-    cg_stack_pop_id("op_1", false);
-    cg_stack_pop_id("op_2", false);
+    cg_stack_pop_id("$$op_1", false);
+    cg_stack_pop_id("$$op_2", false);
 
-    cg_stack_push_gl("op_2");
-    cg_stack_push_gl("op_1");
+    cg_stack_push_gl("$$op_2");
+    cg_stack_push_gl("$$op_1");
 
-    cg_type_of_symb("typ_op_1", "op_1");
-    cg_type_of_symb("typ_op_2", "op_2");
+    cg_type_of_symb("$$typ_op_1", "$$op_1");
+    cg_type_of_symb("$$typ_op_2", "$$op_2");
 
-    cg_jump("JUMPIFEQ", "data_control_f", uni_2_a, "", "GF@typ_op_1", "GF@typ_op_2");
-    cg_jump("JUMPIFNEQ", "data_control_ns", uni_2_a, "", "GF@typ_op_1", "string@string");
-    cg_jump("JUMPIFNEQ", "data_control_ns", uni_2_a, "", "GF@typ_op_2", "string@string");
+    cg_jump("JUMPIFEQ", "$data_control_f", uni_2_a, "", "GF@$$typ_op_1", "GF@$$typ_op_2");
+    cg_jump("JUMPIFNEQ", "$data_control_ns", uni_2_a, "", "GF@$$typ_op_1", "string@string");
+    cg_jump("JUMPIFNEQ", "$data_control_ns", uni_2_a, "", "GF@$$typ_op_2", "string@string");
 
     cg_exit(4);
 
-    cg_label("data_control_", "ns", uni_2_a);
+    cg_label("$data_control_", "ns", uni_2_a);
 
-    cg_jump("JUMPIFEQ", "data_control_i", uni_2_a, "", "GF@typ_op_1", "string@int");
+    cg_jump("JUMPIFEQ", "$data_control_i", uni_2_a, "", "GF@$$typ_op_1", "string@int");
 
-    cg_stack_pop_id("op_1", false);
+    cg_stack_pop_id("$$op_1", false);
     cg_stack_int2float();
-    cg_stack_push_gl("op_1");
+    cg_stack_push_gl("$$op_1");
 
-    cg_jump("JUMP", "data_control_f", uni_2_a, "", "", "");
+    cg_jump("JUMP", "$data_control_f", uni_2_a, "", "", "");
 
-    cg_label("data_control_", "i", uni_2_a);
+    cg_label("$data_control_", "i", uni_2_a);
     cg_stack_int2float();
 
-    cg_label("data_control_", "f", uni_2_a);
+    cg_label("$data_control_", "f", uni_2_a);
 
     // Samotné vykonanie operácie, operandy sú už nachystané na zásobníku
     if ((operation == Plus) || (operation == Minus) || (operation == Multiply) ||
@@ -431,7 +431,7 @@ int cg_count(parserState_t operation, unsigned int type_op_1, unsigned int type_
         cg_operation(operation, uni_2_a);
     } else if (operation == Assign) {
         // Priradenie a odovzdanie výsledku
-        cg_stack_pop_id("op_1", false);
+        cg_stack_pop_id("$$op_1", false);
         cg_clear_stack();
 
     } else if ((operation == NotEqual) || (operation == Smaller) || (operation == SmallerOrEqual)
@@ -567,7 +567,7 @@ int expression(FILE* lIn, dynamic_stack_t* lIStack, token_t* t, token_t* control
                 token->tokenType == Dedent || token->tokenType == Indent)));
     //The work is over when there is E$ on the stack and the token is one of the forementioned types
 
-    cg_stack_pop_id("expr_result", false);
+    cg_stack_pop_id("$$expr_result", false);
 
      sym_stackFree(stack);
      if(t!=NULL){

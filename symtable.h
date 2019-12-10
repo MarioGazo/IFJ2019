@@ -52,6 +52,12 @@ typedef struct {
 } hashTable;
 
 /**
+* @defgroup symtable Symtable functions
+* Functions for working with Symtable
+* @{
+*/
+
+/**
  * @brief Initialises to and empty hash table with capacity = size
  *
  * @param size Hash table size
@@ -107,5 +113,9 @@ void TPrint(hashTable* hTab);
  * @return Hash value
  */
 unsigned long THashFunction(const char *string);
+
+/**
+ * @}
+ */
 
 #endif //VUT_FIT_IFJ2019_SYMTABLE_H

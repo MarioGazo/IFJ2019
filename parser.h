@@ -12,6 +12,12 @@
 #include "symtable.h"
 
 /**
+* @defgroup parser Parser functions
+* Functions for process input program
+* @{
+*/
+
+/**
  * @brief Start of syntactical analysis
  *
  * @param file Input program from STDIN
@@ -73,5 +79,9 @@ int term();
   * @return Pointer to item, or NULL if not found
   */
 hTabItem_t* isInLocalOrGlobalhTab(dynamicString_t name);
+
+/**
+ * @}
+ */
 
 #endif //VUT_FIT_IFJ2019_PARSER_H

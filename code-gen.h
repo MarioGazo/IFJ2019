@@ -46,7 +46,7 @@
     "\n# Built-in function - len"    \
     "\nLABEL $function_len"          \
     "\nPUSHFRAME"                    \
-    "\nSTRLEN GF@expr_result LF@%0"  \
+    "\nSTRLEN GF@$$expr_result LF@%0"  \
     "\nPOPFRAME"                     \
     "\nRETURN"
 
@@ -69,21 +69,21 @@
     "\nMOVE LF@$a LF@%2"                             \
     "\nADD LF@$a LF@$i LF@$a"						 \
     "\nDEFVAR LF@$char"						         \
-    "\nMOVE GF@expr_result string@"                  \
+    "\nMOVE GF@$$expr_result string@"                  \
     "\nLABEL $substr_return"                         \
     "\nLT LF@$bool LF@$i LF@$str_len"                \
     "\nJUMPIFEQ $final_return LF@$bool bool@false"   \
     "\nLT LF@$bool LF@$i LF@$a"                      \
     "\nJUMPIFEQ $final_return LF@$bool bool@false"   \
     "\nGETCHAR LF@$char LF@%0 LF@$i"                 \
-    "\nCONCAT GF@expr_result GF@expr_result LF@$char"\
+    "\nCONCAT GF@$$expr_result GF@$$expr_result LF@$char"\
     "\nADD LF@$i LF@$i int@1"                        \
     "\nJUMP $substr_return"                          \
     "\nLABEL $final_return"                          \
     "\nPOPFRAME"								     \
 	"\nRETURN"                                       \
     "\nLABEL $nones_return"                          \
-    "\nMOVE GF@expr_result string@None"              \
+    "\nMOVE GF@$$expr_result string@None"              \
 	"\nPOPFRAME"								     \
 	"\nRETURN"
 
@@ -92,7 +92,7 @@
     "\n# Built-in function - chr"       \
     "\nLABEL $function_chr"             \
     "\nPUSHFRAME"                       \
-    "\nINT2CHAR GF@expr_result LF@%0"   \
+    "\nINT2CHAR GF@$$expr_result LF@%0"   \
     "\nPOPFRAME"                        \
     "\nRETURN"
 
@@ -109,13 +109,19 @@
 	"\nSUB LF@$str_len LF@$str_len int@1"        \
 	"\nLT LF@$bool LF@$str_len LF@%0"            \
 	"\nJUMPIFEQ $none_return LF@$bool bool@true" \
-	"\nSTRI2INT GF@expr_result LF@%0 LF@%1"		 \
+	"\nSTRI2INT GF@$$expr_result LF@%0 LF@%1"		 \
     "\nPOPFRAME"								 \
 	"\nRETURN"                                   \
     "\nLABEL $none_return"                       \
-    "\nMOVE GF@expr_result string@None"          \
+    "\nMOVE GF@$$expr_result string@None"          \
 	"\nPOPFRAME"								 \
 	"\nRETURN"
+
+/**
+* @defgroup code_gen_1 Code generator functions
+* Functions generating instructions of IFJcode19
+* @{
+*/
 
 /**
  * @brief Sets dynamic string, which will be the output of analysis
@@ -134,6 +140,12 @@ void set_code_output(dynamicString_t* output, hashTable* global);
  * @return Error code
  */
 int code_write_out(int errorCode);
+
+/**
+ * @defgroup code_gen_2 Code generator - Main functions
+ * Functions creating begin and end of Main
+ * @{
+ */
 
 /**
  * @brief Creates IFJcode19 header
@@ -162,6 +174,16 @@ bool cg_main_scope();
  * @return If creation was successful
  */
 bool cg_code_footer();
+
+/**
+ * @}
+ */
+
+/**
+ * @defgroup code_gen_3 Code generator - Function functions
+ * Functions working with user defined and build in functions
+ * @{
+ */
 
 /**
  * @brief User defined functions - creates begging of definition
@@ -219,6 +241,10 @@ bool cg_fun_param_assign(unsigned int id, token_t actualToken, bool local);
 bool cg_fun_return();
 
 /**
+ * @}
+ */
+
+/**
  * @brief Assign the result of expression intro variable
  *
  * @param variable Name of variable in which will be result inserted
@@ -251,6 +277,12 @@ bool cg_var_declare(char* varName, dynamicString_t *in_string, bool local);
 bool cg_label(char* part_1, char* part_2, unsigned int id);
 
 /**
+ * @defgroup code_gen_4 Code generator - While functions
+ * Functions working with while loop
+ * @{
+ */
+
+/**
  * @brief While loop - creates begging of definition
  *
  * @param id Number part of label
@@ -267,6 +299,16 @@ bool cg_while_start(unsigned int id);
  * @return If creation was successful
  */
 bool cg_while_end(unsigned int id);
+
+/**
+ * @}
+ */
+
+/**
+ * @defgroup code_gen_5 Code generator - If & Else functions
+ * Functions working with If & Else statement
+ * @{
+ */
 
 /**
  * @brief If & Else - creates begging of definition
@@ -294,6 +336,10 @@ bool cg_if_else_part(unsigned int id);
  * @return If creation was successful
  */
 bool cg_if_end(unsigned int id);
+
+/**
+ * @}
+ */
 
 /**
  * @brief Create instruction print of value
@@ -332,6 +378,12 @@ bool cg_input(varType_t type);
  * @return If creation was successful
  */
 bool cg_type(varType_t type);
+
+/**
+ * @defgroup code_gen_6 Code generator - IFJcode19 stack functions
+ * Functions working with build in stack of IFJcode19
+ * @{
+ */
 
 /**
  * @brief Push value of variable intro IFJcode19 data stack
@@ -432,6 +484,10 @@ bool cg_rel_operation_stack(parserState_t operation);
 bool cg_clear_stack();
 
 /**
+ * @}
+ */
+
+/**
  * @brief Creates instruction for dynamic type detection in IFJcode19
  *
  * @param var Variable, in which will the type inserted
@@ -472,5 +528,9 @@ bool cg_jump(char* jump_type, char* flag_1_part, unsigned int flag_number, char*
  * @return If creation of instruction was successful
  */
 bool cg_LForGF(bool local);
+
+/**
+ * @}
+ */
 
 #endif //VUT_FIT_IFJ2019_CODE_GEN_H

@@ -123,6 +123,12 @@ typedef enum keywords {
 } keywords_t;
 
 /**
+* @defgroup scanner Scanner functions
+* Functions for scanning program and turn it intro tokens
+* @{
+*/
+
+/**
  * @brief Compares string to each keyword
  *
  * @param string String to be compared
@@ -174,5 +180,9 @@ unsigned int strToInt(const char* string, int base);
  * @param actualToken Token to be printed out.
  */
 void printToken(dynamic_stack_t* indentationStack, token_t actualToken);
+
+/**
+ * @}
+ */
 
 #endif //VUT_FIT_IFJ2019_SCANNER_H

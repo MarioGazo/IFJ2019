@@ -11,6 +11,12 @@
 #include <stdbool.h>
 
 /**
+* @defgroup dynamic_string Dynamic string functions
+* Functions for working with Dynamic string
+* @{
+*/
+
+/**
  * @struct Dynamic string structure
  */
 typedef struct {
@@ -65,5 +71,9 @@ char* dynamicStringGetText(dynamicString_t string);
  * @return Result of comparison of strings
  */
 int dynamicStringStrCmp(dynamicString_t string1, dynamicString_t string2);
+
+/**
+ * @}
+ */
 
 #endif //VUT_FIT_IFJ2019_DYNAMIC_STRING_H

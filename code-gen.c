@@ -43,13 +43,13 @@ bool cg_code_header()
     ADD_INST(".IFJcode19");
     ADD_INST("# Program start");
 
-    ADD_INST("DEFVAR GF@expr_result");
-    ADD_INST("DEFVAR GF@op_1");
-    ADD_INST("DEFVAR GF@op_2");
-    ADD_INST("DEFVAR GF@typ_op_1");
-    ADD_INST("DEFVAR GF@concat");
-    ADD_INST("DEFVAR GF@typ_op_2");
-    ADD_INST("DEFVAR GF@expr_result_type");
+    ADD_INST("DEFVAR GF@$$expr_result");
+    ADD_INST("DEFVAR GF@$$op_1");
+    ADD_INST("DEFVAR GF@$$op_2");
+    ADD_INST("DEFVAR GF@$$typ_op_1");
+    ADD_INST("DEFVAR GF@$$concat");
+    ADD_INST("DEFVAR GF@$$typ_op_2");
+    ADD_INST("DEFVAR GF@$$expr_result_type");
 
     ADD_INST("JUMP $$main");
 
@@ -166,7 +166,7 @@ bool cg_fun_return()
 bool cg_assign_expr_result(char* variable, bool local) {
     ADD_CODE("MOVE ");
     if (cg_LForGF(local) == false) return false;
-    ADD_CODE(variable); ADD_CODE(" GF@expr_result");
+    ADD_CODE(variable); ADD_CODE(" GF@$$expr_result");
     ADD_CODE("\n");
 
     return true;
@@ -195,22 +195,22 @@ bool cg_label(char* part_1, char* part_2, unsigned int id)
 
 bool cg_while_start(unsigned int id)
 {
-    cg_type_of_symb("expr_result_type", "expr_result");
-    cg_jump("JUMPIFEQ", "WHILE_bool", id, "", "GF@expr_result_type", "string@bool");
-    cg_jump("JUMPIFEQ", "WHILE_int", id, "", "GF@expr_result_type", "string@int");
+    cg_type_of_symb("$$expr_result_type", "$$expr_result");
+    cg_jump("JUMPIFEQ", "$WHILE_bool", id, "", "GF@$$expr_result_type", "string@bool");
+    cg_jump("JUMPIFEQ", "$WHILE_int", id, "", "GF@$$expr_result_type", "string@int");
 
     cg_exit(4);
 
-    cg_label("WHILE_int", "", id);
-    cg_jump("JUMPIFEQ", "WHILE_int0", id, "", "GF@expr_result", "int@0");
-    ADD_CODE("MOVE GF@expr_result bool@true\n");
-    cg_jump("JUMP", "WHILE_bool", id, "", "", "");
-    cg_label("WHILE_int0", "", id);
-    ADD_CODE("MOVE GF@expr_result bool@false\n");
+    cg_label("$WHILE_int", "", id);
+    cg_jump("JUMPIFEQ", "$WHILE_int0", id, "", "GF@$$expr_result", "int@0");
+    ADD_CODE("MOVE GF@$$expr_result bool@true\n");
+    cg_jump("JUMP", "$WHILE_bool", id, "", "", "");
+    cg_label("$WHILE_int0", "", id);
+    ADD_CODE("MOVE GF@$$expr_result bool@false\n");
 
-    cg_label("WHILE_bool", "", id);
+    cg_label("$WHILE_bool", "", id);
 
-    ADD_CODE("JUMPIFNEQ $"); ADD_CODE("WHILE");ADD_CODE("A"); ADD_CODE_INT(id); ADD_CODE(" GF@expr_result bool@true"); ADD_CODE("\n");
+    ADD_CODE("JUMPIFNEQ $"); ADD_CODE("WHILE");ADD_CODE("A"); ADD_CODE_INT(id); ADD_CODE(" GF@$$expr_result bool@true"); ADD_CODE("\n");
 
     return true;
 }
@@ -225,21 +225,21 @@ bool cg_while_end(unsigned int id)
 
 bool cg_if_start(unsigned int id)
 {
-    cg_type_of_symb("expr_result_type", "expr_result");
-    cg_jump("JUMPIFEQ", "IF_bool", id, "", "GF@expr_result_type", "string@bool");
-    cg_jump("JUMPIFEQ", "IF_int", id, "", "GF@expr_result_type", "string@int");
+    cg_type_of_symb("$$expr_result_type", "$$expr_result");
+    cg_jump("JUMPIFEQ", "$IF_bool", id, "", "GF@$$expr_result_type", "string@bool");
+    cg_jump("JUMPIFEQ", "$IF_int", id, "", "GF@$$expr_result_type", "string@int");
 
     cg_exit(4);
 
-    cg_label("IF_int", "", id);
-    cg_jump("JUMPIFEQ", "IF_int0", id, "", "GF@expr_result", "int@0");
-    ADD_CODE("MOVE GF@expr_result bool@false\n");
-    cg_jump("JUMP", "IF_bool", id, "", "", "");
-    cg_label("IF_int0", "", id);
-    ADD_CODE("MOVE GF@expr_result bool@true\n");
+    cg_label("$IF_int", "", id);
+    cg_jump("JUMPIFEQ", "$IF_int0", id, "", "GF@$$expr_result", "int@0");
+    ADD_CODE("MOVE GF@$$expr_result bool@false\n");
+    cg_jump("JUMP", "$IF_bool", id, "", "", "");
+    cg_label("$IF_int0", "", id);
+    ADD_CODE("MOVE GF@$$expr_result bool@true\n");
 
-    cg_label("IF_bool", "", id);
-    ADD_CODE("JUMPIFEQ $"); ADD_CODE("IF"); ADD_CODE_INT(id); ADD_CODE(" GF@expr_result bool@false\n");
+    cg_label("$IF_bool", "", id);
+    ADD_CODE("JUMPIFEQ $"); ADD_CODE("IF"); ADD_CODE_INT(id); ADD_CODE(" GF@$$expr_result bool@false\n");
     return true;
 }
 
@@ -330,7 +330,7 @@ bool cg_type(varType_t type) {
 // READ <var> <type>
 bool cg_input(varType_t type) {
     ADD_INST("\n# Reading variable");
-    ADD_CODE("READ GF@expr_result ");
+    ADD_CODE("READ GF@$$expr_result ");
     if (cg_type(type) == false) return false; ADD_CODE("\n");
 
     return true;
@@ -449,16 +449,16 @@ bool cg_rel_operation_stack(parserState_t operation) {
             ADD_INST("LTS");            return true;
         case SmallerOrEqual:
             ADD_INST("LTS");
-            cg_stack_push_gl("op_2");
-            cg_stack_push_gl("op_1");
+            cg_stack_push_gl("$$op_2");
+            cg_stack_push_gl("$$op_1");
             ADD_INST("EQS");
             ADD_INST("ORS");            return true;
         case Bigger:
             ADD_INST("GTS");            return true;
         case BiggerOrEqual:
             ADD_INST("GTS");
-            cg_stack_push_gl("op_2");
-            cg_stack_push_gl("op_1");
+            cg_stack_push_gl("$$op_2");
+            cg_stack_push_gl("$$op_1");
             ADD_INST("EQS");
             ADD_INST("ORS");            return true;
         case Equals:
@@ -496,14 +496,14 @@ bool cg_jump(char* jump_type, char* flag_1_part, unsigned int flag_number, char*
 // Hlavná funkcia pre vykonávanie matematických operácií nad operandmi, zahŕňa ja konkatenáciu stringov
 bool cg_operation(unsigned int operation, unsigned int id){
     ADD_CODE("\n");
-    cg_jump("JUMPIFNEQ", "$operation_m", id, "", "GF@typ_op_1", "string@string");
+    cg_jump("JUMPIFNEQ", "$operation_m", id, "", "GF@$$typ_op_1", "string@string");
 
-    cg_stack_pop_id("op_2", false);
-    cg_stack_pop_id("op_1", false);
+    cg_stack_pop_id("$$op_2", false);
+    cg_stack_pop_id("$$op_1", false);
 
-    ADD_CODE("CONCAT GF@expr_result GF@op_1 GF@op_2\n");
+    ADD_CODE("CONCAT GF@$$expr_result GF@$$op_1 GF@$$op_2\n");
 
-    cg_stack_push_gl("expr_result");
+    cg_stack_push_gl("$$expr_result");
 
     cg_jump("JUMP", "$operation_f", id, "", "", "");
 

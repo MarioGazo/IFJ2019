@@ -20,6 +20,12 @@
 #include "scanner.h"
 
 /**
+* @defgroup expression Expression functions
+* Functions for process expressions
+* @{
+*/
+
+/**
  * @brief Main function for processing expressions
  *
  * @param lIn Input code file of IFJ19
@@ -109,5 +115,9 @@ int cg_count(parserState_t operation, unsigned int type_op_1, unsigned int type_
  * @param token Token to be inserted
  */
 bool cg_stack_p(token_t* token);
+
+/**
+ * @}
+ */
 
 #endif //VUT_FIT_IFJ2019_EXPRESSION_H

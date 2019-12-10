@@ -1,0 +1,9 @@
+# Doxyfile 1.8.9.1
+# Implementation of imperative language IFJ2019 compiler
+# authors: Mario Gazo (xgazom00), Juraj Lazur (xlazur00), Pavol Dubovec (xdubov02), Vojtìch Golda (xgolda02)
+# Documentation file
+
+PROJECT_NAME = IFJ2019_compiler
+OUTPUT_DIRECTORY = documentation
+INPUT =
+GENERATE_LATEX = NO

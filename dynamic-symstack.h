@@ -15,6 +15,12 @@
 #include <stdio.h>
 
 /**
+* @defgroup dynamic_symbol_stack Dynamic symbol stack functions
+* Functions for working with Dynamic symbol stack
+* @{
+*/
+
+/**
  * @struct Symbol token
  *
  * Symbol_token represents one item, token, in dynamic symbol stack
@@ -116,5 +122,9 @@ token_t * sym_stackTraverse(dynamic_symbol_stack_t * stack, int howMuch);
  * @return Whether the store was successful
  */
 void sym_stackDeepInsert(dynamic_symbol_stack_t * stack, token_t * token, int howMuch);
+
+/**
+ * @}
+ */
 
 #endif //VUT_FIT_IFJ2019_DYNAMIC_SYM_STACK_H

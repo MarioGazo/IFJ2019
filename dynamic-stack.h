@@ -11,6 +11,12 @@
 #include <stdbool.h>
 
 /**
+* @defgroup dynamic_stack Dynamic stack functions
+* Functions for working with Dynamic stack
+* @{
+*/
+
+/**
  * @struct Dynamic stack
  */
 typedef struct dynamic_stack {
@@ -65,4 +71,9 @@ void stackFree(dynamic_stack_t* s);
  * @return value on top of the dynamic stack
  */
 int stackTop(dynamic_stack_t s);
+
+/**
+ * @}
+ */
+
 #endif //VUT_FIT_IFJ2019_DYNAMIC_STACK_H
