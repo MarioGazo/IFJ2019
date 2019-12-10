@@ -5,5 +5,5 @@
 
 PROJECT_NAME = IFJ2019_compiler
 OUTPUT_DIRECTORY = documentation
-INPUT =
+INPUT = code-gen.h dynamic-stack.h dynamic-string.h dynamic-symstack.h error.h expression.h parser.h scanner.h symtable.h
 GENERATE_LATEX = NO
