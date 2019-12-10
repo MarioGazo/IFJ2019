@@ -19,26 +19,29 @@
 
 #define MAX_NUMBER_OF_DIGITS 45
 
-#define ADD_INST(_inst) \
+// Makrá umožňujúce zápis inštrukcií do cieľového kódu
+#define ADD_INST(_inst)     \
     if(!dynamicStringAddString(&code,(_inst "\n"))) return false
 
-#define ADD_CODE(_code) \
+#define ADD_CODE(_code)     \
     if(!dynamicStringAddString(&code, (_code))) return false
 
-#define ADD_CODE_INT(_code) \
-    do {                                        \
-        char string[MAX_NUMBER_OF_DIGITS];      \
+#define ADD_CODE_INT(_code)                    \
+    do {                                       \
+        char string[MAX_NUMBER_OF_DIGITS];     \
         sprintf(string,"%u",_code);            \
-        ADD_CODE(string);                       \
+        ADD_CODE(string);                      \
     } while (0)
 
-#define ADD_CODE_DOUBLE(_code) \
+#define ADD_CODE_DOUBLE(_code)                  \
     do {                                        \
         char string[MAX_NUMBER_OF_DIGITS];      \
-        sprintf(string,"float@%a",_code);            \
+        sprintf(string,"float@%a",_code);       \
         ADD_CODE(string);                       \
     } while (0)
 
+// Makrá pre vstavané funkcie
+// Vstavaná funkcia len
 #define FUNCTION_LEN                 \
     "\n# Built-in function - len"    \
     "\nLABEL $function_len"          \
@@ -47,42 +50,44 @@
     "\nPOPFRAME"                     \
     "\nRETURN"
 
-#define FUNCTION_SUBSTR                                                        \
-    "\n# Built-in function - substr"       \
-    "\nLABEL $function_substr"             \
-	"\nPUSHFRAME"                                \
-	"\nDEFVAR LF@$bool"						 \
-	"\nLT LF@$bool int@0 LF@%1"                                \
-    "\nJUMPIFEQ $nones_return LF@$bool bool@false"         \
-	"\nDEFVAR LF@$str_len"						 \
-	"\nSTRLEN LF@$str_len LF@%0"                 \
-	"\nSUB LF@$str_len LF@$str_len int@1"                    \
-	"\nLT LF@$bool LF@%1 LF@$str_len"                                \
-    "\nJUMPIFEQ $nones_return LF@$bool bool@false"         \
-	"\nDEFVAR LF@$i"						 \
-	"\nDEFVAR LF@$a"						 \
-    "\nMOVE LF@$i LF@%1"    \
-    "\nMOVE LF@$a LF@%2"    \
+// Vstavaná funkcia substr
+#define FUNCTION_SUBSTR                              \
+    "\n# Built-in function - substr"                 \
+    "\nLABEL $function_substr"                       \
+	"\nPUSHFRAME"                                    \
+	"\nDEFVAR LF@$bool"						         \
+	"\nLT LF@$bool int@0 LF@%1"                      \
+    "\nJUMPIFEQ $nones_return LF@$bool bool@false"   \
+	"\nDEFVAR LF@$str_len"						     \
+	"\nSTRLEN LF@$str_len LF@%0"                     \
+	"\nSUB LF@$str_len LF@$str_len int@1"            \
+	"\nLT LF@$bool LF@%1 LF@$str_len"                \
+    "\nJUMPIFEQ $nones_return LF@$bool bool@false"   \
+	"\nDEFVAR LF@$i"						         \
+	"\nDEFVAR LF@$a"						         \
+    "\nMOVE LF@$i LF@%1"                             \
+    "\nMOVE LF@$a LF@%2"                             \
     "\nADD LF@$a LF@$i LF@$a"						 \
-    "\nDEFVAR LF@$char"						 \
-    "\nMOVE GF@expr_result string@"          \
-    "\nLABEL $substr_return"\
-    "\nLT LF@$bool LF@$i LF@$str_len"                                \
-    "\nJUMPIFEQ $final_return LF@$bool bool@false"\
-    "\nLT LF@$bool LF@$i LF@$a"                                \
-    "\nJUMPIFEQ $final_return LF@$bool bool@false"\
-    "\nGETCHAR LF@$char LF@%0 LF@$i"                                         \
-    "\nCONCAT GF@expr_result GF@expr_result LF@$char"             \
-    "\nADD LF@$i LF@$i int@1"                                            \
-    "\nJUMP $substr_return"               \
-    "\nLABEL $final_return"               \
-    "\nPOPFRAME"								 \
-	"\nRETURN"                                   \
-    "\nLABEL $nones_return"                       \
-    "\nMOVE GF@expr_result string@None"          \
-	"\nPOPFRAME"								 \
+    "\nDEFVAR LF@$char"						         \
+    "\nMOVE GF@expr_result string@"                  \
+    "\nLABEL $substr_return"                         \
+    "\nLT LF@$bool LF@$i LF@$str_len"                \
+    "\nJUMPIFEQ $final_return LF@$bool bool@false"   \
+    "\nLT LF@$bool LF@$i LF@$a"                      \
+    "\nJUMPIFEQ $final_return LF@$bool bool@false"   \
+    "\nGETCHAR LF@$char LF@%0 LF@$i"                 \
+    "\nCONCAT GF@expr_result GF@expr_result LF@$char"\
+    "\nADD LF@$i LF@$i int@1"                        \
+    "\nJUMP $substr_return"                          \
+    "\nLABEL $final_return"                          \
+    "\nPOPFRAME"								     \
+	"\nRETURN"                                       \
+    "\nLABEL $nones_return"                          \
+    "\nMOVE GF@expr_result string@None"              \
+	"\nPOPFRAME"								     \
 	"\nRETURN"
 
+// Vstavaná funkcia chr
 #define FUNCTION_CHR                    \
     "\n# Built-in function - chr"       \
     "\nLABEL $function_chr"             \
@@ -91,18 +96,19 @@
     "\nPOPFRAME"                        \
     "\nRETURN"
 
+// Vstavaná funkcia ord
 #define FUNCTION_ORD                             \
 	"\n# Built-in function - ord"				 \
 	"\nLABEL $function_ord"						 \
-	"\nPUSHFRAME"    \
-    "\nDEFVAR LF@$bool"						 \
-	"\nLT LF@$bool int@0 LF@%0"                                \
-    "\nJUMPIFEQ $none_return LF@$bool bool@true"         \
+	"\nPUSHFRAME"                                \
+    "\nDEFVAR LF@$bool"						     \
+	"\nLT LF@$bool int@0 LF@%0"                  \
+    "\nJUMPIFEQ $none_return LF@$bool bool@true" \
 	"\nDEFVAR LF@$str_len"						 \
 	"\nSTRLEN LF@$str_len LF@%1"                 \
-	"\nSUB LF@$str_len LF@$str_len int@1"                    \
-	"\nLT LF@$bool LF@$str_len LF@%0"                                \
-	"\nJUMPIFEQ $none_return LF@$bool bool@true"         \
+	"\nSUB LF@$str_len LF@$str_len int@1"        \
+	"\nLT LF@$bool LF@$str_len LF@%0"            \
+	"\nJUMPIFEQ $none_return LF@$bool bool@true" \
 	"\nSTRI2INT GF@expr_result LF@%0 LF@%1"		 \
     "\nPOPFRAME"								 \
 	"\nRETURN"                                   \
@@ -112,173 +118,359 @@
 	"\nRETURN"
 
 /**
- * @brief Sets dynamic string for output
+ * @brief Sets dynamic string, which will be the output of analysis
+ *
+ * @param output Dynamic string with instructions generated by analysis
+ * @param global Global symbol table, it is use in internal CodeGenerator functions
+ *
  */
 void set_code_output(dynamicString_t* output, hashTable* global);
 
 /**
  * @brief Print out dynamic string to file
  *
+ * @param errorCode Error code from analysis
+ *
  * @return Error code
  */
 int code_write_out(int errorCode);
 
 /**
- * @brief Code header
+ * @brief Creates IFJcode19 header
+ *
+ * @return If creation was successful
  */
 bool cg_code_header();
 
 /**
- * @brief Built in functions definition
+ * @brief Inserts Build-in functions of IFJcode19
+ *
+ * @return If insertion was successful
  */
 bool cg_define_b_i_functions();
 
 /**
- * @brief Main scope
+ * @brief Creates IFJcode19 program body start
+ *
+ * @return If creation was successful
  */
 bool cg_main_scope();
 
 /**
- * @brief Main scope end
+ * @brief Creates IFJcode19 program body end
+ *
+ * @return If creation was successful
  */
 bool cg_code_footer();
 
 /**
- * @brief Function start label
+ * @brief User defined functions - creates begging of definition
+ *
+ * @param id_funkcie User defined function name
+ *
+ * @return If creation was successful
  */
 bool cg_fun_start(char *id_funkcie);
 
 /**
- * @brief Function return and local frame destruction
+ * @brief User defined functions - creates ending of definition
+ *
+ * @param id_funkcie User defined function name
+ *
+ * @return If creation was successful
  */
 bool cg_fun_end(char *id_funkcie);
 
 /**
- * @brief Jump to function label with option of return
+ * @brief Creates call instruction of function
+ *
+ * @param id_funkcie Name of function to be call
+ *
+ * @return If creation was successful
  */
 bool cg_fun_call(char *id_funkcie);
 
-bool cg_assign_expr_result(char* variable, bool local);
-//todo komentár
-//bool cg_fun_retval_assign(char *ID_val_l, varType_t typ_l, varType_t navratovy_typ);
-
 /**
- * @brief Define local parameter of function
+ * @brief Creates definition of function parameter
+ *
+ * @param param Name of parameter to be defined
+ * @param num Number of functions parameter
+ *
+ * @return If creation was successful
  */
 bool cg_fun_param_declare(char* param, int num);
 
 /**
  * @brief Assign value to parameter of function
+ *
+ * @param id Number of functions parameter
+ * @param actualToken The variable or value, which will be assign to parameter
+ * @param local Position of functions parameter, it is use in internal CodeGenerator functions
+ *
+ * @return If creation of assign was successful
  */
-bool cg_fun_param_assign(unsigned int uni, token_t actualToken, bool local);
-//todo komentár
-//bool cg_fun_convert_passed_param(varType_t z, varType_t do_, int index);
-//todo komentár
-//bool cg_fun_pass_param(token_t token, int index);
+bool cg_fun_param_assign(unsigned int id, token_t actualToken, bool local);
 
 /**
- * @brief Function return and popframe
+ * @brief Creates return instruction of function
+ *
+ * @return If creation was successful
  */
 bool cg_fun_return();
 
 /**
- * @brief Variable definition
+ * @brief Assign the result of expression intro variable
  *
- * @param ID_premenna Variable name
- * @param inFunc Whether the variable is local or global
+ * @param variable Name of variable in which will be result inserted
+ * @param local Position of variable, it is use in internal CodeGenerator functions
+ *
+ * @return If creation was successful
+ */
+bool cg_assign_expr_result(char* variable, bool local);
+
+/**
+ * @brief Create variable definition
+ *
+ * @param varName Name of new variable
+ * @param in_string In which dynamicString will be variable signed, it is use in internal CodeGenerator functions
+ * @param local Position of variable, it is use in internal CodeGenerator functions
+ *
+ * @return If creation was successful
  */
 bool cg_var_declare(char* varName, dynamicString_t *in_string, bool local);
+
 /**
- * @brief Label for jumping
+ * @brief Create label for program jump
  *
- * @param funcName Function name
+ * @param part_1 1. Part of label
+ * @param part_2 2. Part of label
+ * @param id Number part of label
+ *
+ * @return If creation was successful
  */
-bool cg_label(char* funcName, char* reverse, unsigned int uni);
+bool cg_label(char* part_1, char* part_2, unsigned int id);
 
 /**
- * @brief While loop head and label
+ * @brief While loop - creates begging of definition
+ *
+ * @param id Number part of label
+ *
+ * @return If creation was successful
  */
-bool cg_while_start(unsigned int uni);
+bool cg_while_start(unsigned int id);
 
 /**
- * @brief While loop tail and label
+ * @brief While loop - creates ending of definition
+ *
+ * @param id Number part of label
+ *
+ * @return If creation was successful
  */
-bool cg_while_end(unsigned int uni);
+bool cg_while_end(unsigned int id);
 
 /**
- * @brief If statement
+ * @brief If & Else - creates begging of definition
+ *
+ * @param id Number part of label
+ *
+ * @return If creation was successful
  */
-bool cg_if_start(unsigned int uni);
+bool cg_if_start(unsigned int id);
 
 /**
- * @brief Else statement
+ * @brief If & Else - creates middle part between if and else
+ *
+ * @param id Number part of label
+ *
+ * @return If creation was successful
  */
-bool cg_if_else_part(unsigned int uni);
+bool cg_if_else_part(unsigned int id);
 
 /**
- * @brief End of if & else statement
+ * @brief If & Else - creates ending of definition
+ *
+ * @param id Number part of label
+ *
+ * @return If creation was successful
  */
-bool cg_if_end(unsigned int uni);
+bool cg_if_end(unsigned int id);
 
 /**
- * @brief Writes out value
+ * @brief Create instruction print of value
+ *
+ * @param value Value to be printed
+ * @param typ Type of value
+ *
+ * @return If creation was successful
  */
-bool cg_print_literal(char* value, varType_t typ);
+bool cg_print_literal(char* value, varType_t type);
 
-bool cg_print_id(hTabItem_t* varRecord, bool global);
 /**
- * @brief Reads value
+ * @brief Create instruction print of variable
+ *
+ * @param varRecord Variable to be printed
+ * @param local Position of variable, it is use in internal CodeGenerator functions
+ *
+ * @return If creation was successful
+ */
+bool cg_print_id(hTabItem_t* varRecord, bool local);
+
+/**
+ * @brief Create instruction read of value
+ *
+ * @param typ Type of value
+ *
+ * @return If creation was successful
  */
 bool cg_input(varType_t type);
 
 /**
- * @brief Type enum to text
+ * @brief Create type of value
+ *
+ * @param type Type of value
+ *
+ * @return If creation was successful
  */
 bool cg_type(varType_t type);
 
 /**
- * @brief Assigns return value of built in function to variable
+ * @brief Push value of variable intro IFJcode19 data stack
+ *
+ * @param symb Variable, which value will be pushed
+ *
+ * @return If creation of push instruction was successful
  */
-bool cg_frame_assign_retval(hTabItem_t variable, bool local);
-
-bool cg_math_operation(parserState_t operation, char* var, char* op1, char* op2);
-
-bool cg_math_operation_stack(parserState_t operation);
-
 bool cg_stack_push_id(char* symb);
 
+/**
+ * @brief Push value of variable intro IFJcode19 data stack
+ *
+ * @param symb Variable, which value will be pushed, its always global variable, it is use in internal CodeGenerator functions
+ *
+ * @return If creation of push instruction was successful
+ */
 bool cg_stack_push_gl(char* symb);
 
+/**
+ * @brief Push value of variable intro IFJcode19 data stack
+ *
+ * @param type Type of value, which will be pushed
+ * @param symb Value to be pushed
+ *
+ * @return If creation of push instruction was successful
+ */
 bool cg_stack_push_literal(varType_t type, char* val);
 
-bool cg_stack_push_int(unsigned int val);
+/**
+ * @brief Push int, intro IFJcode19 data stack
+ *
+ * @param val Value to be pushed
+ *
+ * @return If creation of push instruction was successful
+ */
+bool cg_stack_push_int(int val);
 
+/**
+ * @brief Push double, float, intro IFJcode19 data stack
+ *
+ * @param val Value to be pushed
+ *
+ * @return If creation of push instruction was successful
+ */
 bool cg_stack_push_double(double val);
 
-bool cg_clear_stack();
-
-bool cg_cat_literal(char* var, char* op1, char* op2);
-
-bool cg_cat_id(char* var, bool local1, char* op1, bool local2, char* op2, bool local3);
-
+/**
+ * @brief Pop from top of IFJcode19 data stack intro variable
+ *
+ * @param var Variable name
+ * @param symb Variable, in which will be value pop
+ *
+ * @return If creation of pop instruction was successful
+ */
 bool cg_stack_pop_id(char* var, bool local);
 
-bool cg_type_of_symb(char* var, char* symb);
-
-bool cg_flag_gen(char* a_part, unsigned int number, char* b_part);
-
+/**
+ * @brief Creates instruction of conversion from int to float of the top item of IFJcode19 data stack
+ *
+ * @return If creation of instruction was successful
+ */
 bool cg_stack_int2float();
 
-bool cg_exit(int errorNum);
+/**
+ * @brief Main operation function in expression
+ *
+ * @param operation Type of operation
+ * @param id Number of operation, it is use in internal CodeGenerator functions
+ *
+ * @return If creation of instruction was successful
+ */
+bool cg_operation(unsigned int operation, unsigned int id);
 
-bool cg_jump(char* jump_type, char* flag_1_part, unsigned int flag_number, char* flag_2_part, char* op_1, char* op_2);
+/**
+ * @brief Creates math operation of the two top items of IFJcode19 data stack
+ *
+ * @param operation Type of math operation
+ *
+ * @return If creation of operation was successful
+ */
+bool cg_math_operation_stack(parserState_t operation);
 
+/**
+ * @brief Creates relation operation of the two top items of IFJcode19 data stack
+ *
+ * @param operation Type of relation operation
+ *
+ * @return If creation of operation was successful
+ */
 bool cg_rel_operation_stack(parserState_t operation);
 
-bool cg_move(char* id_to_return, char* type);
+/**
+ * @brief Clears IFJcode19 data stack
+ *
+ * @return If creation of instruction was successful
+ */
+bool cg_clear_stack();
 
-bool cg_two_strings(unsigned int operation, unsigned int flag);
+/**
+ * @brief Creates instruction for dynamic type detection in IFJcode19
+ *
+ * @param var Variable, in which will the type inserted
+ * @param symb Variable for type detection
+ *
+ * @return If creation of instruction was successful
+ */
+bool cg_type_of_symb(char* var, char* symb);
 
+/**
+ * @brief Creates IFJcode19 error exit instruction
+ *
+ * @param errorNum Number of error, which will be printed on stderr in case of exit
+ *
+ * @return If creation of instruction was successful
+ */
+bool cg_exit(int errorNum);
+
+/**
+ * @brief Creates jump instruction in IFJcode19
+ *
+ * @param jump_type Type of jump instruction
+ * @param flag_1_part 1. Part of label, on which will be jump
+ * @param flag_number 2. Part of label
+ * @param flag_2_part 3. Part of label
+ * @param op_1 First operand with type to compare
+ * @param op_2 Second operand with type to compare
+ *
+ * @return If creation of instruction was successful
+ */
+bool cg_jump(char* jump_type, char* flag_1_part, unsigned int flag_number, char* flag_2_part, char* op_1, char* op_2);
+
+/**
+ * @brief Adds type of frame instruction, it is use in internal CodeGenerator functions
+ *
+ * @param local Position of variable, it is use in internal CodeGenerator functions
+ *
+ * @return If creation of instruction was successful
+ */
 bool cg_LForGF(bool local);
 
 #endif //VUT_FIT_IFJ2019_CODE_GEN_H

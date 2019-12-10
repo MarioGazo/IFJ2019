@@ -13,6 +13,7 @@
 
 // Global code variable
 dynamicString_t code;
+// Global Symbol table
 hashTable* global_table;
 
 void set_code_output(dynamicString_t* output, hashTable* global) {
@@ -21,22 +22,17 @@ void set_code_output(dynamicString_t* output, hashTable* global) {
 }
 
 int code_write_out(int errorCode) {
-    FILE * output;
-    // Ak je program korektný, je výsledný kód vypísaný do súboru
+    // Ak bol program korektný, je výsledný kód IFJcode19 vypísaný na stdout
     if (errorCode == PROG_OK) {
-        output = fopen("prg.out","w+");
 
-        // Zlyhanie pri tvorbe súboru na výpis
-        if (output == NULL) {
-            return INTERNAL_ERR;
-        }
-
+        // Zápis na stdout
         fprintf(stdout, "%s", code.text);
+        // Uvoľnenie DynamicString
         dynamicStringFree(&code);
-        fclose(output);
 
         return PROG_OK;
     } else {
+        // V prípade, že vstupný program nebol korektný, nie je vypísané nič
         dynamicStringFree(&code);
         return errorCode;
     }
@@ -113,9 +109,9 @@ bool cg_fun_param_declare(char* param, int num)
     return true;
 }
 
-bool cg_fun_param_assign(unsigned int uni, token_t actualToken, bool local) {
-    ADD_CODE("DEFVAR TF@%"); ADD_CODE_INT(uni); ADD_CODE("\n");
-    ADD_CODE("MOVE TF@%"); ADD_CODE_INT(uni); ADD_CODE(" ");
+bool cg_fun_param_assign(unsigned int id, token_t actualToken, bool local) {
+    ADD_CODE("DEFVAR TF@%"); ADD_CODE_INT(id); ADD_CODE("\n");
+    ADD_CODE("MOVE TF@%"); ADD_CODE_INT(id); ADD_CODE(" ");
 
     switch (actualToken.tokenType) {
         case Identifier:
@@ -191,84 +187,84 @@ bool cg_var_declare(char* varName, dynamicString_t *in_string, bool local)
     return true;
 }
 
-bool cg_label(char* funcName, char* reverse, unsigned int uni)
+bool cg_label(char* part_1, char* part_2, unsigned int id)
 {
-    ADD_CODE("LABEL $"); ADD_CODE(funcName); ADD_CODE(reverse); ADD_CODE_INT(uni); ADD_CODE("\n");
+    ADD_CODE("LABEL $"); ADD_CODE(part_1); ADD_CODE(part_2); ADD_CODE_INT(id); ADD_CODE("\n");
     return true;
 }
 
-bool cg_while_start(unsigned int uni)
+bool cg_while_start(unsigned int id)
 {
     cg_type_of_symb("expr_result_type", "expr_result");
-    cg_jump("JUMPIFEQ", "WHILE_bool", uni, "", "GF@expr_result_type", "string@bool");
-    cg_jump("JUMPIFEQ", "WHILE_int", uni, "", "GF@expr_result_type", "string@int");
+    cg_jump("JUMPIFEQ", "WHILE_bool", id, "", "GF@expr_result_type", "string@bool");
+    cg_jump("JUMPIFEQ", "WHILE_int", id, "", "GF@expr_result_type", "string@int");
 
     cg_exit(4);
 
-    cg_label("WHILE_int", "", uni);
-    cg_jump("JUMPIFEQ", "WHILE_int0", uni, "", "GF@expr_result", "int@0");
+    cg_label("WHILE_int", "", id);
+    cg_jump("JUMPIFEQ", "WHILE_int0", id, "", "GF@expr_result", "int@0");
     ADD_CODE("MOVE GF@expr_result bool@true\n");
-    cg_jump("JUMP", "WHILE_bool", uni, "", "", "");
-    cg_label("WHILE_int0", "", uni);
+    cg_jump("JUMP", "WHILE_bool", id, "", "", "");
+    cg_label("WHILE_int0", "", id);
     ADD_CODE("MOVE GF@expr_result bool@false\n");
 
-    cg_label("WHILE_bool", "", uni);
+    cg_label("WHILE_bool", "", id);
 
-    ADD_CODE("JUMPIFNEQ $"); ADD_CODE("WHILE");ADD_CODE("A"); ADD_CODE_INT(uni); ADD_CODE(" GF@expr_result bool@true"); ADD_CODE("\n");
+    ADD_CODE("JUMPIFNEQ $"); ADD_CODE("WHILE");ADD_CODE("A"); ADD_CODE_INT(id); ADD_CODE(" GF@expr_result bool@true"); ADD_CODE("\n");
 
     return true;
 }
 
 
-bool cg_while_end(unsigned int uni)
+bool cg_while_end(unsigned int id)
 {
-    ADD_CODE("JUMP $"); ADD_CODE("WHILE"); ADD_CODE_INT(uni); ADD_CODE("\n");
+    ADD_CODE("JUMP $"); ADD_CODE("WHILE"); ADD_CODE_INT(id); ADD_CODE("\n");
 
     return true;
 }
 
-bool cg_if_start(unsigned int uni)
+bool cg_if_start(unsigned int id)
 {
     cg_type_of_symb("expr_result_type", "expr_result");
-    cg_jump("JUMPIFEQ", "IF_bool", uni, "", "GF@expr_result_type", "string@bool");
-    cg_jump("JUMPIFEQ", "IF_int", uni, "", "GF@expr_result_type", "string@int");
+    cg_jump("JUMPIFEQ", "IF_bool", id, "", "GF@expr_result_type", "string@bool");
+    cg_jump("JUMPIFEQ", "IF_int", id, "", "GF@expr_result_type", "string@int");
 
     cg_exit(4);
 
-    cg_label("IF_int", "", uni);
-    cg_jump("JUMPIFEQ", "IF_int0", uni, "", "GF@expr_result", "int@0");
+    cg_label("IF_int", "", id);
+    cg_jump("JUMPIFEQ", "IF_int0", id, "", "GF@expr_result", "int@0");
     ADD_CODE("MOVE GF@expr_result bool@false\n");
-    cg_jump("JUMP", "IF_bool", uni, "", "", "");
-    cg_label("IF_int0", "", uni);
+    cg_jump("JUMP", "IF_bool", id, "", "", "");
+    cg_label("IF_int0", "", id);
     ADD_CODE("MOVE GF@expr_result bool@true\n");
 
-    cg_label("IF_bool", "", uni);
-    ADD_CODE("JUMPIFEQ $"); ADD_CODE("IF"); ADD_CODE_INT(uni); ADD_CODE(" GF@expr_result bool@false\n");
+    cg_label("IF_bool", "", id);
+    ADD_CODE("JUMPIFEQ $"); ADD_CODE("IF"); ADD_CODE_INT(id); ADD_CODE(" GF@expr_result bool@false\n");
     return true;
 }
 
 
-bool cg_if_else_part(unsigned int uni)
+bool cg_if_else_part(unsigned int id)
 {
-    ADD_CODE("JUMP $"); ADD_CODE("IF"); ADD_CODE("A"); ADD_CODE_INT(uni); ADD_CODE("\n");
+    ADD_CODE("JUMP $"); ADD_CODE("IF"); ADD_CODE("A"); ADD_CODE_INT(id); ADD_CODE("\n");
     ADD_INST("# Else part");
-    if (!cg_label("IF", "", uni)) return false;
+    if (!cg_label("IF", "", id)) return false;
     return true;
 }
 
-bool cg_if_end(unsigned int uni)
+bool cg_if_end(unsigned int id)
 {
     ADD_INST("\n# End If");
-    if (!cg_label("IF", "A", uni)) return false;
+    if (!cg_label("IF", "A", id)) return false;
     return true;
 }
 
 // WRITE <symb>
-bool cg_print_literal(char* value, varType_t typ) {
+bool cg_print_literal(char* value, varType_t type) {
     ADD_INST("\n# Function PRINT LITERAL");
 
     // Výpis celého čísla, desatinného čísla alebo reťazca?
-    switch (typ) {
+    switch (type) {
         case TypeInteger:
             ADD_CODE("WRITE int@"); ADD_CODE(value);
             return true;
@@ -276,7 +272,7 @@ bool cg_print_literal(char* value, varType_t typ) {
             ADD_CODE("WRITE float@"); ADD_CODE(value);
             return true;
         case TypeNone:
-            ADD_INST("WRITE string@None"); // TODO možno nil@nil
+            ADD_INST("WRITE string@None");
             return true;
         case TypeString:
             ADD_CODE("WRITE string@");
@@ -340,50 +336,10 @@ bool cg_input(varType_t type) {
     return true;
 }
 
-// Operácia nad operandmi a premenná do ktorej je výsledok priradený
-bool cg_math_operation(parserState_t operation, char* var, char* op1, char* op2) {
-    switch (operation) {
-        case Plus:
-            ADD_CODE("ADD ");  ADD_CODE(" ");
-                       ADD_CODE(var); ADD_CODE(" ");
-                       ADD_CODE(op1); ADD_CODE(" ");
-                       ADD_CODE(op2); ADD_CODE("\n");
-            break;
-        case Minus:
-            ADD_CODE("SUB ");  ADD_CODE(" ");
-                       ADD_CODE(var); ADD_CODE(" ");
-                       ADD_CODE(op1); ADD_CODE(" ");
-                       ADD_CODE(op2); ADD_CODE("\n");
-            break;
-        case Multiply:
-            ADD_CODE("MUL ");  ADD_CODE(" ");
-                       ADD_CODE(var); ADD_CODE(" ");
-                       ADD_CODE(op1); ADD_CODE(" ");
-                       ADD_CODE(op2); ADD_CODE("\n");
-            break;
-        case DivideWRest:
-            ADD_CODE("DIV ");  ADD_CODE(" ");
-                       ADD_CODE(var); ADD_CODE(" ");
-                       ADD_CODE(op1); ADD_CODE(" ");
-                       ADD_CODE(op2); ADD_CODE("\n");
-            break;
-        case DivideWORest:
-            ADD_CODE("IDIV ");  ADD_CODE(" ");
-                        ADD_CODE(var); ADD_CODE(" ");
-                        ADD_CODE(op1); ADD_CODE(" ");
-                        ADD_CODE(op2); ADD_CODE("\n");
-            break;
-        default:
-            return false;
-    }
-
-    return true;
-}
-
 // Uloženie hodnoty symb na vrchol dátoveho zasobniku
 bool cg_stack_push_id(char* symb) {
     ADD_CODE("PUSHS ");
-    // Nachádza sa v globálnej hashT
+    // Nachádza sa v globálnej hashTable
     if (TSearch_char(global_table, symb)) {
         ADD_CODE("GF@");
     } else {
@@ -394,6 +350,7 @@ bool cg_stack_push_id(char* symb) {
     return true;
 }
 
+// Uloženie hodnoty symb na vrchol dátoveho zasobniku
 bool cg_stack_push_gl(char* symb) {
     ADD_CODE("PUSHS ");
     ADD_CODE("GF@");
@@ -433,7 +390,7 @@ bool cg_stack_push_literal(varType_t type, char* val) {
 }
 
 // Uloženie hodnoty val na vrchol dátoveho zasobniku
-bool cg_stack_push_int(unsigned int val) {
+bool cg_stack_push_int(int val) {
     ADD_CODE("PUSHS int@");
     ADD_CODE_INT(val); ADD_CODE("\n");
 
@@ -448,7 +405,7 @@ bool cg_stack_push_double(double val) {
     return true;
 }
 
-// Uloženie hodnoty symb na vrchol dátoveho zasobniku
+// Uloženie hodnoty z vrcholu dátového zásobníka do symb
 bool cg_stack_pop_id(char* var, bool local) {
     ADD_CODE("POPS ");
     if (cg_LForGF(local) == false) return false;
@@ -457,14 +414,14 @@ bool cg_stack_pop_id(char* var, bool local) {
     return true;
 }
 
-// Clear stack
+// Clear IFJcode19 stack
 bool cg_clear_stack() {
     ADD_INST("CLEARS");
 
     return true;
 }
 
-// Operácia nad operandmi na vrchole dátového zásobníka
+// Matematické operácie nad operandmi na vrchole dátového zásobníka
 bool cg_math_operation_stack(parserState_t operation) {
     switch (operation) {
         case Plus:
@@ -482,9 +439,8 @@ bool cg_math_operation_stack(parserState_t operation) {
     }
 }
 
-// Relacne perácie na vrchole dátového zásobníka
+// Relačné operácie na vrchole dátového zásobníka
 bool cg_rel_operation_stack(parserState_t operation) {
-
     switch (operation) {
         case NotEqual:
             ADD_INST("EQS");
@@ -512,30 +468,13 @@ bool cg_rel_operation_stack(parserState_t operation) {
     }
 }
 
-// Konkatenácia operandov a priradenie premennej
-bool cg_cat_id(char* var, bool local1, char* op1, bool local2, char* op2, bool local3) {
-    ADD_CODE("CONCAT");
-    if (cg_LForGF(local1) == false) return false; ADD_CODE(var);
-    if (cg_LForGF(local2) == false) return false; ADD_CODE(op1);
-    if (cg_LForGF(local3) == false) return false; ADD_CODE(op2);
-    ADD_CODE("\n");
-
-    return true;
-}
-
-// Dynamicke zistenie typu premmennej
+// Dynamické zisťovanie typu premmennej
 bool cg_type_of_symb(char* var, char* symb){
     ADD_CODE("TYPE GF@"); ADD_CODE(var); ADD_CODE(" GF@"); ADD_CODE(symb); ADD_CODE("\n");
     return true;
 }
 
-// Vytvorenie navestia
-bool cg_flag_gen(char* a_part, unsigned int number, char* b_part){
-    ADD_CODE("LABEL $"); ADD_CODE(a_part); ADD_CODE(""); ADD_CODE_INT(number); ADD_CODE(""); ADD_CODE(b_part); ADD_CODE("\n");
-    return true;
-}
-
-// Konverzia int na double
+// Konverzia int na double nad zásobníkom
 bool cg_stack_int2float(){
     ADD_INST("INT2FLOATS");
     return true;
@@ -547,21 +486,17 @@ bool cg_exit(int errorNum){
     return true;
 }
 
-// JUMP - vsetky varianty
+// JUMP inštrukcia, všetky jej varianty
 bool cg_jump(char* jump_type, char* flag_1_part, unsigned int flag_number, char* flag_2_part, char* op_1, char* op_2){
-    ADD_CODE(jump_type); ADD_CODE(" $"); ADD_CODE(flag_1_part); ADD_CODE(""); ADD_CODE_INT(flag_number); ADD_CODE(""); ADD_CODE(flag_2_part); ADD_CODE(" ");
+    ADD_CODE(jump_type); ADD_CODE(" $"); ADD_CODE(flag_1_part); ADD_CODE_INT(flag_number); ADD_CODE(flag_2_part); ADD_CODE(" ");
     ADD_CODE(op_1); ADD_CODE(" "); ADD_CODE(op_2); ADD_CODE("\n");
     return true;
 }
 
-// Vratenie vyslednej hodnoty
-bool cg_move(char* id_to_return, char* type){
-    ADD_CODE("MOVE LF@%navratova_hodnota "); ADD_CODE(type); ADD_CODE("@"); ADD_CODE(id_to_return); ADD_CODE("\n");
-    return true;
-}
-
-bool cg_two_strings(unsigned int operation, unsigned int flag){
-    cg_jump("JUMPIFNEQ", "operation_m", flag, "", "GF@typ_op_1", "string@string");
+// Hlavná funkcia pre vykonávanie matematických operácií nad operandmi, zahŕňa ja konkatenáciu stringov
+bool cg_operation(unsigned int operation, unsigned int id){
+    ADD_CODE("\n");
+    cg_jump("JUMPIFNEQ", "$operation_m", id, "", "GF@typ_op_1", "string@string");
 
     cg_stack_pop_id("op_2", false);
     cg_stack_pop_id("op_1", false);
@@ -570,13 +505,14 @@ bool cg_two_strings(unsigned int operation, unsigned int flag){
 
     cg_stack_push_gl("expr_result");
 
-    cg_jump("JUMP", "operation_f", flag, "", "", "");
+    cg_jump("JUMP", "$operation_f", id, "", "", "");
 
-    cg_flag_gen("operation_m", flag, "");
+    cg_label("$operation_m","", id);
 
     cg_math_operation_stack(operation);
 
-    cg_flag_gen("operation_f", flag, "");
+    cg_label("$operation_f","", id);
+    ADD_CODE("\n");
 
     return true;
 }

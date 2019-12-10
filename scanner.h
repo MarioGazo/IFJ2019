@@ -16,8 +16,11 @@
  * @union Token attribute is a number or a string
  */
 typedef union {
+    /** int token value */
     unsigned int intValue;
+    /** double token value */
     double doubleValue;
+    /** string token value */
     dynamicString_t word;
 } tokenAttribute_t;
 
@@ -81,7 +84,9 @@ typedef enum parserState {
  * Token represents one of the final states and its potential attribute
  */
 typedef struct {
+    /** Token type */
     parserState_t tokenType;
+    /** Token value */
     tokenAttribute_t tokenAttribute;
 } token_t;
 

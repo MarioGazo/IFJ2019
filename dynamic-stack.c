@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+// Inicializácia stack
 bool stackInit(dynamic_stack_t* s) {
     s->data = calloc(1, sizeof(int));
 
@@ -21,10 +22,12 @@ bool stackInit(dynamic_stack_t* s) {
     }
 }
 
+// Je zásobník prázdny?
 bool stackEmpty(dynamic_stack_t s) {
     return (s.top == 0);
 }
 
+// Pop
 int stackPop(dynamic_stack_t* s) {
     int result = 0;
 
@@ -40,6 +43,7 @@ int stackPop(dynamic_stack_t* s) {
     }
 }
 
+// Push
 bool stackPush(dynamic_stack_t* s, int num) {
     s->data = realloc(s->data, ++s->capacity * sizeof(int));
 
@@ -51,6 +55,7 @@ bool stackPush(dynamic_stack_t* s, int num) {
     }
 }
 
+// Uvoľnenie pamäti
 void stackFree(dynamic_stack_t* s) {
     free(s->data);
 }

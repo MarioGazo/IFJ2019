@@ -11,7 +11,8 @@
 #include <stdio.h>
 #include "code-gen.h"
 
-#define DEBUG 0 // TODO set to 0
+// DEBUG - procesné výpisy programu počas spracovávania výrazu
+#define DEBUG 0
 #define RULEHEIGHT 18
 #define RULEWIDTH 3
 
@@ -22,13 +23,13 @@
 FILE* in;
 dynamic_stack_t* iStack;
 
-//variables to deal with the getToken function
+// Variables to deal with the getToken function
 token_t* microStack = NULL;
 static unsigned int uni_2_a = 0;
 int zero_division = 0;
 int inFun = 0;
 
-
+// LL table
 int errN = PROG_OK;
 char LL[7][7] = {
   // +|- *|/|// (    )    i    EV   $
@@ -41,7 +42,7 @@ char LL[7][7] = {
     {'<', '<', '<', ' ', '<', '<', ' '}, // $
 };
 
-//Rules to pick from. 99 = E (Nonterminal)
+// Rules to pick from. 99 = E (Nonterminal)
 parserState_t rules[RULEHEIGHT][RULEWIDTH] = {
     {Nonterminal, Plus, Nonterminal},                           // E -> E+E 1
     {Nonterminal, Minus, Nonterminal},                          // E -> E-E 2
@@ -174,40 +175,6 @@ token_t* getNewToken() {
     if (token->tokenType == ErrorIndent) errN = LEX_ERR;
     if(errN != PROG_OK) return NULL;
     return token;
-  /*
-  char  s;
-  scanf(" %c", &s);
-
-  switch (s){
-    case '+':
-      return new_token(Plus);
-      break;
-    case '-':
-      return new_token(Minus);
-      break;
-    case '*':
-      return new_token(Multiply);
-      break;
-    case '(':
-      return new_token(LeftBracket);
-      break;
-    case ')':
-      return new_token(RightBracket);
-      break;
-    case 'i':
-      return new_token(Identifier);
-      break;
-    case '=':
-      return new_token(Equals);
-      break;
-    case 's':
-      return new_token(String);
-      break;
-    default:
-      return new_token(EOL);
-      break;
-  };
-  */
 }
 
 int expSwitch( dynamic_symbol_stack_t* stack, token_t** t, const int* depth, char symbol, int *ret_value_type){
@@ -299,6 +266,7 @@ int expSwitch( dynamic_symbol_stack_t* stack, token_t** t, const int* depth, cha
                 if(found == 12 ||found == 13 ||found == 14 ||found == 15 ||found == 16 ||found == 17){
                   E->tokenAttribute.intValue = exp[0]->tokenType;
 
+                    // Ak je operand int, alebo float a je 0, musíme si dať pozor na delenie 0
                   if (((E->tokenAttribute.intValue == Integer) && (exp[0]->tokenAttribute.intValue == 0)) ||
                       ((E->tokenAttribute.intValue == Double) && (exp[0]->tokenAttribute.doubleValue == 0.0))){
                         E->tokenAttribute.intValue = 0;
@@ -309,6 +277,7 @@ int expSwitch( dynamic_symbol_stack_t* stack, token_t** t, const int* depth, cha
                 }else if(found != 11){
                     if ((exp[0]->tokenType == 99) && (exp[2]->tokenType == 99)){
 
+                        // Nasledujú typové kontroly operácií, je tu asi polovica kontrol, druhá sa vykonáva počas interpretácie
                         if ((exp[0]->tokenAttribute.intValue == DocumentString) || (exp[0]->tokenAttribute.intValue == String)
                         || (exp[2]->tokenAttribute.intValue == String) || (exp[2]->tokenAttribute.intValue == DocumentString)){
                             if ((exp[1]->tokenType != Plus) && (exp[1]->tokenType != Equals) && (exp[1]->tokenType != NotEqual) &&
@@ -318,12 +287,14 @@ int expSwitch( dynamic_symbol_stack_t* stack, token_t** t, const int* depth, cha
                             }
                         }
 
+                        // Nekompatibilné typy
                         if (((exp[0]->tokenAttribute.intValue == DocumentString) || (exp[0]->tokenAttribute.intValue == String))
                             && ((exp[2]->tokenAttribute.intValue != String) && (exp[2]->tokenAttribute.intValue != DocumentString)
                             && (exp[2]->tokenAttribute.intValue != Identifier) && (exp[2]->tokenAttribute.intValue != Keyword))){
                                 return SEMRUN_ERR;
                         }
 
+                        // Nekompatibilné typy
                         if (((exp[2]->tokenAttribute.intValue == DocumentString) || (exp[2]->tokenAttribute.intValue == String))
                             && ((exp[0]->tokenAttribute.intValue != String) && (exp[0]->tokenAttribute.intValue != DocumentString)
                             && (exp[0]->tokenAttribute.intValue != Identifier) && (exp[0]->tokenAttribute.intValue != Keyword))){
@@ -331,6 +302,7 @@ int expSwitch( dynamic_symbol_stack_t* stack, token_t** t, const int* depth, cha
                         }
 
                         if (exp[1]->tokenType == DivideWRest){
+                            // Delenie nulou
                             if (exp[0]->tokenAttribute.intValue == Start){
                                 return DIVZERO_ERR;
                             } else {
@@ -346,7 +318,9 @@ int expSwitch( dynamic_symbol_stack_t* stack, token_t** t, const int* depth, cha
                             } else {
                                 return  SEMRUN_ERR;
                             }
+
                         } else if (exp[1]->tokenType == DivideWORest){
+                            // Delenie nulou
                             if (exp[0]->tokenAttribute.intValue == Start){
                                 return DIVZERO_ERR;
                             } else if (exp[0]->tokenAttribute.intValue == Integer) {
@@ -364,6 +338,7 @@ int expSwitch( dynamic_symbol_stack_t* stack, token_t** t, const int* depth, cha
                             }
                         }
 
+                        // Volanie funkcie pre zápis inštrukcií
                         E->tokenAttribute.intValue = cg_count(exp[1]->tokenType, exp[0]->tokenAttribute.intValue, exp[2]->tokenAttribute.intValue, ret_value_type);
                     } else if (exp[0]->tokenType == 99){
                         E->tokenAttribute.intValue = cg_count(exp[1]->tokenType, exp[0]->tokenAttribute.intValue, exp[2]->tokenType, ret_value_type);
@@ -399,6 +374,7 @@ int expSwitch( dynamic_symbol_stack_t* stack, token_t** t, const int* depth, cha
 }
 
 bool cg_stack_p(token_t* token){
+    // Zápis na dátový zásobník IFJcode19
     if (token->tokenType == DocumentString || token->tokenType == String) {
         cg_stack_push_literal(TypeString, token->tokenAttribute.word.text);
     } else if (token->tokenType == Integer){
@@ -416,7 +392,7 @@ bool cg_stack_p(token_t* token){
     return true;
 }
 
-int cg_count(parserState_t operatio, unsigned int type_op_1, unsigned int type_op_2, int *ret_value_type){
+int cg_count(parserState_t operation, unsigned int type_op_1, unsigned int type_op_2, int *ret_value_type){
 
     cg_stack_pop_id("op_1", false);
     cg_stack_pop_id("op_2", false);
@@ -427,44 +403,41 @@ int cg_count(parserState_t operatio, unsigned int type_op_1, unsigned int type_o
     cg_type_of_symb("typ_op_1", "op_1");
     cg_type_of_symb("typ_op_2", "op_2");
 
-    cg_jump("JUMPIFEQ", "data_control", uni_2_a, "final", "GF@typ_op_1", "GF@typ_op_2");
-    cg_jump("JUMPIFNEQ", "data_control", uni_2_a, "not_string", "GF@typ_op_1", "string@string");
-    cg_jump("JUMPIFNEQ", "data_control", uni_2_a, "not_string", "GF@typ_op_2", "string@string");
+    cg_jump("JUMPIFEQ", "data_control_f", uni_2_a, "", "GF@typ_op_1", "GF@typ_op_2");
+    cg_jump("JUMPIFNEQ", "data_control_ns", uni_2_a, "", "GF@typ_op_1", "string@string");
+    cg_jump("JUMPIFNEQ", "data_control_ns", uni_2_a, "", "GF@typ_op_2", "string@string");
 
     cg_exit(4);
 
-    cg_flag_gen("data_control", uni_2_a, "not_string");
-    cg_jump("JUMPIFEQ", "data_control", uni_2_a, "int", "GF@typ_op_1", "string@int");
+    cg_label("data_control_", "ns", uni_2_a);
+
+    cg_jump("JUMPIFEQ", "data_control_i", uni_2_a, "", "GF@typ_op_1", "string@int");
 
     cg_stack_pop_id("op_1", false);
     cg_stack_int2float();
     cg_stack_push_gl("op_1");
 
-    cg_jump("JUMP", "data_control", uni_2_a, "final", "", "");
+    cg_jump("JUMP", "data_control_f", uni_2_a, "", "", "");
 
-    cg_flag_gen("data_control", uni_2_a, "int");
+    cg_label("data_control_", "i", uni_2_a);
     cg_stack_int2float();
 
-    cg_flag_gen("data_control", uni_2_a, "final");
+    cg_label("data_control_", "f", uni_2_a);
 
-
-    // Vykoname operaciu
-    // Operácia môže byť matematická, alebo relačná
-    // V prípade relačnej, výsledok odvzdávame späť, buď ako bool v prípade podmienky,
-    // alebo ako výsledok výrazu v prípade priradenia
-    if ((operatio == Plus) || (operatio == Minus) || (operatio == Multiply) ||
-        (operatio == DivideWRest) || (operatio == DivideWORest)){
-        cg_two_strings(operatio, uni_2_a);
-    } else if (operatio == Assign) {
-        // Priradenie a odovzdanie vysledku cez navratova_hodnota
+    // Samotné vykonanie operácie, operandy sú už nachystané na zásobníku
+    if ((operation == Plus) || (operation == Minus) || (operation == Multiply) ||
+        (operation == DivideWRest) || (operation == DivideWORest)){
+        // Matematická operácia
+        cg_operation(operation, uni_2_a);
+    } else if (operation == Assign) {
+        // Priradenie a odovzdanie výsledku
         cg_stack_pop_id("op_1", false);
-        cg_move("op_1", "typ_op_1");
         cg_clear_stack();
 
-    } else if ((operatio == NotEqual) || (operatio == Smaller) || (operatio == SmallerOrEqual)
-    || (operatio == Bigger) || (operatio == BiggerOrEqual) || (operatio == Equals)){
-        // Relacna operacia nad zasobnikom
-        cg_rel_operation_stack(operatio);
+    } else if ((operation == NotEqual) || (operation == Smaller) || (operation == SmallerOrEqual)
+    || (operation == Bigger) || (operation == BiggerOrEqual) || (operation == Equals)){
+        // Relačná operácia
+        cg_rel_operation_stack(operation);
     }
 
     uni_2_a = uni_2_a + 1;
@@ -523,7 +496,7 @@ int expression(FILE* lIn, dynamic_stack_t* lIStack, token_t* t, token_t* control
         *token = *t;
         *ret_value_type = token->tokenType;
         break;
-      case 2: // Two were passed - im assuming that controlToken comes before t, (TODO: maybe switch them)
+      case 2: // Two were passed - im assuming that controlToken comes before t
         token = calloc(1, sizeof(token_t)); //both of these should end up on the stack at some point
         if (token == NULL)
             return  INTERNAL_ERR;

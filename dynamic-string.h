@@ -14,7 +14,9 @@
  * @struct Dynamic string structure
  */
 typedef struct {
+    /** String capacity */
     unsigned int capacity;
+    /** Value stored in string */
     char* text;
 } dynamicString_t;
 

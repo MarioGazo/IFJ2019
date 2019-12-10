@@ -7,7 +7,6 @@
 
 #include "parser.h"
 
-
 int main() {
     return analyse(stdin);
 }

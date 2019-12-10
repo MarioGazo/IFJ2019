@@ -14,8 +14,11 @@
  * @struct Dynamic stack
  */
 typedef struct dynamic_stack {
+    /** Data */
     int* data;
+    /** Size of dynamic stack */
     unsigned int capacity;
+    /** First letter */
     int top;
 } dynamic_stack_t;
 

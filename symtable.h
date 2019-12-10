@@ -29,10 +29,15 @@ typedef enum {
  * @struct Representation of a symtable item
  */
 typedef struct hTabItem {
+    /** Identifier of token in table*/
     dynamicString_t key;
+    /** Token type */
     varType_t type;
+    /** Is token defined, use only in case of function or variable */
     bool defined;
+    /** Value of token */
     tokenAttribute_t value;
+    /** Next item in table */
     struct hTabItem *next;
 } hTabItem_t;
 
@@ -40,7 +45,9 @@ typedef struct hTabItem {
  * @struct Representation of a hash table
  */
 typedef struct {
+    /** Table size */
     unsigned long size;
+    /** Data */
     struct hTabItem *variables[];
 } hashTable;
 

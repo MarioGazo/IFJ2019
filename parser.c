@@ -12,7 +12,8 @@
 #include "error.h"
 #include "expression.h"
 
-#define DEBUG 0 // TODO pred odovzdanim nastavit na 0
+// DEBUG - kontrolné výpisy celého programu
+#define DEBUG 0
 
 #define TRUE 1
 #define FALSE 0
@@ -41,28 +42,34 @@ token_t actualToken;
 FILE* in;
 dynamic_stack_t indentationStack;
 int ret_type = 0;
+
 // Jedinečné hodnoty pre každé náveštie
 unsigned int uni_a = 0;
 unsigned int uni_b = 42;
 unsigned int uni = 0;
+
+// Zásobníky pre vnorené funkcie
 dynamic_stack_t unistack_if;
 dynamic_stack_t unistack_while;
+
 // Kód chybového hlásenia prekladača
 int errorCode;
 int unsigned main_parts = 0;
 int num_of_l = 0;
-// Tabuľka symbolov
+
+// Tabuľka symbolov - globálna, lokálna
 hashTable *GlobalTable, *LocalTable;
 
 // Príznaky značia kde sa nachádza čítanie programu
 bool inFunc = false;    // sme vo funkcii
 bool inRecursion = false;    // sme vo funkcii
 bool expr = false;      // bol spracovany vyraz
-bool while_in = false;
-bool if_in = false;
+bool while_in = false;  // sme vo funkcii while
+bool if_in = false; // sme vo funkcii if
 
 // Výsledný kód
 dynamicString_t code;
+
 dynamicString_t while_def;
 dynamicString_t if_def;
 
@@ -671,11 +678,6 @@ int command() {
 
             case keywordPass:
                 PRINT_DEBUG("\tPASS\n");
-                // A: TODO PASS
-                // Q: Čo sa tú ma vypisovať?
-                // A: Asi nič.
-                // Q: A sme si istý?
-                // A: Nie.
                 return PROG_OK;
 
             case keywordInputf: // input bez priradenia
@@ -865,7 +867,6 @@ int command() {
     }
 }
 
-// TODO vramci kazdej vetvy urcit typ premennej
 int assign(hTabItem_t* varRecord) {
     PRINT_DEBUG("ASSIGNMENT\n");
 

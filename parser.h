@@ -36,6 +36,8 @@ int defFunction();
 /**
  * @brief Function analysing parameters of user defined functions
  *
+ * @param funcRecord Parameters function record
+ *
  * @return Error code
  */
 int param(hTabItem_t* funcRecord);
@@ -49,6 +51,7 @@ int command();
 
 /**
  * @brief Assigment
+ *
  * @param varRecord Variable to assign to
  *
  * @return Error code
@@ -65,7 +68,10 @@ int term();
  /**
   * @brief Finds and returns item in hash table
   *
+  * @param name Name of searched item
+  *
   * @return Pointer to item, or NULL if not found
   */
- hTabItem_t* isInLocalOrGlobalhTab(dynamicString_t name);
+hTabItem_t* isInLocalOrGlobalhTab(dynamicString_t name);
+
 #endif //VUT_FIT_IFJ2019_PARSER_H
